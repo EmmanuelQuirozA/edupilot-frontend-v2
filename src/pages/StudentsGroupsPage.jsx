@@ -38,8 +38,90 @@ const createInitialStudent = () => ({
   group_id: '',
   register_id: '',
   payment_reference: '',
-  role_id: 4,
 });
+
+const extractListFromPayload = (payload) => {
+  if (!payload) {
+    return [];
+  }
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  const candidates = [
+    payload.data,
+    payload.results,
+    payload.items,
+    payload.list,
+    payload.response,
+    payload.schools,
+    payload.classes,
+    payload.data?.items,
+    payload.data?.results,
+    payload.data?.data,
+  ];
+
+  return candidates.find(Array.isArray) ?? [];
+};
+
+const normalizeSelectOption = (item, index = 0) => {
+  if (item == null) {
+    return { value: '', label: '' };
+  }
+
+  if (typeof item !== 'object') {
+    const stringValue = String(item);
+    return { value: stringValue, label: stringValue };
+  }
+
+  const valueKeys = [
+    'id',
+    'school_id',
+    'schoolId',
+    'class_id',
+    'classId',
+    'group_id',
+    'groupId',
+    'value',
+    'uuid',
+    'code',
+  ];
+
+  let value = '';
+  for (const key of valueKeys) {
+    const candidate = item[key];
+    if (candidate !== undefined && candidate !== null && candidate !== '') {
+      value = String(candidate);
+      break;
+    }
+  }
+
+  const labelKeys = [
+    'name',
+    'label',
+    'title',
+    'description',
+    'code',
+    'group_name',
+    'class_name',
+  ];
+
+  let label = '';
+  for (const key of labelKeys) {
+    const candidate = item[key];
+    if (typeof candidate === 'string' && candidate.trim() !== '') {
+      label = candidate;
+      break;
+    }
+  }
+
+  if (!label) {
+    label = value || String(index + 1);
+  }
+
+  return { value, label };
+};
 
 const normalizeStudentsResponse = (payload) => {
   if (!payload) {
@@ -92,6 +174,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
   const [isSubmittingStudent, setIsSubmittingStudent] = useState(false);
   const [formFeedback, setFormFeedback] = useState('');
   const [globalAlert, setGlobalAlert] = useState(null);
+  const [schoolOptions, setSchoolOptions] = useState([]);
+  const [classOptions, setClassOptions] = useState([]);
 
   const [selectedStudent, setSelectedStudent] = useState(null);
 
@@ -230,8 +314,102 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
     setIsFiltersOpen(false);
   };
 
+  const fetchClasses = useCallback(
+    async (schoolId) => {
+      if (!schoolId) {
+        setClassOptions([]);
+        setStudentForm((previous) => ({ ...previous, group_id: '' }));
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/classes?lang=en&school_id=${encodeURIComponent(schoolId)}`,
+          {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to load classes');
+        }
+
+        const payload = await response.json();
+        const classesList = extractListFromPayload(payload);
+        const options = classesList
+          .map((item, index) => normalizeSelectOption(item, index))
+          .filter((option) => option.value !== '');
+        setClassOptions(options);
+
+        if (options.length > 0) {
+          setStudentForm((previous) => ({ ...previous, group_id: options[0].value }));
+        } else {
+          setStudentForm((previous) => ({ ...previous, group_id: '' }));
+        }
+      } catch (error) {
+        console.error('Failed to load classes', error);
+        setClassOptions([]);
+        setStudentForm((previous) => ({ ...previous, group_id: '' }));
+      }
+    },
+    [token],
+  );
+
+  const fetchSchools = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/schools/list?lang=es&status_filter=-1`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load schools');
+      }
+
+      const payload = await response.json();
+      const schoolsList = extractListFromPayload(payload);
+      const options = schoolsList
+        .map((item, index) => normalizeSelectOption(item, index))
+        .filter((option) => option.value !== '');
+      setSchoolOptions(options);
+
+      if (options.length > 0) {
+        const selectedSchool = options[0].value;
+        setStudentForm((previous) => ({ ...previous, school_id: selectedSchool }));
+        fetchClasses(selectedSchool);
+      } else {
+        setStudentForm((previous) => ({ ...previous, school_id: '', group_id: '' }));
+        setClassOptions([]);
+      }
+    } catch (error) {
+      console.error('Failed to load schools', error);
+      setSchoolOptions([]);
+      setStudentForm((previous) => ({ ...previous, school_id: '', group_id: '' }));
+      setClassOptions([]);
+    }
+  }, [fetchClasses, token]);
+
+  useEffect(() => {
+    if (isStudentModalOpen) {
+      fetchSchools();
+    }
+  }, [fetchSchools, isStudentModalOpen]);
+
   const handleStudentFormChange = (event) => {
     const { name, value } = event.target;
+    if (name === 'school_id') {
+      setStudentForm((previous) => ({ ...previous, school_id: value, group_id: '' }));
+      fetchClasses(value);
+      return;
+    }
+
     setStudentForm((previous) => ({ ...previous, [name]: value }));
   };
 
@@ -723,21 +901,35 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
                   </label>
                   <label>
                     <span>{strings.form.fields.schoolId}</span>
-                    <input name="school_id" value={studentForm.school_id} onChange={handleStudentFormChange} />
+                    <select
+                      name="school_id"
+                      value={studentForm.school_id}
+                      onChange={handleStudentFormChange}
+                      disabled={!schoolOptions.length}
+                      required
+                    >
+                      {schoolOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                   <label>
                     <span>{strings.form.fields.groupId}</span>
-                    <input name="group_id" value={studentForm.group_id} onChange={handleStudentFormChange} />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.roleId}</span>
-                    <input
-                      type="number"
-                      name="role_id"
-                      value={studentForm.role_id}
+                    <select
+                      name="group_id"
+                      value={studentForm.group_id}
                       onChange={handleStudentFormChange}
-                      min="1"
-                    />
+                      disabled={!classOptions.length}
+                      required={classOptions.length > 0}
+                    >
+                      {classOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
               </section>
