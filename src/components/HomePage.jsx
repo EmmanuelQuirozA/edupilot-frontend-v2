@@ -355,6 +355,12 @@ const HomePage = ({ language, onLanguageChange }) => {
             </label>
             <LanguageSelector value={language} onChange={onLanguageChange} />
             <button type="button" className="dashboard__notification" aria-label={t.home.header.notifications}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 3a5 5 0 0 0-5 5v2.17c0 .7-.28 1.37-.77 1.86L4.6 13.65A1 1 0 0 0 5.3 15h13.4a1 1 0 0 0 .7-1.35l-1.63-1.62a2.63 2.63 0 0 1-.77-1.86V8a5 5 0 0 0-5-5Zm0 18a2.5 2.5 0 0 1-2.45-2h4.9A2.5 2.5 0 0 1 12 21Z"
+                  fill="currentColor"
+                />
+              </svg>
               <span />
             </button>
             <div className="dashboard__user-chip">
