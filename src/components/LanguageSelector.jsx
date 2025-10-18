@@ -1,17 +1,15 @@
-import './LanguageSelector.css';
-
 const languages = [
   { code: 'es', label: 'ES' },
   { code: 'en', label: 'EN' },
 ];
 
-const LanguageSelector = ({ value, onChange }) => (
-  <div className="language-selector" role="group" aria-label="Language selector">
+const LanguageSelector = ({ value, onChange, variant = 'outline-primary', size = 'sm' }) => (
+  <div className="btn-group" role="group" aria-label="Language selector">
     {languages.map(({ code, label }) => (
       <button
         key={code}
         type="button"
-        className={`language-selector__button${value === code ? ' is-active' : ''}`}
+        className={`btn btn-${value === code ? variant.replace('outline-', '') : variant} btn-${size}`}
         onClick={() => onChange?.(code)}
       >
         {label}
