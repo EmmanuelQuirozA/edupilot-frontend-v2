@@ -6,17 +6,15 @@ const PlaceholderPage = ({ title, description, icon }) => {
     .replace(/(^-|-$)/g, '')}`;
 
   return (
-    <section className="py-5">
-      <div className="bg-white border rounded-4 shadow-sm text-center p-5 mx-auto" style={{ maxWidth: '40rem' }}>
+    <section className="dashboard__placeholder" aria-labelledby={headingId}>
+      <div className="dashboard__placeholder-inner">
         {icon ? (
-          <div className="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary mb-4" style={{ width: '72px', height: '72px' }} aria-hidden="true">
+          <div className="dashboard__placeholder-icon" aria-hidden="true">
             {icon}
           </div>
         ) : null}
-        <h2 id={headingId} className="h4 fw-semibold mb-3">
-          {title}
-        </h2>
-        {description ? <p className="text-secondary mb-0">{description}</p> : null}
+        <h2 id={headingId}>{title}</h2>
+        {description ? <p>{description}</p> : null}
       </div>
     </section>
   );
