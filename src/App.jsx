@@ -1,35 +1,46 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from 'react';
+import LoginPage from './components/LoginPage';
+import HomePage from './components/HomePage';
+import { useAuth } from './context/AuthContext';
+import { getTranslation } from './i18n/translations';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+const supportedLanguages = ['es', 'en'];
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+const getInitialLanguage = () => {
+  if (typeof window === 'undefined') {
+    return 'es';
+  }
 
-export default App
+  const stored = window.localStorage.getItem('language');
+  if (stored && supportedLanguages.includes(stored)) {
+    return stored;
+  }
+
+  const browserLanguage = navigator.language?.split('-')?.[0]?.toLowerCase?.();
+  return supportedLanguages.includes(browserLanguage) ? browserLanguage : 'es';
+};
+
+const App = () => {
+  const { user } = useAuth();
+  const [language, setLanguage] = useState(getInitialLanguage);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('language', language);
+    }
+  }, [language]);
+
+  useEffect(() => {
+    const t = getTranslation(language);
+    document.title = user ? `${t.home.greeting} ${user?.name ?? ''} | EduPilot` : `${t.loginTitle} | EduPilot`;
+  }, [language, user]);
+
+  return user ? (
+    <HomePage language={language} onLanguageChange={setLanguage} />
+  ) : (
+    <LoginPage language={language} onLanguageChange={setLanguage} />
+  );
+};
+
+export default App;
