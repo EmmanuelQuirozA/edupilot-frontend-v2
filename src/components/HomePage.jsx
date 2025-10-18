@@ -51,13 +51,74 @@ const HomePage = ({ language, onLanguageChange }) => {
 
   const menuItems = useMemo(
     () => [
-      { key: 'dashboard', label: t.home.menu.items.dashboard },
-      { key: 'payments', label: t.home.menu.items.payments },
-      { key: 'students', label: t.home.menu.items.students },
-      { key: 'teachers', label: t.home.menu.items.teachers },
-      { key: 'schedules', label: t.home.menu.items.schedules },
-      { key: 'grades', label: t.home.menu.items.grades },
-      { key: 'communications', label: t.home.menu.items.communications },
+      { key: 'dashboard', 
+        label: t.home.menu.items.dashboard, 
+        icon : 
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor"/>
+          <rect x="13" y="3" width="8" height="5" rx="2" fill="currentColor"/>
+          <rect x="13" y="10" width="8" height="11" rx="2" fill="currentColor"/>
+          <rect x="3" y="13" width="8" height="8" rx="2" fill="currentColor"/>
+        </svg> 
+      },
+      { key: 'payments', 
+        label: t.home.menu.items.payments, 
+        icon : 
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="2" y="6" width="20" height="12" rx="2" fill="currentColor" opacity="0.2"/>
+          <rect x="2" y="8" width="20" height="3" fill="currentColor"/>
+          <rect x="4" y="14" width="6" height="2" rx="1" fill="currentColor"/>
+          <rect x="12" y="14" width="4" height="2" rx="1" fill="currentColor"/>
+        </svg>
+      },
+      { key: 'students', 
+        label: t.home.menu.items.students, 
+        icon : 
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3 2 8l10 5 7-3.5V15a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-2" fill="currentColor" opacity="0.2"/>
+          <path d="M12 3 2 8l10 5 10-5-10-5Z" fill="currentColor"/>
+          <path d="M19 10v6a2 2 0 0 0 2 2h1" fill="currentColor"/>
+        </svg> 
+      },
+      { key: 'teachers', 
+        label: t.home.menu.items.teachers, 
+        icon : 
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="4" width="12" height="8" rx="1.5" fill="currentColor"/>
+          <circle cx="6.5" cy="9" r="2.5" fill="currentColor"/>
+          <path d="M2 18a4.5 4.5 0 0 1 9 0v2H2v-2Z" fill="currentColor"/>
+          <rect x="11" y="13" width="8" height="2" rx="1" fill="currentColor"/>
+        </svg>
+      },
+      { key: 'schedules', 
+        label: t.home.menu.items.schedules, 
+        icon : 
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="2" fill="currentColor" opacity="0.2"/>
+          <rect x="3" y="8" width="18" height="3" fill="currentColor"/>
+          <rect x="7" y="3" width="2" height="4" rx="1" fill="currentColor"/>
+          <rect x="15" y="3" width="2" height="4" rx="1" fill="currentColor"/>
+          <path d="M9 16l2 2 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      },
+      { key: 'grades', 
+        label: t.home.menu.items.grades, 
+        icon : 
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 3h8l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" fill="currentColor" opacity="0.2"/>
+          <path d="M14 3v5h5" fill="currentColor"/>
+          <rect x="8" y="12" width="8" height="2" rx="1" fill="currentColor"/>
+          <rect x="8" y="16" width="6" height="2" rx="1" fill="currentColor"/>
+        </svg>
+      },
+      { key: 'communications', 
+        label: t.home.menu.items.communications, 
+        icon :
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 4h10a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-4 3V7a3 3 0 0 1 3-3Z" fill="currentColor"/>
+          <path d="M10 12h6a2 2 0 0 1 2 2v5l3-2" fill="currentColor" opacity="0.3"/>
+        </svg>
+      },
     ],
     [t.home.menu.items],
   );
@@ -151,13 +212,13 @@ const HomePage = ({ language, onLanguageChange }) => {
               {studentsCard.list.map((student) => (
                 <li key={`${student.name}-${student.grade}`}>
                   <div className="students-card__identity">
-                    <span className="students-card__avatar" aria-hidden="true">
+                    <div className="students-card__avatar" aria-hidden="true">
                       {student.name
                         .split(' ')
                         .map((part) => part.charAt(0).toUpperCase())
                         .slice(0, 2)
                         .join('')}
-                    </span>
+                    </div>
                     <div>
                       <p>{student.name}</p>
                       <span>{student.grade}</span>
@@ -193,13 +254,13 @@ const HomePage = ({ language, onLanguageChange }) => {
                   <strong>{paymentsCard.nextPayment.amount}</strong>
                 </div>
                 <div className="payments-card__next-student">
-                  <span className="payments-card__avatar" aria-hidden="true">
+                  <div className="payments-card__avatar" aria-hidden="true">
                     {paymentsCard.nextPayment.student
                       .split(' ')
                       .map((part) => part.charAt(0).toUpperCase())
                       .slice(0, 2)
                       .join('')}
-                  </span>
+                  </div>
                   <div>
                     <p>{paymentsCard.nextPayment.student}</p>
                     <span>
@@ -304,7 +365,7 @@ const HomePage = ({ language, onLanguageChange }) => {
                 className={activePage === item.key ? 'is-active' : ''}
                 onClick={() => handleNavClick(item.key)}
               >
-                {item.label}
+                {item.icon} {item.label}
               </li>
             ))}
           </ul>
