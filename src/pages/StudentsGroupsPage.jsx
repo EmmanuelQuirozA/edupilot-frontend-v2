@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../config';
+import { useAuth } from '../context/AuthContext';
 import './StudentsGroupsPage.css';
 
 const DEFAULT_PAGINATION = { offset: 0, limit: 10 };
@@ -81,6 +82,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const { token } = useAuth();
   const [filters, setFilters] = useState(createInitialFilters);
   const [appliedFilters, setAppliedFilters] = useState(createInitialFilters);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -139,6 +141,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
         signal: controller.signal,
         headers: {
           Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 
@@ -164,7 +167,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
     return () => {
       controller.abort();
     };
-  }, [appliedFilters, language, pagination.limit, pagination.offset]);
+  }, [appliedFilters, language, pagination.limit, pagination.offset, token]);
 
   useEffect(() => {
     const abort = fetchStudents();
@@ -251,6 +254,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
       });
@@ -262,7 +266,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
       setGlobalAlert({ type: 'success', message: strings.form.success });
       closeStudentModal();
       fetchStudents();
-    } catch (requestError) {
+    } catch (error) {
+      console.error('Failed to create student', error);
       setFormFeedback(strings.form.error);
       setGlobalAlert({ type: 'error', message: strings.form.error });
     } finally {
