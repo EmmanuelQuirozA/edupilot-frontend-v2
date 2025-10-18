@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import LanguageSelector from './LanguageSelector';
 import { getTranslation } from '../i18n/translations';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,8 @@ import TeachersPage from '../pages/TeachersPage';
 import SchedulesTasksPage from '../pages/SchedulesTasksPage';
 import GradesPage from '../pages/GradesPage';
 import CommunicationsPage from '../pages/CommunicationsPage';
+import Breadcrumbs from './Breadcrumbs';
+import StudentDetailPage from '../pages/StudentDetailPage';
 import './HomePage.css';
 
 const COLLAPSE_BREAKPOINT = 1200;
@@ -15,17 +17,42 @@ const COLLAPSE_BREAKPOINT = 1200;
 const getIsDesktop = () =>
   typeof window === 'undefined' ? true : window.innerWidth >= COLLAPSE_BREAKPOINT;
 
-const HomePage = ({ language, onLanguageChange, activePage: activePageProp = 'dashboard', onNavigate }) => {
+const HomePage = ({
+  language,
+  onLanguageChange,
+  activePage: activePageProp = 'dashboard',
+  onNavigate,
+  routeSegments = [],
+  onNavigateToStudentDetail,
+}) => {
   const { user, logout } = useAuth();
   const t = getTranslation(language);
 
   const [activePage, setActivePage] = useState(activePageProp);
   const [isDesktop, setIsDesktop] = useState(getIsDesktop);
   const [isSidebarOpen, setIsSidebarOpen] = useState(getIsDesktop);
+  const [detailBreadcrumbLabel, setDetailBreadcrumbLabel] = useState(
+    t.home.studentsPage.detail.breadcrumbFallback,
+  );
+
+  const isStudentDetailActive = activePage === 'students' && routeSegments.length > 0;
+  const studentDetailId = isStudentDetailActive ? routeSegments[0] : null;
 
   useEffect(() => {
     setActivePage(activePageProp);
   }, [activePageProp]);
+
+  useEffect(() => {
+    if (isStudentDetailActive) {
+      setDetailBreadcrumbLabel(t.home.studentsPage.detail.breadcrumbFallback);
+    }
+  }, [isStudentDetailActive, studentDetailId, t.home.studentsPage.detail.breadcrumbFallback]);
+
+  useEffect(() => {
+    if (!isStudentDetailActive) {
+      setDetailBreadcrumbLabel(t.home.studentsPage.detail.breadcrumbFallback);
+    }
+  }, [isStudentDetailActive, t.home.studentsPage.detail.breadcrumbFallback]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -55,8 +82,8 @@ const HomePage = ({ language, onLanguageChange, activePage: activePageProp = 'da
 
   const menuItems = useMemo(
     () => [
-      { key: 'dashboard', 
-        label: t.home.menu.items.dashboard, 
+      { key: 'dashboard',
+        label: t.home.menu.items.dashboard,
         icon : 
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor"/>
@@ -128,23 +155,71 @@ const HomePage = ({ language, onLanguageChange, activePage: activePageProp = 'da
   );
 
   const studentsPageStrings = t.home.studentsPage;
+  const studentsDetailStrings = studentsPageStrings.detail ?? {};
 
   const placeholderPages = useMemo(
     () => ({
       payments: <PaymentsFinancePage {...t.home.pages.payments} />,
-      students: (
-        <StudentsGroupsPage
-          language={language}
-          placeholder={t.home.pages.students}
-          strings={studentsPageStrings}
-        />
-      ),
       teachers: <TeachersPage {...t.home.pages.teachers} />,
       schedules: <SchedulesTasksPage {...t.home.pages.schedules} />,
       grades: <GradesPage {...t.home.pages.grades} />,
       communications: <CommunicationsPage {...t.home.pages.communications} />,
     }),
-    [language, studentsPageStrings, t.home.pages],
+    [t.home.pages],
+  );
+
+  const handleNavClick = useCallback(
+    (key) => {
+      setActivePage(key);
+      onNavigate?.(key);
+
+      if (!isDesktop) {
+        setIsSidebarOpen(false);
+      }
+    },
+    [isDesktop, onNavigate],
+  );
+
+  const handleDetailBreadcrumbChange = useCallback(
+    (label) => {
+      const trimmed = typeof label === 'string' ? label.trim() : '';
+      setDetailBreadcrumbLabel(trimmed || t.home.studentsPage.detail.breadcrumbFallback);
+    },
+    [t.home.studentsPage.detail.breadcrumbFallback],
+  );
+
+  const handleStudentDetailNavigate = useCallback(
+    (student) => {
+      if (!student || !student.id) {
+        return;
+      }
+
+      if (student.name) {
+        setDetailBreadcrumbLabel(student.name);
+      } else {
+        setDetailBreadcrumbLabel(t.home.studentsPage.detail.breadcrumbFallback);
+      }
+
+      onNavigateToStudentDetail?.(student.id);
+    },
+    [onNavigateToStudentDetail, t.home.studentsPage.detail.breadcrumbFallback],
+  );
+
+  const studentsContent = isStudentDetailActive ? (
+    <StudentDetailPage
+      studentId={studentDetailId}
+      language={language}
+      strings={studentsDetailStrings}
+      onBreadcrumbChange={handleDetailBreadcrumbChange}
+      onNavigateToStudents={() => handleNavClick('students')}
+    />
+  ) : (
+    <StudentsGroupsPage
+      language={language}
+      placeholder={t.home.pages.students}
+      strings={studentsPageStrings}
+      onStudentDetail={handleStudentDetailNavigate}
+    />
   );
 
   const headerTitle =
@@ -152,14 +227,42 @@ const HomePage = ({ language, onLanguageChange, activePage: activePageProp = 'da
       ? t.home.header.title
       : t.home.pages[activePage]?.title ?? t.home.header.title;
 
-  const handleNavClick = (key) => {
-    setActivePage(key);
-    onNavigate?.(key);
+  const breadcrumbs = useMemo(() => {
+    const items = [
+      {
+        label: t.home.menu.items.dashboard,
+        onClick: () => handleNavClick('dashboard'),
+      },
+    ];
 
-    if (!isDesktop) {
-      setIsSidebarOpen(false);
+    if (activePage === 'dashboard' && !isStudentDetailActive) {
+      return items;
     }
-  };
+
+    if (isStudentDetailActive) {
+      items.push({
+        label: t.home.menu.items.students,
+        onClick: () => handleNavClick('students'),
+      });
+      items.push({
+        label: detailBreadcrumbLabel,
+      });
+      return items;
+    }
+
+    items.push({
+      label: t.home.menu.items[activePage] ?? headerTitle,
+    });
+
+    return items;
+  }, [
+    activePage,
+    detailBreadcrumbLabel,
+    headerTitle,
+    handleNavClick,
+    isStudentDetailActive,
+    t.home.menu.items,
+  ]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((previous) => !previous);
@@ -449,7 +552,12 @@ const HomePage = ({ language, onLanguageChange, activePage: activePageProp = 'da
           </div>
         </header>
 
-        {activePage === 'dashboard' ? renderDashboard() : placeholderPages[activePage] ?? null}
+        <Breadcrumbs items={breadcrumbs} />
+        {activePage === 'dashboard'
+          ? renderDashboard()
+          : activePage === 'students'
+          ? studentsContent
+          : placeholderPages[activePage] ?? null}
       </div>
     </div>
   );

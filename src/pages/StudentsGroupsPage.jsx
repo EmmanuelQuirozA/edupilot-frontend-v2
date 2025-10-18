@@ -15,6 +15,8 @@ const createInitialFilters = () => ({
 });
 
 const createInitialStudent = () => ({
+  student_id: '',
+  user_id: '',
   first_name: '',
   last_name_father: '',
   last_name_mother: '',
@@ -142,6 +144,7 @@ const normalizeStudentsResponse = (payload) => {
     payload.data?.students,
     payload.data?.items,
     payload.response,
+    payload.content,
   ].find(Array.isArray);
 
   const students = possibleArrays ?? [];
@@ -152,12 +155,13 @@ const normalizeStudentsResponse = (payload) => {
     payload.meta?.total ??
     payload.data?.total ??
     payload.pagination?.total ??
+    payload.totalElements ??
     students.length;
 
   return { students, total: Number.isFinite(total) ? total : students.length };
 };
 
-const StudentsGroupsPage = ({ language, placeholder, strings }) => {
+const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail }) => {
   const [activeTab, setActiveTab] = useState('students');
   const [searchValue, setSearchValue] = useState('');
   const [students, setStudents] = useState([]);
@@ -178,8 +182,11 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
   const [globalAlert, setGlobalAlert] = useState(null);
   const [schoolOptions, setSchoolOptions] = useState([]);
   const [classOptions, setClassOptions] = useState([]);
-
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [modalMode, setModalMode] = useState('create');
+  const [editingStudentId, setEditingStudentId] = useState(null);
+  const [isStudentPrefetching, setIsStudentPrefetching] = useState(false);
+  const [openActionsMenuId, setOpenActionsMenuId] = useState(null);
+  const [pendingStatusStudentId, setPendingStatusStudentId] = useState(null);
 
   const filtersCount = useMemo(
     () =>
@@ -317,12 +324,17 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
   };
 
   const fetchClasses = useCallback(
-    async (schoolId) => {
+    async (schoolId, preferredGroupId = '') => {
       if (!schoolId) {
         setClassOptions([]);
         setStudentForm((previous) => ({ ...previous, group_id: '' }));
         return;
       }
+
+      const normalizedPreferredGroupId =
+        preferredGroupId === null || preferredGroupId === undefined
+          ? ''
+          : String(preferredGroupId);
 
       try {
         const response = await fetch(
@@ -348,7 +360,12 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
         setClassOptions(options);
 
         if (options.length > 0) {
-          setStudentForm((previous) => ({ ...previous, group_id: options[0].value }));
+          const availableValues = new Set(options.map((option) => option.value));
+          const nextGroupId =
+            normalizedPreferredGroupId && availableValues.has(normalizedPreferredGroupId)
+              ? normalizedPreferredGroupId
+              : options[0].value;
+          setStudentForm((previous) => ({ ...previous, group_id: nextGroupId }));
         } else {
           setStudentForm((previous) => ({ ...previous, group_id: '' }));
         }
@@ -361,48 +378,162 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
     [token],
   );
 
-  const fetchSchools = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/schools/list?lang=es&status_filter=-1`, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  const fetchSchools = useCallback(
+    async (preferredSchoolId = '', preferredGroupId = '') => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/schools/list?lang=es&status_filter=-1`, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load schools');
+        }
+
+        const payload = await response.json();
+        const schoolsList = extractListFromPayload(payload);
+        const options = schoolsList
+          .map((item, index) => normalizeSelectOption(item, index))
+          .filter((option) => option.value !== '');
+        setSchoolOptions(options);
+
+        const normalizedPreferredSchoolId =
+          preferredSchoolId === null || preferredSchoolId === undefined
+            ? ''
+            : String(preferredSchoolId);
+
+        if (options.length > 0) {
+          const availableValues = new Set(options.map((option) => option.value));
+          const nextSchoolId =
+            normalizedPreferredSchoolId && availableValues.has(normalizedPreferredSchoolId)
+              ? normalizedPreferredSchoolId
+              : options[0].value;
+
+          setStudentForm((previous) => ({ ...previous, school_id: nextSchoolId }));
+
+          if (nextSchoolId) {
+            await fetchClasses(nextSchoolId, preferredGroupId);
+          } else {
+            setClassOptions([]);
+            setStudentForm((previous) => ({ ...previous, group_id: '' }));
+          }
+        } else {
+          setStudentForm((previous) => ({ ...previous, school_id: '', group_id: '' }));
+          setClassOptions([]);
+        }
+      } catch (error) {
+        console.error('Failed to load schools', error);
+        setSchoolOptions([]);
+        setStudentForm((previous) => ({ ...previous, school_id: '', group_id: '' }));
+        setClassOptions([]);
+        throw error;
+      }
+    },
+    [fetchClasses, token],
+  );
+
+  const fetchStudentDetail = useCallback(
+    async (studentId) => {
+      if (!studentId) {
+        return null;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/students/student-details/${encodeURIComponent(studentId)}?lang=${language ?? 'es'}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
         },
-      });
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to load schools');
+        throw new Error('Failed to load student details');
       }
 
       const payload = await response.json();
-      const schoolsList = extractListFromPayload(payload);
-      const options = schoolsList
-        .map((item, index) => normalizeSelectOption(item, index))
-        .filter((option) => option.value !== '');
-      setSchoolOptions(options);
 
-      if (options.length > 0) {
-        const selectedSchool = options[0].value;
-        setStudentForm((previous) => ({ ...previous, school_id: selectedSchool }));
-        fetchClasses(selectedSchool);
-      } else {
-        setStudentForm((previous) => ({ ...previous, school_id: '', group_id: '' }));
-        setClassOptions([]);
+      const detailCandidate = [
+        payload.data,
+        payload.result,
+        payload.student,
+        payload.details,
+        payload.response,
+        payload,
+      ].find((candidate) => candidate && typeof candidate === 'object' && !Array.isArray(candidate));
+
+      if (!detailCandidate) {
+        throw new Error('Student details not available');
       }
-    } catch (error) {
-      console.error('Failed to load schools', error);
-      setSchoolOptions([]);
-      setStudentForm((previous) => ({ ...previous, school_id: '', group_id: '' }));
-      setClassOptions([]);
-    }
-  }, [fetchClasses, token]);
 
-  useEffect(() => {
-    if (isStudentModalOpen) {
-      fetchSchools();
+      return detailCandidate;
+    },
+    [language, token],
+  );
+
+  const mapDetailToForm = useCallback((detail) => {
+    const base = createInitialStudent();
+
+    if (!detail || typeof detail !== 'object') {
+      return base;
     }
-  }, [fetchSchools, isStudentModalOpen]);
+
+    const normalized = { ...base };
+
+    const fieldMap = {
+      student_id: ['student_id', 'id'],
+      user_id: ['user_id', 'userId'],
+      first_name: ['first_name', 'firstName'],
+      last_name_father: ['last_name_father', 'lastNameFather', 'father_last_name'],
+      last_name_mother: ['last_name_mother', 'lastNameMother', 'mother_last_name'],
+      birth_date: ['birth_date', 'birthDate'],
+      phone_number: ['phone_number', 'phoneNumber', 'phone'],
+      tax_id: ['tax_id', 'taxId'],
+      curp: ['curp'],
+      street: ['street'],
+      ext_number: ['ext_number', 'extNumber', 'external_number'],
+      int_number: ['int_number', 'intNumber', 'internal_number'],
+      suburb: ['suburb', 'neighborhood'],
+      locality: ['locality', 'city'],
+      municipality: ['municipality'],
+      state: ['state'],
+      personal_email: ['personal_email', 'personalEmail'],
+      image: ['image', 'avatar'],
+      email: ['email'],
+      username: ['username', 'user_name'],
+      school_id: ['school_id', 'schoolId'],
+      group_id: ['group_id', 'groupId', 'class_id'],
+      register_id: ['register_id', 'registration_id', 'registerId'],
+      payment_reference: ['payment_reference', 'paymentReference'],
+    };
+
+    Object.entries(fieldMap).forEach(([field, keys]) => {
+      for (const key of keys) {
+        const value = detail[key];
+        if (value !== undefined && value !== null && value !== '') {
+          normalized[field] = typeof value === 'number' ? String(value) : value;
+          break;
+        }
+      }
+    });
+
+    if (!normalized.user_id && detail.user && typeof detail.user === 'object') {
+      const userId = detail.user.user_id ?? detail.user.id;
+      if (userId !== undefined && userId !== null) {
+        normalized.user_id = typeof userId === 'number' ? String(userId) : userId;
+      }
+      if (!normalized.email && detail.user.email) {
+        normalized.email = detail.user.email;
+      }
+    }
+
+    return normalized;
+  }, []);
 
   const handleStudentFormChange = (event) => {
     const { name, value } = event.target;
@@ -419,44 +550,230 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
     setIsStudentModalOpen(false);
     setStudentForm(createInitialStudent());
     setFormFeedback('');
+    setModalMode('create');
+    setEditingStudentId(null);
+    setSchoolOptions([]);
+    setClassOptions([]);
+    setIsStudentPrefetching(false);
   };
 
-  const handleCreateStudent = async (event) => {
+  const handleStudentSubmit = async (event) => {
     event.preventDefault();
     setIsSubmittingStudent(true);
     setFormFeedback('');
 
-    const payload = [{ ...studentForm }];
+    const { student_id: studentId, user_id: userId, ...restForm } = studentForm;
+
+    const sanitizedForm = Object.fromEntries(
+      Object.entries(restForm).map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value]),
+    );
 
     try {
-      const response = await fetch(`${API_BASE_URL}/students/create?lang=${language ?? 'es'}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
+      if (modalMode === 'edit' && editingStudentId) {
+        const updatePayload = {
+          ...sanitizedForm,
+          ...(studentId ? { student_id: studentId } : {}),
+          ...(userId ? { user_id: userId } : {}),
+        };
 
-      if (!response.ok) {
-        throw new Error('Failed to create student');
+        const response = await fetch(
+          `${API_BASE_URL}/students/admin/update/${encodeURIComponent(editingStudentId)}?lang=${language ?? 'es'}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(updatePayload),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to update student');
+        }
+
+        setGlobalAlert({ type: 'success', message: strings.form.editSuccess });
+      } else {
+        const createPayload = [{ ...sanitizedForm }];
+
+        const response = await fetch(`${API_BASE_URL}/students/create?lang=${language ?? 'es'}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(createPayload),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create student');
+        }
+
+        setGlobalAlert({ type: 'success', message: strings.form.success });
       }
 
-      setGlobalAlert({ type: 'success', message: strings.form.success });
       closeStudentModal();
       fetchStudents();
     } catch (error) {
-      console.error('Failed to create student', error);
-      setFormFeedback(strings.form.error);
-      setGlobalAlert({ type: 'error', message: strings.form.error });
+      console.error('Failed to submit student', error);
+      const feedbackMessage = modalMode === 'edit' ? strings.form.editError : strings.form.error;
+      setFormFeedback(feedbackMessage);
+      setGlobalAlert({ type: 'error', message: feedbackMessage });
     } finally {
       setIsSubmittingStudent(false);
     }
   };
 
+  const handleOpenCreateStudent = async () => {
+    setModalMode('create');
+    setEditingStudentId(null);
+    setStudentForm(createInitialStudent());
+    setFormFeedback('');
+    setOpenActionsMenuId(null);
+    setIsStudentPrefetching(true);
+
+    try {
+      await fetchSchools();
+    } catch (error) {
+      console.error('Failed to prepare student modal', error);
+      setGlobalAlert({ type: 'error', message: strings.form.loadError });
+    } finally {
+      setIsStudentPrefetching(false);
+      setIsStudentModalOpen(true);
+    }
+  };
+
+  const handleEditStudent = async (student) => {
+    const studentId = student?.student_id ?? student?.id;
+    if (!studentId) {
+      return;
+    }
+
+    setOpenActionsMenuId(null);
+    setModalMode('edit');
+    setFormFeedback('');
+    setIsStudentPrefetching(true);
+
+    try {
+      const detail = await fetchStudentDetail(studentId);
+      const mappedForm = mapDetailToForm(detail);
+      setStudentForm(mappedForm);
+      setEditingStudentId(studentId);
+      await fetchSchools(mappedForm.school_id, mappedForm.group_id);
+      setIsStudentModalOpen(true);
+    } catch (error) {
+      console.error('Failed to load student for editing', error);
+      setGlobalAlert({ type: 'error', message: strings.form.loadError });
+    } finally {
+      setIsStudentPrefetching(false);
+    }
+  };
+
+  const handleDisableStudent = async (student) => {
+    const studentId = student?.student_id ?? student?.id;
+    if (!studentId) {
+      return;
+    }
+
+    setOpenActionsMenuId(null);
+    setPendingStatusStudentId(studentId);
+
+    try {
+      const detail = await fetchStudentDetail(studentId);
+      const userIdCandidate =
+        detail?.user_id ??
+        detail?.userId ??
+        detail?.user?.user_id ??
+        detail?.user?.id ??
+        student?.user_id ??
+        student?.userId;
+
+      if (!userIdCandidate) {
+        throw new Error('Missing user id');
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/users/update/${encodeURIComponent(userIdCandidate)}/status?lang=en`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ status: 0 }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to update status');
+      }
+
+      setGlobalAlert({ type: 'success', message: strings.actions.disableSuccess });
+      fetchStudents();
+    } catch (error) {
+      console.error('Failed to disable student', error);
+      setGlobalAlert({ type: 'error', message: strings.actions.disableError });
+    } finally {
+      setPendingStatusStudentId(null);
+    }
+  };
+
+  const toggleActionsMenu = (studentId) => {
+    setOpenActionsMenuId((previous) => (previous === studentId ? null : studentId));
+  };
+
+  const handleMenuPlaceholder = () => {
+    setOpenActionsMenuId(null);
+    setGlobalAlert({ type: 'info', message: strings.actions.menuPlaceholder });
+  };
+
+  useEffect(() => {
+    if (!openActionsMenuId) {
+      return () => {};
+    }
+
+    const handleClickOutside = (event) => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      const target = event.target;
+      if (target instanceof Element) {
+        if (target.closest('.students-table__menu')) {
+          return;
+        }
+      }
+
+      setOpenActionsMenuId(null);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openActionsMenuId]);
+
+  const handleStudentDetailNavigation = (student, fallbackName) => {
+    const studentId = student?.student_id ?? student?.id;
+    if (!studentId) {
+      return;
+    }
+
+    const fullName =
+      student.full_name ??
+      fallbackName ??
+      [student.first_name, student.last_name_father, student.last_name_mother].filter(Boolean).join(' ');
+
+    onStudentDetail?.({ id: studentId, name: fullName, registerId: student.register_id ?? student.registration_id });
+  };
+
   const { title, description } = placeholder;
   const statusLabels = strings.status;
+  const isEditMode = modalMode === 'edit';
 
   const activePage = Math.floor(pagination.offset / pagination.limit) + 1;
   const totalPages = Math.max(1, Math.ceil((totalStudents || 0) / pagination.limit));
@@ -486,10 +803,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
     }
   };
 
-  const handleDetailClose = () => {
-    setSelectedStudent(null);
-  };
-
   return (
     <div className="students-groups">
       <header className="students-groups__header">
@@ -497,7 +810,12 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
           <h2>{strings.header?.title ?? title}</h2>
           <p>{strings.header?.subtitle ?? description}</p>
         </div>
-        <button type="button" className="students-groups__add" onClick={() => setIsStudentModalOpen(true)}>
+        <button
+          type="button"
+          className="students-groups__add"
+          onClick={handleOpenCreateStudent}
+          disabled={isStudentPrefetching}
+        >
           <span>+</span>
           {strings.actions.addStudent}
         </button>
@@ -583,37 +901,36 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
             <table className="students-table">
               <thead>
                 <tr>
-                  <th scope="col">{strings.table.registrationId}</th>
                   <th scope="col">{strings.table.student}</th>
                   <th scope="col">{strings.table.gradeGroup}</th>
-                  <th scope="col">{strings.table.generation}</th>
                   <th scope="col">{strings.table.status}</th>
-                  <th scope="col">{strings.table.contact}</th>
+                  <th scope="col">{strings.table.actions}</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="students-table__empty">
+                    <td colSpan={4} className="students-table__empty">
                       <span className="students-table__loader" aria-hidden="true" />
-                      Cargando alumnos...
+                      {strings.table.loading}
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={6} className="students-table__empty">
+                    <td colSpan={4} className="students-table__empty">
                       {error}
                     </td>
                   </tr>
                 ) : students.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="students-table__empty">
+                    <td colSpan={4} className="students-table__empty">
                       {strings.table.empty}
                     </td>
                   </tr>
                 ) : (
                   students.map((student) => {
-                    const fullName = student.full_name ??
+                    const fullName =
+                      student.full_name ??
                       [student.first_name, student.last_name_father, student.last_name_mother]
                         .filter(Boolean)
                         .join(' ');
@@ -623,25 +940,84 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
                       .map((part) => part.charAt(0).toUpperCase())
                       .slice(0, 2)
                       .join('');
-                    const contact = student.personal_email ?? student.email ?? student.phone_number ?? '-';
+                    const gradeGroup = student.grade_group ?? student.group ?? strings.table.noGroup;
+                    const registerId = student.register_id ?? student.registration_id ?? '—';
+                    const studentId = student.student_id ?? student.id ?? registerId;
 
                     return (
-                      <tr key={student.student_id ?? student.id ?? fullName}>
-                        <td data-title={strings.table.registrationId}>{student.register_id ?? student.registration_id ?? '—'}</td>
-                        <td data-title={strings.table.student}>
-                          <button type="button" className="students-table__identity" onClick={() => setSelectedStudent(student)}>
+                      <tr key={studentId}>
+                        <td data-title={strings.table.student} className="students-table__student">
+                          <div className="students-table__student-wrapper">
                             <span className="students-table__avatar" aria-hidden="true">
                               {initials || '??'}
                             </span>
-                            <span className="students-table__name">{fullName || '—'}</span>
-                          </button>
+                            <div className="students-table__student-info">
+                              <button
+                                type="button"
+                                onClick={() => handleStudentDetailNavigation(student, fullName)}
+                              >
+                                {fullName || strings.table.unknownStudent}
+                              </button>
+                              <span className="students-table__student-meta">
+                                {strings.table.registrationIdLabel}
+                                <strong>{registerId}</strong>
+                              </span>
+                            </div>
+                          </div>
                         </td>
-                        <td data-title={strings.table.gradeGroup}>{student.grade_group ?? student.group ?? '—'}</td>
-                        <td data-title={strings.table.generation}>{student.generation ?? '—'}</td>
+                        <td data-title={strings.table.gradeGroup}>
+                          {gradeGroup}
+                        </td>
                         <td data-title={strings.table.status}>{renderStatusPill(student)}</td>
-                        <td data-title={strings.table.contact} className="students-table__contact">
-                          {contact}
-                          {student.phone_number && <span>{student.phone_number}</span>}
+                        <td data-title={strings.table.actions} className="students-table__actions-cell">
+                          <div className="students-table__actions">
+                            <button type="button" onClick={() => handleEditStudent(student)}>
+                              {strings.actions.edit}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDisableStudent(student)}
+                              disabled={pendingStatusStudentId === studentId}
+                            >
+                              {pendingStatusStudentId === studentId
+                                ? strings.actions.disabling
+                                : strings.actions.disable}
+                            </button>
+                            <div className={`students-table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
+                              <button
+                                type="button"
+                                aria-haspopup="menu"
+                                aria-expanded={openActionsMenuId === studentId}
+                                onClick={() => toggleActionsMenu(studentId)}
+                              >
+                                <span className="visually-hidden">{strings.actions.more}</span>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                  <circle cx="12" cy="5" r="1.8" />
+                                  <circle cx="12" cy="12" r="1.8" />
+                                  <circle cx="12" cy="19" r="1.8" />
+                                </svg>
+                              </button>
+                              {openActionsMenuId === studentId ? (
+                                <ul role="menu">
+                                  <li>
+                                    <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
+                                      {strings.actions.registerPayment}
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
+                                      {strings.actions.createPaymentRequest}
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
+                                      {strings.actions.addBalance}
+                                    </button>
+                                  </li>
+                                </ul>
+                              ) : null}
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -751,14 +1127,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
           <div className="students-modal__dialog" role="dialog" aria-modal="true">
             <header className="students-modal__header">
               <div>
-                <h3>{strings.form.title}</h3>
-                <p>{strings.form.description}</p>
+                <h3>{isEditMode ? strings.form.editTitle : strings.form.title}</h3>
+                <p>{isEditMode ? strings.form.editDescription : strings.form.description}</p>
               </div>
               <button type="button" onClick={closeStudentModal} aria-label="Cerrar">
                 ×
               </button>
             </header>
-            <form className="students-form" onSubmit={handleCreateStudent}>
+            <form className="students-form" onSubmit={handleStudentSubmit}>
               <section>
                 <h4>{strings.form.sections.personal}</h4>
                 <div className="students-form__grid">
@@ -945,25 +1321,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
                   {strings.form.cancel}
                 </button>
                 <button type="submit" disabled={isSubmittingStudent}>
-                  {isSubmittingStudent ? '...' : strings.form.submit}
+                  {isSubmittingStudent
+                    ? '...'
+                    : isEditMode
+                    ? strings.form.editSubmit
+                    : strings.form.submit}
                 </button>
               </footer>
             </form>
-          </div>
-        </div>
-      )}
-
-      {selectedStudent && (
-        <div className="students-detail">
-          <div className="students-detail__backdrop" aria-hidden="true" onClick={handleDetailClose} />
-          <div className="students-detail__card" role="dialog" aria-modal="true">
-            <header>
-              <h3>{strings.detailPlaceholder.title}</h3>
-              <button type="button" onClick={handleDetailClose} aria-label={strings.detailPlaceholder.close}>
-                ×
-              </button>
-            </header>
-            <p>{strings.detailPlaceholder.description}</p>
           </div>
         </div>
       )}
@@ -973,6 +1338,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
 
 StudentsGroupsPage.defaultProps = {
   language: 'es',
+  onStudentDetail: undefined,
 };
 
 export default StudentsGroupsPage;

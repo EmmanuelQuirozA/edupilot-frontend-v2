@@ -76,6 +76,7 @@ const App = () => {
   const language = isLanguageValid ? languageSegment : fallbackLanguage;
   const restSegments = isLanguageValid ? segments.slice(1) : segments;
   const rawSection = restSegments[0];
+  const detailSegments = restSegments.slice(1);
 
   const resolvedSection = useMemo(() => {
     if (!user) {
@@ -89,13 +90,30 @@ const App = () => {
     return HOME_PAGES.has(rawSection) ? rawSection : 'dashboard';
   }, [rawSection, user]);
 
-  const targetPath = buildPath(language, resolvedSection);
+  const normalizedPath = useMemo(() => {
+    if (!user) {
+      if (resolvedSection === 'login' && rawSection === 'login') {
+        return null;
+      }
+      return buildPath(language, resolvedSection);
+    }
+
+    if (!rawSection) {
+      return buildPath(language, resolvedSection);
+    }
+
+    if (!HOME_PAGES.has(rawSection)) {
+      return buildPath(language, resolvedSection);
+    }
+
+    return null;
+  }, [language, rawSection, resolvedSection, user]);
 
   useEffect(() => {
-    if (path !== targetPath) {
-      navigate(targetPath, { replace: true });
+    if (normalizedPath && path !== normalizedPath) {
+      navigate(normalizedPath, { replace: true });
     }
-  }, [navigate, path, targetPath]);
+  }, [navigate, normalizedPath, path]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -117,15 +135,32 @@ const App = () => {
         return;
       }
 
-      navigate(buildPath(nextLanguage, resolvedSection));
+      const nextPath =
+        resolvedSection === 'students' && detailSegments.length > 0
+          ? `/${nextLanguage}/students/${detailSegments.join('/')}`
+          : buildPath(nextLanguage, resolvedSection);
+
+      navigate(nextPath);
     },
-    [language, navigate, resolvedSection],
+    [detailSegments, language, navigate, resolvedSection],
   );
 
   const handlePageChange = useCallback(
     (nextPage) => {
       const safePage = HOME_PAGES.has(nextPage) ? nextPage : 'dashboard';
       navigate(buildPath(language, safePage));
+    },
+    [language, navigate],
+  );
+
+  const handleStudentDetailNavigation = useCallback(
+    (studentId) => {
+      if (!studentId) {
+        return;
+      }
+
+      const safeId = encodeURIComponent(String(studentId));
+      navigate(`/${language}/students/${safeId}`);
     },
     [language, navigate],
   );
@@ -141,6 +176,8 @@ const App = () => {
         onLanguageChange={handleLanguageChange}
         activePage={resolvedSection}
         onNavigate={handlePageChange}
+        routeSegments={detailSegments}
+        onNavigateToStudentDetail={handleStudentDetailNavigation}
       />
     );
   }
