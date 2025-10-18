@@ -42,8 +42,9 @@
 }
 
 .students-groups__add span {
-  display: grid;
+  display: flex;
   place-items: center;
+  justify-content: center;
   width: 26px;
   height: 26px;
   border-radius: 50%;

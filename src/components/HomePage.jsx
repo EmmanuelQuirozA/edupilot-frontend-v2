@@ -433,9 +433,9 @@ const HomePage = ({ language, onLanguageChange }) => {
               <span />
             </button>
             <div className="dashboard__user-chip">
-              <divb className="dashboard__user-initials" aria-hidden="true">
+              <div className="dashboard__user-initials" aria-hidden="true">
                 {initials || 'AD'}
-              </divb>
+              </div>
               <div>
                 <p>{displayName}</p>
                 <span>{user?.role ?? t.home.roleLabel}</span>
