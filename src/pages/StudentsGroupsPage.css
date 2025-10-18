@@ -57,6 +57,13 @@
   box-shadow: 0 20px 50px -30px rgba(37, 99, 235, 0.9);
 }
 
+.students-groups__add:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 16px 45px -28px rgba(37, 99, 235, 0.85);
+}
+
 .students-groups__tabs {
   display: inline-flex;
   align-items: center;
@@ -212,6 +219,12 @@
   border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
+.students-groups__alert--info {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
 .students-table__wrapper {
   border-radius: 1rem;
   overflow: hidden;
@@ -249,21 +262,11 @@
   border-bottom: none;
 }
 
-.students-table__identity {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-}
 
-.students-table__identity:hover .students-table__name {
-  color: #1d4ed8;
+.students-table__student-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
 }
 
 .students-table__avatar {
@@ -277,8 +280,40 @@
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
 }
 
-.students-table__name {
+.students-table__student-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.students-table__student-info button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #0f172a;
   font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.students-table__student-info button:hover,
+.students-table__student-info button:focus {
+  color: #1d4ed8;
+}
+
+.students-table__student-meta {
+  font-size: 0.8rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.students-table__student-meta strong {
+  font-weight: 600;
+  color: #1e293b;
 }
 
 .students-table__status {
@@ -303,11 +338,115 @@
   color: #b91c1c;
 }
 
-.students-table__contact {
+
+.students-table__actions-cell {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.students-table__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.students-table__actions > button {
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.students-table__actions > button:first-of-type {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  box-shadow: 0 14px 35px -25px rgba(37, 99, 235, 0.9);
+}
+
+.students-table__actions > button:first-of-type:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 40px -28px rgba(37, 99, 235, 0.95);
+}
+
+.students-table__actions > button:nth-of-type(2) {
+  background: rgba(248, 113, 113, 0.15);
+  color: #b91c1c;
+}
+
+.students-table__actions > button:nth-of-type(2):hover {
+  background: rgba(248, 113, 113, 0.25);
+}
+
+.students-table__actions > button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.students-table__menu {
+  position: relative;
+}
+
+.students-table__menu > button {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: #e2e8f0;
+  color: #334155;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.students-table__menu > button:hover,
+.students-table__menu.is-open > button {
+  background: #cbd5f5;
+}
+
+.students-table__menu svg {
+  width: 18px;
+  height: 18px;
+}
+
+.students-table__menu ul {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 200px;
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+  background: #fff;
+  border-radius: 0.85rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 30px 60px -40px rgba(15, 23, 42, 0.35);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  color: #475569;
+  z-index: 20;
+}
+
+.students-table__menu li button {
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.65rem;
+  font-size: 0.88rem;
+  color: #0f172a;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.students-table__menu li button:hover,
+.students-table__menu li button:focus {
+  background: #f1f5f9;
 }
 
 .students-table__empty {
@@ -613,55 +752,6 @@
   color: #fff;
 }
 
-.students-detail {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 80;
-}
-
-.students-detail__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-}
-
-.students-detail__card {
-  position: relative;
-  width: min(420px, 90%);
-  background: #fff;
-  border-radius: 1.25rem;
-  padding: 1.75rem;
-  box-shadow: 0 40px 90px -48px rgba(15, 23, 42, 0.55);
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.students-detail__card header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.students-detail__card h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.students-detail__card button {
-  border: none;
-  background: rgba(226, 232, 240, 0.75);
-  width: 32px;
-  height: 32px;
-  border-radius: 0.75rem;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
 @media (max-width: 860px) {
   .students-view {
     padding: 1.5rem;
@@ -725,6 +815,34 @@
 
   .students-table__wrapper {
     border: none;
+  }
+
+  .students-table__student-wrapper {
+    align-items: flex-start;
+  }
+
+  .students-table__actions {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: flex-start;
+  }
+
+  .students-table__actions > button {
+    flex: 1 1 140px;
+  }
+
+  .students-table__menu {
+    width: 100%;
+  }
+
+  .students-table__menu > button {
+    width: 100%;
+    border-radius: 0.75rem;
+  }
+
+  .students-table__menu ul {
+    left: 0;
+    right: 0;
   }
 }
 
