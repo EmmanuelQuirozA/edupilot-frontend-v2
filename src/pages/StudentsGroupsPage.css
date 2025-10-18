@@ -457,7 +457,7 @@
 }
 
 .students-filters__form input,
-.students-filters__form select {
+.custom_select {
   padding: 0.6rem 0.75rem;
   border-radius: 0.8rem;
   border: 1px solid #e2e8f0;

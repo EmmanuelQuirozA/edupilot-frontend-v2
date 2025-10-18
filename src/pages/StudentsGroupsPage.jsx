@@ -726,7 +726,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
               </label>
               <label>
                 <span>{strings.filters.enabled}</span>
-                <select name="enabled" value={filters.enabled} onChange={handleFilterChange}>
+                <select className='custom_select' name="enabled" value={filters.enabled} onChange={handleFilterChange}>
                   <option value="">{strings.filters.enabledOptions.all}</option>
                   <option value="true">{strings.filters.enabledOptions.enabled}</option>
                   <option value="false">{strings.filters.enabledOptions.disabled}</option>
@@ -902,6 +902,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
                   <label>
                     <span>{strings.form.fields.schoolId}</span>
                     <select
+                      className='custom_select'
                       name="school_id"
                       value={studentForm.school_id}
                       onChange={handleStudentFormChange}
@@ -918,6 +919,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings }) => {
                   <label>
                     <span>{strings.form.fields.groupId}</span>
                     <select
+                      className='custom_select'
                       name="group_id"
                       value={studentForm.group_id}
                       onChange={handleStudentFormChange}
