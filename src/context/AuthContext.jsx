@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(storedUser);
   const [loading, setLoading] = useState(false);
 
-  const login = async (username, password) => {
+  const login = async (usernameOrEmail, password) => {
     setLoading(true);
 
     try {
@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ usernameOrEmail, password }),
       });
 
       if (!response.ok) {
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }) => {
 
       const resolvedToken = deriveToken(payload);
       const resolvedUser = deriveUser(payload) ?? payload;
-      const role = resolvedUser?.role ?? payload?.role;
+      const role = resolvedUser?.role_name ?? payload?.role_name;
 
       if (!role) {
         const roleError = new Error('Unable to determine user role from the server response.');
