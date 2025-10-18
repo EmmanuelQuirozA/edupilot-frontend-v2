@@ -55,6 +55,7 @@ const extractListFromPayload = (payload) => {
     payload.items,
     payload.list,
     payload.response,
+    payload.content,
     payload.schools,
     payload.classes,
     payload.data?.items,
@@ -103,6 +104,7 @@ const normalizeSelectOption = (item, index = 0) => {
     'title',
     'description',
     'code',
+    'grade_group',
     'group_name',
     'class_name',
   ];
