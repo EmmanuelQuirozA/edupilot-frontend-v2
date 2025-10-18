@@ -15,13 +15,17 @@ const COLLAPSE_BREAKPOINT = 1200;
 const getIsDesktop = () =>
   typeof window === 'undefined' ? true : window.innerWidth >= COLLAPSE_BREAKPOINT;
 
-const HomePage = ({ language, onLanguageChange }) => {
+const HomePage = ({ language, onLanguageChange, activePage: activePageProp = 'dashboard', onNavigate }) => {
   const { user, logout } = useAuth();
   const t = getTranslation(language);
 
-  const [activePage, setActivePage] = useState('dashboard');
+  const [activePage, setActivePage] = useState(activePageProp);
   const [isDesktop, setIsDesktop] = useState(getIsDesktop);
   const [isSidebarOpen, setIsSidebarOpen] = useState(getIsDesktop);
+
+  useEffect(() => {
+    setActivePage(activePageProp);
+  }, [activePageProp]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -150,6 +154,7 @@ const HomePage = ({ language, onLanguageChange }) => {
 
   const handleNavClick = (key) => {
     setActivePage(key);
+    onNavigate?.(key);
 
     if (!isDesktop) {
       setIsSidebarOpen(false);
