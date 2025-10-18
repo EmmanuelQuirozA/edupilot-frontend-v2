@@ -123,16 +123,24 @@ const HomePage = ({ language, onLanguageChange }) => {
     [t.home.menu.items],
   );
 
+  const studentsPageStrings = t.home.studentsPage;
+
   const placeholderPages = useMemo(
     () => ({
       payments: <PaymentsFinancePage {...t.home.pages.payments} />,
-      students: <StudentsGroupsPage {...t.home.pages.students} />,
+      students: (
+        <StudentsGroupsPage
+          language={language}
+          placeholder={t.home.pages.students}
+          strings={studentsPageStrings}
+        />
+      ),
       teachers: <TeachersPage {...t.home.pages.teachers} />,
       schedules: <SchedulesTasksPage {...t.home.pages.schedules} />,
       grades: <GradesPage {...t.home.pages.grades} />,
       communications: <CommunicationsPage {...t.home.pages.communications} />,
     }),
-    [t.home.pages],
+    [language, studentsPageStrings, t.home.pages],
   );
 
   const headerTitle =
