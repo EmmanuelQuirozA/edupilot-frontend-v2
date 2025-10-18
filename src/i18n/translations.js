@@ -23,6 +23,140 @@ export const translations = {
       },
       description: 'Has accedido correctamente a la plataforma EduPilot.',
       logout: 'Cerrar sesión',
+      roleLabel: 'Administrador escolar',
+      menu: {
+        main: 'Menú principal',
+        settings: 'Ajustes',
+        items: {
+          dashboard: 'Dashboard',
+          payments: 'Pagos y Finanzas',
+          students: 'Alumnos y Grupos',
+          teachers: 'Profesores',
+          schedules: 'Horarios y Tareas',
+          grades: 'Calificaciones',
+          communications: 'Comunicaciones',
+        },
+        paymentCenter: 'Centro de pagos',
+        configuration: 'Configuración',
+      },
+      header: {
+        title: 'Dashboard',
+        subtitle: 'School The Sauses',
+        searchPlaceholder: 'Buscar',
+        notifications: 'Notificaciones',
+        openMenu: 'Abrir menú',
+        closeMenu: 'Cerrar menú',
+      },
+      dashboard: {
+        hero: {
+          tag: 'School The Sauses',
+          title: 'Bienvenido a tu panel administrativo',
+          description:
+            'Gestiona las operaciones diarias, revisa los indicadores clave y acompaña a tu comunidad educativa desde un solo lugar.',
+          highlights: {
+            students: {
+              value: '8,903',
+              label: 'Estudiantes activos',
+            },
+            retention: {
+              value: '98%',
+              label: 'Retención anual',
+            },
+          },
+        },
+        stats: [
+          {
+            title: 'Total estudiantes',
+            value: '8,903',
+            description: 'En los últimos 12 meses · 0% incidencia',
+            accent: 'blue',
+          },
+          {
+            title: 'Total profesores',
+            value: '45',
+            description: 'Nuevos 10 · Estable',
+            accent: 'green',
+          },
+          {
+            title: 'Restaurantes',
+            value: '4',
+            description: 'Atención diaria',
+            accent: 'orange',
+          },
+          {
+            title: 'Eventos programados',
+            value: '23',
+            description: 'Eventos mensuales · 12 alumnos',
+            accent: 'purple',
+          },
+        ],
+        studentsCard: {
+          title: 'Lista estudiantes',
+          subtitle: 'Grupo destacado · 4°A',
+          actionLabel: 'Ver más',
+          status: {
+            paid: 'Pagado',
+            pending: 'Pendiente',
+          },
+          list: [
+            { name: 'María José Diaz', grade: '4°A', status: 'paid', amount: '$1,000 MXN' },
+            { name: 'Jeronimo Diaz', grade: '4°A', status: 'pending', amount: '$1,000 MXN' },
+            { name: 'Fernanda Diaz', grade: '4°A', status: 'pending', amount: '$1,000 MXN' },
+            { name: 'Jorge Diaz', grade: '4°A', status: 'paid', amount: '$1,000 MXN' },
+            { name: 'Valentina Diaz', grade: '4°A', status: 'pending', amount: '$1,000 MXN' },
+          ],
+        },
+        paymentsCard: {
+          label: 'Balance pagos estudiantes',
+          summary: 'Resumen de pagos automáticos',
+          periodOptions: ['2 meses', '3 meses'],
+          nextPaymentTitle: 'Siguiente pago',
+          nextPayment: {
+            student: 'María José Diaz',
+            grade: '4°A',
+            amount: '$1,000 MXN',
+            dueIn: 'Vence en 12 días',
+          },
+          totals: [
+            { label: 'Pagado', value: '$41,456', change: '+12%' },
+            { label: 'Pendiente', value: '$12,800', change: '-4%' },
+          ],
+          chart: {
+            caption: 'Balance últimos 6 meses',
+            description: 'Ingresos netos proyectados',
+            ariaLabel: 'Tendencia de pagos',
+            valueSuffix: 'k',
+            months: ['Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago'],
+            values: [40, 52, 48, 60, 68, 73],
+          },
+        },
+      },
+      pages: {
+        payments: {
+          title: 'Pagos y Finanzas',
+          description: 'Esta sección estará disponible próximamente.',
+        },
+        students: {
+          title: 'Alumnos y Grupos',
+          description: 'Gestiona toda la información de tus grupos desde aquí muy pronto.',
+        },
+        teachers: {
+          title: 'Profesores',
+          description: 'Accede al panel docente en una próxima actualización.',
+        },
+        schedules: {
+          title: 'Horarios y Tareas',
+          description: 'Organiza horarios y tareas en un solo lugar próximamente.',
+        },
+        grades: {
+          title: 'Calificaciones',
+          description: 'Consulta los reportes académicos en futuras versiones.',
+        },
+        communications: {
+          title: 'Comunicaciones',
+          description: 'Centraliza los mensajes de tu comunidad educativa aquí.',
+        },
+      },
     },
     errors: {
       invalidCredentials: 'Usuario o contraseña incorrectos.',
@@ -51,6 +185,140 @@ export const translations = {
       },
       description: 'You have successfully signed in to EduPilot.',
       logout: 'Log out',
+      roleLabel: 'School administrator',
+      menu: {
+        main: 'Main menu',
+        settings: 'Settings',
+        items: {
+          dashboard: 'Dashboard',
+          payments: 'Payments & Finance',
+          students: 'Students & Groups',
+          teachers: 'Teachers',
+          schedules: 'Schedules & Tasks',
+          grades: 'Grades',
+          communications: 'Communications',
+        },
+        paymentCenter: 'Payments center',
+        configuration: 'Configuration',
+      },
+      header: {
+        title: 'Dashboard',
+        subtitle: 'School The Sauses',
+        searchPlaceholder: 'Search',
+        notifications: 'Notifications',
+        openMenu: 'Open menu',
+        closeMenu: 'Close menu',
+      },
+      dashboard: {
+        hero: {
+          tag: 'School The Sauses',
+          title: 'Welcome to your administrative dashboard',
+          description:
+            'Oversee daily operations, review key indicators, and support your school community from a single place.',
+          highlights: {
+            students: {
+              value: '8,903',
+              label: 'Active students',
+            },
+            retention: {
+              value: '98%',
+              label: 'Annual retention',
+            },
+          },
+        },
+        stats: [
+          {
+            title: 'Total students',
+            value: '8,903',
+            description: 'Last 12 months · 0% incidence',
+            accent: 'blue',
+          },
+          {
+            title: 'Total teachers',
+            value: '45',
+            description: '10 new · Stable trend',
+            accent: 'green',
+          },
+          {
+            title: 'Cafeterias',
+            value: '4',
+            description: 'Daily service',
+            accent: 'orange',
+          },
+          {
+            title: 'Scheduled events',
+            value: '23',
+            description: 'Monthly events · 12 students',
+            accent: 'purple',
+          },
+        ],
+        studentsCard: {
+          title: 'Students list',
+          subtitle: 'Featured group · 4°A',
+          actionLabel: 'View more',
+          status: {
+            paid: 'Paid',
+            pending: 'Pending',
+          },
+          list: [
+            { name: 'María José Diaz', grade: '4°A', status: 'paid', amount: '$1,000 MXN' },
+            { name: 'Jeronimo Diaz', grade: '4°A', status: 'pending', amount: '$1,000 MXN' },
+            { name: 'Fernanda Diaz', grade: '4°A', status: 'pending', amount: '$1,000 MXN' },
+            { name: 'Jorge Diaz', grade: '4°A', status: 'paid', amount: '$1,000 MXN' },
+            { name: 'Valentina Diaz', grade: '4°A', status: 'pending', amount: '$1,000 MXN' },
+          ],
+        },
+        paymentsCard: {
+          label: 'Student payments balance',
+          summary: 'Automatic payments summary',
+          periodOptions: ['2 months', '3 months'],
+          nextPaymentTitle: 'Next payment',
+          nextPayment: {
+            student: 'María José Diaz',
+            grade: '4°A',
+            amount: '$1,000 MXN',
+            dueIn: 'Due in 12 days',
+          },
+          totals: [
+            { label: 'Paid', value: '$41,456', change: '+12%' },
+            { label: 'Pending', value: '$12,800', change: '-4%' },
+          ],
+          chart: {
+            caption: 'Balance over the last 6 months',
+            description: 'Projected net income',
+            ariaLabel: 'Payments trend',
+            valueSuffix: 'k',
+            months: ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+            values: [40, 52, 48, 60, 68, 73],
+          },
+        },
+      },
+      pages: {
+        payments: {
+          title: 'Payments & Finance',
+          description: 'This section will be available soon.',
+        },
+        students: {
+          title: 'Students & Groups',
+          description: 'Manage all your group information here very soon.',
+        },
+        teachers: {
+          title: 'Teachers',
+          description: 'Access the teacher workspace in an upcoming release.',
+        },
+        schedules: {
+          title: 'Schedules & Tasks',
+          description: 'Plan schedules and assignments in one place soon.',
+        },
+        grades: {
+          title: 'Grades',
+          description: 'Academic reports will be available in future versions.',
+        },
+        communications: {
+          title: 'Communications',
+          description: 'Centralize your community messages here.',
+        },
+      },
     },
     errors: {
       invalidCredentials: 'Invalid username or password.',
