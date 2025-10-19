@@ -4,6 +4,7 @@ import { getTranslation } from '../i18n/translations';
 import { useAuth } from '../context/AuthContext';
 import PaymentsFinancePage from '../pages/PaymentsFinancePage';
 import StudentsGroupsPage from '../pages/StudentsGroupsPage';
+import StudentsBulkUploadPage from '../pages/StudentsBulkUploadPage';
 import TeachersPage from '../pages/TeachersPage';
 import SchedulesTasksPage from '../pages/SchedulesTasksPage';
 import GradesPage from '../pages/GradesPage';
@@ -24,6 +25,7 @@ const HomePage = ({
   onNavigate,
   routeSegments = [],
   onNavigateToStudentDetail,
+  onNavigateToBulkUpload,
 }) => {
   const { user, logout } = useAuth();
   const t = getTranslation(language);
@@ -35,7 +37,9 @@ const HomePage = ({
     t.home.studentsPage.detail.breadcrumbFallback,
   );
 
-  const isStudentDetailActive = activePage === 'students' && routeSegments.length > 0;
+  const isBulkUploadActive = activePage === 'students' && routeSegments[0] === 'bulk-upload';
+  const isStudentDetailActive =
+    activePage === 'students' && routeSegments.length > 0 && !isBulkUploadActive;
   const studentDetailId = isStudentDetailActive ? routeSegments[0] : null;
 
   useEffect(() => {
@@ -155,6 +159,7 @@ const HomePage = ({
   );
 
   const studentsPageStrings = t.home.studentsPage;
+  const studentsBulkStrings = studentsPageStrings.bulkUploadPage ?? {};
   const studentsDetailStrings = studentsPageStrings.detail ?? {};
 
   const placeholderPages = useMemo(
@@ -213,12 +218,19 @@ const HomePage = ({
       onBreadcrumbChange={handleDetailBreadcrumbChange}
       onNavigateToStudents={() => handleNavClick('students')}
     />
+  ) : isBulkUploadActive ? (
+    <StudentsBulkUploadPage
+      language={language}
+      strings={studentsBulkStrings}
+      onNavigateBack={() => handleNavClick('students')}
+    />
   ) : (
     <StudentsGroupsPage
       language={language}
       placeholder={t.home.pages.students}
       strings={studentsPageStrings}
       onStudentDetail={handleStudentDetailNavigate}
+      onBulkUpload={onNavigateToBulkUpload}
     />
   );
 
@@ -250,6 +262,17 @@ const HomePage = ({
       return items;
     }
 
+    if (isBulkUploadActive) {
+      items.push({
+        label: t.home.menu.items.students,
+        onClick: () => handleNavClick('students'),
+      });
+      items.push({
+        label: studentsBulkStrings.breadcrumb ?? studentsPageStrings.actions.bulkUpload,
+      });
+      return items;
+    }
+
     items.push({
       label: t.home.menu.items[activePage] ?? headerTitle,
     });
@@ -260,7 +283,10 @@ const HomePage = ({
     detailBreadcrumbLabel,
     headerTitle,
     handleNavClick,
+    isBulkUploadActive,
     isStudentDetailActive,
+    studentsBulkStrings.breadcrumb,
+    studentsPageStrings.actions.bulkUpload,
     t.home.menu.items,
   ]);
 
