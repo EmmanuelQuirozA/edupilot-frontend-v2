@@ -493,6 +493,18 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
 
       const payload = await response.json();
 
+      if (Array.isArray(payload)) {
+        const arrayCandidate = payload.find(
+          (candidate) => candidate && typeof candidate === 'object' && !Array.isArray(candidate),
+        );
+
+        if (!arrayCandidate) {
+          throw new Error('Student details not available');
+        }
+
+        return arrayCandidate;
+      }
+
       const detailCandidate = [
         payload.data,
         payload.result,
