@@ -238,31 +238,6 @@
   font-size: 0.75rem;
 }
 
-.students-groups__alert {
-  padding: 0.85rem 1.1rem;
-  border-radius: 0.9rem;
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-.students-groups__alert--success {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
-  border: 1px solid rgba(34, 197, 94, 0.25);
-}
-
-.students-groups__alert--error {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-}
-
-.students-groups__alert--info {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
-  border: 1px solid rgba(59, 130, 246, 0.25);
-}
-
 .students-table__wrapper {
   position: relative;
   border-radius: 1rem;

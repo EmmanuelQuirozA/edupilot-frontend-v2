@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import GlobalToast from '../components/GlobalToast.jsx';
 import './StudentsGroupsPage.css';
 
 const DEFAULT_PAGINATION = { offset: 0, limit: 10 };
@@ -604,6 +605,38 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
     setIsStudentPrefetching(false);
   };
 
+  const toastCloseLabel = useMemo(
+    () => strings?.actions?.close ?? strings?.alertCloseLabel ?? 'Cerrar',
+    [strings],
+  );
+
+  const showGlobalAlert = useCallback(
+    (type, message, options = {}) => {
+      setGlobalAlert({
+        type,
+        message: message ?? '',
+        id: Date.now(),
+        closeLabel: options.closeLabel ?? toastCloseLabel,
+        ...options,
+      });
+    },
+    [toastCloseLabel],
+  );
+
+  useEffect(() => {
+    if (!globalAlert) {
+      return undefined;
+    }
+
+    const timeout = setTimeout(() => {
+      setGlobalAlert(null);
+    }, globalAlert.duration ?? 5000);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [globalAlert?.id, globalAlert?.duration]);
+
   const handleStudentSubmit = async (event) => {
     event.preventDefault();
     setIsSubmittingStudent(true);
@@ -636,11 +669,16 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
           },
         );
 
-        if (!response.ok) {
-          throw new Error('Failed to update student');
+        const payload = await response.json();
+        if (!payload?.success) {
+          const feedbackMessage = payload?.message || strings.form.editError;
+          setFormFeedback(feedbackMessage);
+          showGlobalAlert('error', feedbackMessage);
+          return;
         }
 
-        setGlobalAlert({ type: 'success', message: strings.form.editSuccess });
+        const successMessage = payload?.message || strings.form.editSuccess;
+        showGlobalAlert('success', successMessage);
       } else {
         const createPayload = [{ ...sanitizedForm }];
 
@@ -654,20 +692,28 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
           body: JSON.stringify(createPayload),
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to create student');
+        const payload = await response.json();
+        if (!payload?.success) {
+          const feedbackMessage = payload?.message || strings.form.error;
+          setFormFeedback(feedbackMessage);
+          showGlobalAlert('error', feedbackMessage);
+          return;
         }
 
-        setGlobalAlert({ type: 'success', message: strings.form.success });
+        const successMessage = payload?.message || strings.form.success;
+        showGlobalAlert('success', successMessage);
       }
 
       closeStudentModal();
       fetchStudents();
     } catch (error) {
       console.error('Failed to submit student', error);
-      const feedbackMessage = modalMode === 'edit' ? strings.form.editError : strings.form.error;
-      setFormFeedback(feedbackMessage);
-      setGlobalAlert({ type: 'error', message: feedbackMessage });
+      const fallbackMessage =
+        modalMode === 'edit'
+          ? strings.form.editError
+          : strings.form.error;
+      setFormFeedback(fallbackMessage);
+      showGlobalAlert('error', fallbackMessage);
     } finally {
       setIsSubmittingStudent(false);
     }
@@ -685,7 +731,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
       await fetchSchools();
     } catch (error) {
       console.error('Failed to prepare student modal', error);
-      setGlobalAlert({ type: 'error', message: strings.form.loadError });
+      showGlobalAlert('error', strings.form.loadError);
     } finally {
       setIsStudentPrefetching(false);
       setIsStudentModalOpen(true);
@@ -712,7 +758,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
       setIsStudentModalOpen(true);
     } catch (error) {
       console.error('Failed to load student for editing', error);
-      setGlobalAlert({ type: 'error', message: strings.form.loadError });
+      showGlobalAlert('error', strings.form.loadError);
     } finally {
       setIsStudentPrefetching(false);
     }
@@ -752,23 +798,25 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
         },
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to update status');
+      const payload = await response.json();
+      if (!payload?.success) {
+        const errorMessage =
+          payload?.message || strings.actions.statusError || strings.actions.disableError;
+        showGlobalAlert('error', errorMessage);
+        return;
       }
 
-      setGlobalAlert({
-        type: 'success',
-        message: shouldEnable
+      const successMessage =
+        payload?.message ||
+        (shouldEnable
           ? strings.actions.enableSuccess ?? strings.actions.disableSuccess
-          : strings.actions.disableSuccess,
-      });
+          : strings.actions.disableSuccess);
+      showGlobalAlert('success', successMessage);
       fetchStudents();
     } catch (error) {
       console.error('Failed to toggle student status', error);
-      setGlobalAlert({
-        type: 'error',
-        message: strings.actions.statusError ?? strings.actions.disableError,
-      });
+      const fallbackMessage = strings.actions.statusError ?? strings.actions.disableError;
+      showGlobalAlert('error', fallbackMessage);
     } finally {
       setPendingStatusStudentId(null);
     }
@@ -780,7 +828,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
 
   const handleMenuPlaceholder = () => {
     setOpenActionsMenuId(null);
-    setGlobalAlert({ type: 'info', message: strings.actions.menuPlaceholder });
+    showGlobalAlert('info', strings.actions.menuPlaceholder);
   };
 
   useEffect(() => {
@@ -882,6 +930,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
 
   return (
     <div className="students-groups">
+      <GlobalToast alert={globalAlert} onClose={() => setGlobalAlert(null)} />
+
       <header className="students-groups__header">
         <div>
           <p>{strings.header?.subtitle ?? description}</p>
@@ -967,12 +1017,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
               </button>
             </div>
           </div>
-
-          {globalAlert && (
-            <div className={`students-groups__alert students-groups__alert--${globalAlert.type}`}>
-              {globalAlert.message}
-            </div>
-          )}
 
           <div className="students-table__wrapper">
             <table className="students-table">
