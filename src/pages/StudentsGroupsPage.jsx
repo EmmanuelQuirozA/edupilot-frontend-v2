@@ -671,7 +671,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
     }
   };
 
-  const handleDisableStudent = async (student) => {
+  const handleToggleStudentStatus = async (student, shouldEnable) => {
     const studentId = student?.student_id ?? student?.id;
     if (!studentId) {
       return;
@@ -703,7 +703,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
             Accept: 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ status: 0 }),
+          body: JSON.stringify({ status: shouldEnable ? 1 : 0 }),
         },
       );
 
@@ -711,11 +711,19 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
         throw new Error('Failed to update status');
       }
 
-      setGlobalAlert({ type: 'success', message: strings.actions.disableSuccess });
+      setGlobalAlert({
+        type: 'success',
+        message: shouldEnable
+          ? strings.actions.enableSuccess ?? strings.actions.disableSuccess
+          : strings.actions.disableSuccess,
+      });
       fetchStudents();
     } catch (error) {
-      console.error('Failed to disable student', error);
-      setGlobalAlert({ type: 'error', message: strings.actions.disableError });
+      console.error('Failed to toggle student status', error);
+      setGlobalAlert({
+        type: 'error',
+        message: strings.actions.statusError ?? strings.actions.disableError,
+      });
     } finally {
       setPendingStatusStudentId(null);
     }
@@ -773,6 +781,35 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
 
   const { title, description } = placeholder;
   const statusLabels = strings.status;
+  const getStudentStatusValue = (student) =>
+    student?.status ?? student?.enabled ?? student?.is_enabled ?? student?.user_status ?? student?.state;
+
+  const isStudentActive = (student) => {
+    const status = getStudentStatusValue(student);
+
+    if (typeof status === 'string') {
+      const normalized = status.trim().toLowerCase();
+
+      if (!normalized) {
+        return false;
+      }
+
+      const activeTokens = [
+        '1',
+        'true',
+        'active',
+        'enabled',
+        'activo',
+        'habilitado',
+        (statusLabels?.active ?? '').toString().toLowerCase(),
+      ].filter(Boolean);
+
+      return activeTokens.includes(normalized);
+    }
+
+    return status === 1 || status === true;
+  };
+
   const isEditMode = modalMode === 'edit';
 
   const activePage = Math.floor(pagination.offset / pagination.limit) + 1;
@@ -780,18 +817,13 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
   const showingFrom = Math.min(totalStudents, pagination.offset + 1);
   const showingTo = Math.min(totalStudents, pagination.offset + students.length);
 
-  const renderStatusPill = (student) => {
-    const rawStatus =
-      student.status ?? student.enabled ?? student.is_enabled ?? student.user_status ?? student.state;
-    const isActive =
-      rawStatus === 1 ||
-      rawStatus === '1' ||
-      rawStatus === true ||
-      rawStatus === 'true' ||
-      rawStatus === statusLabels.active ||
-      rawStatus === 'Activo';
-
-    const label = student.user_status ?? (isActive ? statusLabels.active : statusLabels.inactive);
+  const renderStatusPill = (student, isActive) => {
+    const label =
+      typeof student.user_status === 'string' && student.user_status.trim()
+        ? student.user_status
+        : isActive
+        ? statusLabels.active
+        : statusLabels.inactive;
     const tone = isActive ? 'active' : 'inactive';
 
     return <span className={`students-table__status students-table__status--${tone}`}>{label}</span>;
@@ -810,33 +842,47 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
           <h2>{strings.header?.title ?? title}</h2>
           <p>{strings.header?.subtitle ?? description}</p>
         </div>
-        <button
-          type="button"
-          className="students-groups__add"
-          onClick={handleOpenCreateStudent}
-          disabled={isStudentPrefetching}
-        >
-          <span>+</span>
-          {strings.actions.addStudent}
-        </button>
       </header>
 
-      <nav className="students-groups__tabs" aria-label="Tabs">
-        <button
-          type="button"
-          className={activeTab === 'students' ? 'is-active' : ''}
-          onClick={() => setActiveTab('students')}
-        >
-          {strings.tabs.students}
-        </button>
-        <button
-          type="button"
-          className={activeTab === 'groups' ? 'is-active' : ''}
-          onClick={() => setActiveTab('groups')}
-        >
-          {strings.tabs.groups}
-        </button>
-      </nav>
+      <div className="students-groups__tabs-row">
+        <nav className="students-groups__tabs" aria-label="Tabs">
+          <button
+            type="button"
+            className={activeTab === 'students' ? 'is-active' : ''}
+            onClick={() => setActiveTab('students')}
+          >
+            {strings.tabs.students}
+          </button>
+          <button
+            type="button"
+            className={activeTab === 'groups' ? 'is-active' : ''}
+            onClick={() => setActiveTab('groups')}
+          >
+            {strings.tabs.groups}
+          </button>
+        </nav>
+
+        {activeTab === 'students' ? (
+          <div className="students-groups__tab-actions">
+            <button type="button" className="students-groups__tab-action students-groups__tab-action--secondary">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 20h16a1 1 0 0 0 1-1v-5h-2v4H5v-4H3v5a1 1 0 0 0 1 1z" />
+                <path d="M12 3 7 8h3v7h4V8h3l-5-5z" />
+              </svg>
+              {strings.actions.bulkUpload}
+            </button>
+            <button
+              type="button"
+              className="students-groups__add"
+              onClick={handleOpenCreateStudent}
+              disabled={isStudentPrefetching}
+            >
+              <span>+</span>
+              {strings.actions.addStudent}
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       {activeTab === 'students' ? (
         <section className="students-view">
@@ -874,19 +920,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
                 </svg>
                 {strings.actions.filters}
                 {filtersCount > 0 && <span className="students-view__filters-count">{filtersCount}</span>}
-              </button>
-              <button type="button" className="students-view__secondary">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M4 7h16M4 12h16M4 17h10"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {strings.actions.bulkUpload}
               </button>
             </div>
           </div>
@@ -943,6 +976,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
                     const gradeGroup = student.grade_group ?? student.group ?? strings.table.noGroup;
                     const registerId = student.register_id ?? student.registration_id ?? '—';
                     const studentId = student.student_id ?? student.id ?? registerId;
+                    const isStatusPending = pendingStatusStudentId === studentId;
+                    const isActive = isStudentActive(student);
+                    const switchTitle = isStatusPending
+                      ? strings.actions.statusUpdating ?? strings.actions.disabling
+                      : isActive
+                      ? statusLabels.active
+                      : statusLabels.inactive;
+                    const switchActionLabel = isActive ? strings.actions.disable : strings.actions.enable;
 
                     return (
                       <tr key={studentId}>
@@ -968,21 +1009,34 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
                         <td data-title={strings.table.gradeGroup}>
                           {gradeGroup}
                         </td>
-                        <td data-title={strings.table.status}>{renderStatusPill(student)}</td>
+                        <td data-title={strings.table.status}>{renderStatusPill(student, isActive)}</td>
                         <td data-title={strings.table.actions} className="students-table__actions-cell">
                           <div className="students-table__actions">
-                            <button type="button" onClick={() => handleEditStudent(student)}>
-                              {strings.actions.edit}
-                            </button>
                             <button
                               type="button"
-                              onClick={() => handleDisableStudent(student)}
-                              disabled={pendingStatusStudentId === studentId}
+                              className="students-table__icon-button"
+                              onClick={() => handleEditStudent(student)}
+                              aria-label={`${strings.actions.edit} ${fullName || strings.table.unknownStudent}`}
                             >
-                              {pendingStatusStudentId === studentId
-                                ? strings.actions.disabling
-                                : strings.actions.disable}
+                              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                                <path d="M3 16.75V19h2.25l8.9-8.9-2.25-2.25Zm12.87-7.4a.75.75 0 0 0 0-1.06l-1.16-1.16a.75.75 0 0 0-1.06 0l-1.04 1.04 2.22 2.22Z" />
+                              </svg>
                             </button>
+                            <label
+                              className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
+                              title={switchTitle}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isActive}
+                                onChange={() => handleToggleStudentStatus(student, !isActive)}
+                                disabled={isStatusPending}
+                                aria-label={`${switchActionLabel} ${fullName || strings.table.unknownStudent}`}
+                              />
+                              <span className="students-table__switch-track">
+                                <span className="students-table__switch-thumb" />
+                              </span>
+                            </label>
                             <div className={`students-table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
                               <button
                                 type="button"
