@@ -218,7 +218,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
   const [schoolOptions, setSchoolOptions] = useState([]);
   const [classOptions, setClassOptions] = useState([]);
   const [modalMode, setModalMode] = useState('create');
-  const [editingStudentId, setEditingStudentId] = useState(null);
+  const [editingStudentUserId, setEditingStudentUserId] = useState(null);
   const [isStudentPrefetching, setIsStudentPrefetching] = useState(false);
   const [openActionsMenuId, setOpenActionsMenuId] = useState(null);
   const [pendingStatusStudentId, setPendingStatusStudentId] = useState(null);
@@ -598,7 +598,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
     setStudentForm(createInitialStudent());
     setFormFeedback('');
     setModalMode('create');
-    setEditingStudentId(null);
+    setEditingStudentUserId(null);
     setSchoolOptions([]);
     setClassOptions([]);
     setIsStudentPrefetching(false);
@@ -616,7 +616,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
     );
 
     try {
-      if (modalMode === 'edit' && editingStudentId) {
+      if (modalMode === 'edit' && editingStudentUserId) {
         const updatePayload = {
           ...sanitizedForm,
           ...(studentId ? { student_id: studentId } : {}),
@@ -624,7 +624,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
         };
 
         const response = await fetch(
-          `${API_BASE_URL}/students/admin/update/${encodeURIComponent(editingStudentId)}?lang=${language ?? 'es'}`,
+          `${API_BASE_URL}/students/update/${encodeURIComponent(editingStudentUserId)}?lang=${language ?? 'es'}`,
           {
             method: 'PUT',
             headers: {
@@ -636,7 +636,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
           },
         );
 
-        if (!response.ok) {
+        if (!response.success) {
           throw new Error('Failed to update student');
         }
 
@@ -675,7 +675,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
 
   const handleOpenCreateStudent = async () => {
     setModalMode('create');
-    setEditingStudentId(null);
+    setEditingStudentUserId(null);
     setStudentForm(createInitialStudent());
     setFormFeedback('');
     setOpenActionsMenuId(null);
@@ -707,7 +707,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
       const detail = await fetchStudentDetail(studentId);
       const mappedForm = mapDetailToForm(detail);
       setStudentForm(mappedForm);
-      setEditingStudentId(studentId);
+      setEditingStudentUserId(detail.user_id);
       await fetchSchools(mappedForm.school_id, mappedForm.group_id);
       setIsStudentModalOpen(true);
     } catch (error) {
@@ -1018,6 +1018,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
                       .slice(0, 2)
                       .join('');
                     const gradeGroup = student.grade_group ?? student.group ?? strings.table.noGroup;
+                    const scholarLevel = student.scholar_level_name ?? strings.table.noGroup;
                     const registerId = student.register_id ?? student.registration_id ?? '—';
                     const studentId = student.student_id ?? student.id ?? registerId;
                     const isStatusPending = pendingStatusStudentId === studentId;
@@ -1051,7 +1052,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
                           </div>
                         </td>
                         <td data-title={strings.table.gradeGroup}>
-                          {gradeGroup}
+                          {gradeGroup + " " + scholarLevel}
                         </td>
                         <td data-title={strings.table.status}>{renderStatusPill(student, isActive)}</td>
                         <td data-title={strings.table.actions} className="students-table__actions-cell">
@@ -1272,23 +1273,60 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
                     />
                   </label>
                   <label>
-                    <span>{strings.form.fields.username}</span>
+                    <span>{strings.form.fields.registerId}</span>
                     <input
-                      name="username"
-                      value={studentForm.username}
+                      name="register_id"
+                      value={studentForm.register_id}
                       onChange={handleStudentFormChange}
-                      required
                     />
                   </label>
                   <label>
-                    <span>{strings.form.fields.password}</span>
+                    <span>{strings.form.fields.paymentReference}</span>
                     <input
-                      type="password"
-                      name="password"
-                      value={studentForm.password}
+                      name="payment_reference"
+                      value={studentForm.payment_reference}
                       onChange={handleStudentFormChange}
-                      required
                     />
+                  </label>
+                </div>
+              </section>
+
+              <section>
+                <h4>{strings.form.sections.academic}</h4>
+                <div className="students-form__grid">
+                  <label>
+                    <span>{strings.form.fields.schoolId}</span>
+                    <select
+                      className='custom_select'
+                      name="school_id"
+                      value={studentForm.school_id}
+                      onChange={handleStudentFormChange}
+                      disabled={!schoolOptions.length}
+                      required
+                    >
+                      {schoolOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>{strings.form.fields.groupId}</span>
+                    <select
+                      className='custom_select'
+                      name="group_id"
+                      value={studentForm.group_id}
+                      onChange={handleStudentFormChange}
+                      disabled={!classOptions.length}
+                      required={classOptions.length > 0}
+                    >
+                      {classOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
               </section>
@@ -1352,62 +1390,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
                   <label>
                     <span>{strings.form.fields.state}</span>
                     <input name="state" value={studentForm.state} onChange={handleStudentFormChange} />
-                  </label>
-                </div>
-              </section>
-
-              <section>
-                <h4>{strings.form.sections.academic}</h4>
-                <div className="students-form__grid">
-                  <label>
-                    <span>{strings.form.fields.registerId}</span>
-                    <input
-                      name="register_id"
-                      value={studentForm.register_id}
-                      onChange={handleStudentFormChange}
-                    />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.paymentReference}</span>
-                    <input
-                      name="payment_reference"
-                      value={studentForm.payment_reference}
-                      onChange={handleStudentFormChange}
-                    />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.schoolId}</span>
-                    <select
-                      className='custom_select'
-                      name="school_id"
-                      value={studentForm.school_id}
-                      onChange={handleStudentFormChange}
-                      disabled={!schoolOptions.length}
-                      required
-                    >
-                      {schoolOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.groupId}</span>
-                    <select
-                      className='custom_select'
-                      name="group_id"
-                      value={studentForm.group_id}
-                      onChange={handleStudentFormChange}
-                      disabled={!classOptions.length}
-                      required={classOptions.length > 0}
-                    >
-                      {classOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
                   </label>
                 </div>
               </section>

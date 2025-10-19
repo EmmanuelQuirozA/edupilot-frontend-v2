@@ -232,7 +232,7 @@ export const translations = {
           sections: {
             personal: 'Datos personales',
             contact: 'Información de contacto',
-            academic: 'Información escolar y estatus',
+            academic: 'Información escolar',
           },
           fields: {
             firstName: 'Nombre',
@@ -521,7 +521,7 @@ export const translations = {
           sections: {
             personal: 'Personal information',
             contact: 'Contact information',
-            academic: 'Academic information & status',
+            academic: 'Academic information',
           },
           fields: {
             firstName: 'First name',

@@ -459,10 +459,10 @@ const HomePage = ({
             ×
           </button>
         ) : null}
-        <div className="sidebar__brand">
+        {/* <div className="sidebar__brand">
           <span className="sidebar__brand-mark">school</span>
           <span className="sidebar__brand-badge">EduPilot</span>
-        </div>
+        </div> */}
         <div className="sidebar__profile">
           <div className="sidebar__avatar" aria-hidden="true">
             {initials || 'AD'}
