@@ -161,6 +161,33 @@ const normalizeStudentsResponse = (payload) => {
   return { students, total: Number.isFinite(total) ? total : students.length };
 };
 
+const extractUserIdFromStudentDetail = (detail) => {
+  if (!detail || typeof detail !== 'object') {
+    return null;
+  }
+
+  const candidates = [
+    detail.user_id,
+    detail.userId,
+    detail.user?.user_id,
+    detail.user?.userId,
+    detail.user?.id,
+    detail.user?.data?.user_id,
+    detail.user?.data?.userId,
+    detail.user?.data?.id,
+  ];
+
+  const validCandidate = candidates.find(
+    (candidate) => candidate !== undefined && candidate !== null && candidate !== '',
+  );
+
+  if (validCandidate === undefined) {
+    return null;
+  }
+
+  return typeof validCandidate === 'number' ? String(validCandidate) : validCandidate;
+};
+
 const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail }) => {
   const [activeTab, setActiveTab] = useState('students');
   const [searchValue, setSearchValue] = useState('');
@@ -682,20 +709,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
 
     try {
       const detail = await fetchStudentDetail(studentId);
-      const userIdCandidate =
-        detail?.user_id ??
-        detail?.userId ??
-        detail?.user?.user_id ??
-        detail?.user?.id ??
-        student?.user_id ??
-        student?.userId;
+      const userIdFromDetail = extractUserIdFromStudentDetail(detail);
 
-      if (!userIdCandidate) {
+      if (!userIdFromDetail) {
         throw new Error('Missing user id');
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/users/update/${encodeURIComponent(userIdCandidate)}/status?lang=en`,
+        `${API_BASE_URL}/users/update/${encodeURIComponent(userIdFromDetail)}/status?lang=en`,
         {
           method: 'PUT',
           headers: {
