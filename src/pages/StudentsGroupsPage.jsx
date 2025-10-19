@@ -169,12 +169,20 @@ const extractUserIdFromStudentDetail = (detail) => {
   const candidates = [
     detail.user_id,
     detail.userId,
+    detail.user_uuid,
+    detail.userUuid,
     detail.user?.user_id,
     detail.user?.userId,
     detail.user?.id,
+    detail.user?.uuid,
+    detail.user?.user_uuid,
+    detail.user?.userUuid,
     detail.user?.data?.user_id,
     detail.user?.data?.userId,
     detail.user?.data?.id,
+    detail.user?.data?.user?.id,
+    detail.user?.data?.user?.user_id,
+    detail.user?.data?.user?.userId,
   ];
 
   const validCandidate = candidates.find(
@@ -485,6 +493,18 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
 
       const payload = await response.json();
 
+      if (Array.isArray(payload)) {
+        const arrayCandidate = payload.find(
+          (candidate) => candidate && typeof candidate === 'object' && !Array.isArray(candidate),
+        );
+
+        if (!arrayCandidate) {
+          throw new Error('Student details not available');
+        }
+
+        return arrayCandidate;
+      }
+
       const detailCandidate = [
         payload.data,
         payload.result,
@@ -708,8 +728,12 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
     setPendingStatusStudentId(studentId);
 
     try {
-      const detail = await fetchStudentDetail(studentId);
-      const userIdFromDetail = extractUserIdFromStudentDetail(detail);
+      let userIdFromDetail = extractUserIdFromStudentDetail(student);
+
+      if (!userIdFromDetail) {
+        const detail = await fetchStudentDetail(studentId);
+        userIdFromDetail = extractUserIdFromStudentDetail(detail);
+      }
 
       if (!userIdFromDetail) {
         throw new Error('Missing user id');
@@ -718,7 +742,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
       const response = await fetch(
         `${API_BASE_URL}/users/update/${encodeURIComponent(userIdFromDetail)}/status?lang=en`,
         {
-          method: 'PUT',
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
