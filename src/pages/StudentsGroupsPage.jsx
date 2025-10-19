@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import GlobalToast from '../components/GlobalToast.jsx';
 import './StudentsGroupsPage.css';
 
 const DEFAULT_PAGINATION = { offset: 0, limit: 10 };
@@ -604,13 +605,27 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
     setIsStudentPrefetching(false);
   };
 
-  const showGlobalAlert = useCallback((type, message) => {
-    setGlobalAlert({ type, message: message ?? '', id: Date.now() });
-  }, []);
+  const toastCloseLabel = useMemo(
+    () => strings?.actions?.close ?? strings?.alertCloseLabel ?? 'Cerrar',
+    [strings],
+  );
+
+  const showGlobalAlert = useCallback(
+    (type, message, options = {}) => {
+      setGlobalAlert({
+        type,
+        message: message ?? '',
+        id: Date.now(),
+        closeLabel: options.closeLabel ?? toastCloseLabel,
+        ...options,
+      });
+    },
+    [toastCloseLabel],
+  );
 
   useEffect(() => {
     if (!globalAlert) {
-      return () => {};
+      return undefined;
     }
 
     const timeout = setTimeout(() => {
@@ -915,6 +930,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
 
   return (
     <div className="students-groups">
+      <GlobalToast alert={globalAlert} onClose={() => setGlobalAlert(null)} />
+
       <header className="students-groups__header">
         <div>
           <p>{strings.header?.subtitle ?? description}</p>
@@ -1000,22 +1017,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
               </button>
             </div>
           </div>
-
-          {globalAlert && (
-            <div className="students-groups__toast-container" role="status" aria-live="polite">
-              <div className={`students-groups__toast students-groups__toast--${globalAlert.type}`}>
-                <span className="students-groups__toast-message">{globalAlert.message}</span>
-                <button
-                  type="button"
-                  className="students-groups__toast-close"
-                  onClick={() => setGlobalAlert(null)}
-                  aria-label={strings.actions?.close ?? 'Cerrar'}
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
-              </div>
-            </div>
-          )}
 
           <div className="students-table__wrapper">
             <table className="students-table">
