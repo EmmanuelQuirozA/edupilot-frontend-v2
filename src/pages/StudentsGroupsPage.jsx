@@ -779,7 +779,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
     onStudentDetail?.({ id: studentId, name: fullName, registerId: student.register_id ?? student.registration_id });
   };
 
-  const { title, description } = placeholder;
+  const { description } = placeholder;
   const statusLabels = strings.status;
   const getStudentStatusValue = (student) =>
     student?.status ?? student?.enabled ?? student?.is_enabled ?? student?.user_status ?? student?.state;
@@ -839,7 +839,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
     <div className="students-groups">
       <header className="students-groups__header">
         <div>
-          <h2>{strings.header?.title ?? title}</h2>
           <p>{strings.header?.subtitle ?? description}</p>
         </div>
       </header>
