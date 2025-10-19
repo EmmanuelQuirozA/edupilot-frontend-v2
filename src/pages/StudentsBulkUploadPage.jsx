@@ -658,6 +658,39 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
     [scheduleValidation],
   );
 
+  const handleDrop = useCallback(
+    (event) => {
+      event.preventDefault();
+      setIsDragging(false);
+
+      const file = event.dataTransfer?.files?.[0];
+      if (file) {
+        handleFile(file);
+      }
+    },
+    [handleFile],
+  );
+
+  const handleDragOver = useCallback((event) => {
+    event.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((event) => {
+    event.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleFileInputChange = useCallback(
+    (event) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        handleFile(file);
+      }
+    },
+    [handleFile],
+  );
+
   const handleFile = useCallback(
     (file) => {
       if (!file || (!file.name.endsWith('.csv') && file.type !== 'text/csv')) {
@@ -746,39 +779,6 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
       reader.readAsText(file, 'UTF-8');
     },
     [runValidation, selectedSchool, strings.notifications, strings.validation],
-  );
-
-  const handleDrop = useCallback(
-    (event) => {
-      event.preventDefault();
-      setIsDragging(false);
-
-      const file = event.dataTransfer?.files?.[0];
-      if (file) {
-        handleFile(file);
-      }
-    },
-    [handleFile],
-  );
-
-  const handleDragOver = useCallback((event) => {
-    event.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((event) => {
-    event.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const handleFileInputChange = useCallback(
-    (event) => {
-      const file = event.target.files?.[0];
-      if (file) {
-        handleFile(file);
-      }
-    },
-    [handleFile],
   );
 
   const handleClearFile = useCallback(() => {
