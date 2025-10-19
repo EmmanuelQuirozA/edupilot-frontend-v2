@@ -197,7 +197,7 @@ const extractUserIdFromStudentDetail = (detail) => {
   return typeof validCandidate === 'number' ? String(validCandidate) : validCandidate;
 };
 
-const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail }) => {
+const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, onBulkUpload }) => {
   const [activeTab, setActiveTab] = useState('students');
   const [searchValue, setSearchValue] = useState('');
   const [students, setStudents] = useState([]);
@@ -635,7 +635,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
     return () => {
       clearTimeout(timeout);
     };
-  }, [globalAlert?.id, globalAlert?.duration]);
+  }, [globalAlert]);
 
   const handleStudentSubmit = async (event) => {
     event.preventDefault();
@@ -958,7 +958,11 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
 
         {activeTab === 'students' ? (
           <div className="students-groups__tab-actions">
-            <button type="button" className="students-groups__tab-action students-groups__tab-action--secondary">
+            <button
+              type="button"
+              className="students-groups__tab-action students-groups__tab-action--secondary"
+              onClick={onBulkUpload}
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 20h16a1 1 0 0 0 1-1v-5h-2v4H5v-4H3v5a1 1 0 0 0 1 1z" />
                 <path d="M12 3 7 8h3v7h4V8h3l-5-5z" />
@@ -1463,6 +1467,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail })
 StudentsGroupsPage.defaultProps = {
   language: 'es',
   onStudentDetail: undefined,
+  onBulkUpload: undefined,
 };
 
 export default StudentsGroupsPage;
