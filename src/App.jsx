@@ -165,6 +165,10 @@ const App = () => {
     [language, navigate],
   );
 
+  const handleStudentBulkUploadNavigation = useCallback(() => {
+    navigate(`/${language}/students/bulk-upload`);
+  }, [language, navigate]);
+
   if (!user && resolvedSection === 'login') {
     return <LoginPage language={language} onLanguageChange={handleLanguageChange} />;
   }
@@ -178,6 +182,7 @@ const App = () => {
         onNavigate={handlePageChange}
         routeSegments={detailSegments}
         onNavigateToStudentDetail={handleStudentDetailNavigation}
+        onNavigateToBulkUpload={handleStudentBulkUploadNavigation}
       />
     );
   }

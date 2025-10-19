@@ -283,6 +283,100 @@ export const translations = {
           registerLabel: 'Matrícula',
           backToStudents: 'Volver a alumnos',
         },
+        bulkUploadPage: {
+          breadcrumb: 'Carga masiva',
+          header: {
+            title: 'Carga Masiva de Alumnos',
+            description: 'Sube un archivo CSV para registrar múltiples alumnos de una sola vez.',
+          },
+          summary: {
+            total: 'Total',
+            valid: 'Válidos',
+            invalid: 'Con incidencias',
+          },
+          steps: {
+            title: 'Pasos para la carga',
+            selectSchool: {
+              title: 'Selecciona la escuela',
+              description: 'Elige la escuela para obtener la lista de grupos disponibles.',
+              empty: 'No hay escuelas disponibles',
+            },
+            downloadTemplate: {
+              title: 'Descarga el formato',
+              description: 'Utiliza el archivo CSV de referencia para respetar el formato correcto.',
+            },
+            uploadFile: {
+              title: 'Sube el archivo CSV',
+              description: 'Arrastra o selecciona un archivo con máximo 100 registros.',
+            },
+          },
+          dropzone: {
+            title: 'Arrastra y suelta un archivo CSV aquí',
+            description: 'o haz clic para seleccionarlo desde tu computadora.',
+            helper: 'Acepta máximo 100 registros por carga.',
+          },
+          actions: {
+            downloadTemplate: 'Descargar aquí',
+            selectFile: 'Seleccionar archivo',
+            removeFile: 'Eliminar',
+            back: 'Volver a alumnos',
+            create: 'Crear alumnos válidos',
+            validating: 'Validando...',
+          },
+          table: {
+            title: 'Previsualización de registros',
+            subtitle: 'Edita la información antes de confirmar la carga.',
+            empty: 'Selecciona un archivo CSV para mostrar una previsualización.',
+            rowNumber: 'Fila',
+            groupPlaceholder: 'Selecciona un grupo',
+            status: 'Estado',
+            errors: 'Incidencias',
+          },
+          logs: {
+            title: 'Incidencias detectadas',
+            hint: 'Haz clic en un elemento para ir al registro correspondiente.',
+            empty: 'No se detectaron incidencias.',
+          },
+          statuses: {
+            pending: 'Pendiente',
+            valid: 'Listo',
+            invalid: 'Con incidencias',
+          },
+          validation: {
+            limitExceeded:
+              'El archivo solo puede contener hasta 100 registros. Se procesaron los primeros 100.',
+            missingRequired: 'El campo {field} es obligatorio.',
+            duplicateInFile: 'Registro duplicado en el archivo.',
+            duplicateInSystem: 'Ya existe un registro con la misma información.',
+            invalidGroup: 'Selecciona un grupo válido.',
+            unableToValidate: 'No fue posible validar el registro en el servidor.',
+          },
+          notifications: {
+            invalidFile: 'Selecciona un archivo CSV con un máximo de 100 registros.',
+            parseError: 'No fue posible procesar el archivo. Verifica el formato.',
+            downloadError: 'No fue posible descargar el formato.',
+            noValidRecords: 'No hay registros válidos qué crear.',
+            createSuccess: 'Alumno creado correctamente.',
+            createError: 'No fue posible crear los alumnos. Intenta nuevamente.',
+            reportReady: 'El reporte se descargó correctamente.',
+            missingSchool: 'Selecciona una escuela antes de continuar.',
+          },
+          confirmations: {
+            mixedTitle: 'Registros con incidencias',
+            mixedMessage:
+              'Se encontraron {invalidCount} registros con incidencias. ¿Deseas continuar y crear únicamente los {validCount} registros válidos?',
+            confirm: 'Sí, continuar',
+            cancel: 'Revisar',
+          },
+          report: {
+            download: 'Descargar reporte',
+            fileName: 'reporte_carga_masiva.csv',
+          },
+          fileInfo: {
+            label: 'Archivo seleccionado',
+          },
+          helper: 'Recuerda completar todos los campos obligatorios marcados con *.',
+        },
       },
     },
     errors: {
@@ -570,6 +664,99 @@ export const translations = {
           placeholderDescription: 'Soon you will be able to review records, payments and communications here.',
           registerLabel: 'Registration',
           backToStudents: 'Back to students',
+        },
+        bulkUploadPage: {
+          breadcrumb: 'Bulk upload',
+          header: {
+            title: 'Student bulk upload',
+            description: 'Upload a CSV file to register multiple students at once.',
+          },
+          summary: {
+            total: 'Total',
+            valid: 'Ready',
+            invalid: 'With issues',
+          },
+          steps: {
+            title: 'Upload steps',
+            selectSchool: {
+              title: 'Select the school',
+              description: 'Choose the school to load the available groups.',
+              empty: 'No schools available',
+            },
+            downloadTemplate: {
+              title: 'Download the template',
+              description: 'Use the reference CSV file to keep the correct structure.',
+            },
+            uploadFile: {
+              title: 'Upload the CSV file',
+              description: 'Drag or select a file with up to 100 records.',
+            },
+          },
+          dropzone: {
+            title: 'Drag and drop a CSV file here',
+            description: 'or click to choose it from your computer.',
+            helper: 'Up to 100 records per upload.',
+          },
+          actions: {
+            downloadTemplate: 'Download template',
+            selectFile: 'Select file',
+            removeFile: 'Remove',
+            back: 'Back to students',
+            create: 'Create valid students',
+            validating: 'Validating...',
+          },
+          table: {
+            title: 'Preview of records',
+            subtitle: 'Edit the information before confirming the upload.',
+            empty: 'Select a CSV file to show a preview.',
+            rowNumber: 'Row',
+            groupPlaceholder: 'Choose a group',
+            status: 'Status',
+            errors: 'Issues',
+          },
+          logs: {
+            title: 'Detected issues',
+            hint: 'Click an item to focus the corresponding record.',
+            empty: 'No issues detected.',
+          },
+          statuses: {
+            pending: 'Pending',
+            valid: 'Ready',
+            invalid: 'With issues',
+          },
+          validation: {
+            limitExceeded: 'The file can only contain up to 100 records. The first 100 rows were processed.',
+            missingRequired: 'The field {field} is required.',
+            duplicateInFile: 'Duplicate record in the file.',
+            duplicateInSystem: 'A record with the same information already exists.',
+            invalidGroup: 'Select a valid group.',
+            unableToValidate: 'The record could not be validated on the server.',
+          },
+          notifications: {
+            invalidFile: 'Upload a CSV file with up to 100 records.',
+            parseError: 'The file could not be processed. Check the format.',
+            downloadError: 'The reference file could not be downloaded.',
+            noValidRecords: 'There are no valid records to create.',
+            createSuccess: 'Student created successfully.',
+            createError: 'The students could not be created. Please try again.',
+            reportReady: 'The report was downloaded successfully.',
+            missingSchool: 'Please select a school before continuing.',
+          },
+          confirmations: {
+            mixedTitle: 'Records with issues',
+            mixedMessage:
+              'There are {invalidCount} records with issues. Do you want to continue and create only the {validCount} valid records?',
+            confirm: 'Yes, continue',
+            cancel: 'Review',
+          },
+          report: {
+            download: 'Download report',
+            fileName: 'bulk_upload_report.csv',
+          },
+          fileInfo: {
+            label: 'Selected file',
+          },
+          helper: 'Make sure to fill in all the required fields marked with *.',
         },
       },
     },
