@@ -310,6 +310,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
   const validationTimerRef = useRef(null);
   const focusTimerRef = useRef(null);
   const rowRefs = useRef(new Map());
+  const handleFileRef = useRef(null);
 
   useEffect(() => {
     rowsRef.current = rows;
@@ -658,39 +659,6 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
     [scheduleValidation],
   );
 
-  const handleDrop = useCallback(
-    (event) => {
-      event.preventDefault();
-      setIsDragging(false);
-
-      const file = event.dataTransfer?.files?.[0];
-      if (file) {
-        handleFile(file);
-      }
-    },
-    [handleFile],
-  );
-
-  const handleDragOver = useCallback((event) => {
-    event.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((event) => {
-    event.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const handleFileInputChange = useCallback(
-    (event) => {
-      const file = event.target.files?.[0];
-      if (file) {
-        handleFile(file);
-      }
-    },
-    [handleFile],
-  );
-
   const handleFile = useCallback(
     (file) => {
       if (!file || (!file.name.endsWith('.csv') && file.type !== 'text/csv')) {
@@ -780,6 +748,37 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
     },
     [runValidation, selectedSchool, strings.notifications, strings.validation],
   );
+
+  useEffect(() => {
+    handleFileRef.current = handleFile;
+  }, [handleFile]);
+
+  const handleDrop = useCallback((event) => {
+    event.preventDefault();
+    setIsDragging(false);
+
+    const file = event.dataTransfer?.files?.[0];
+    if (file && handleFileRef.current) {
+      handleFileRef.current(file);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((event) => {
+    event.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((event) => {
+    event.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleFileInputChange = useCallback((event) => {
+    const file = event.target.files?.[0];
+    if (file && handleFileRef.current) {
+      handleFileRef.current(file);
+    }
+  }, []);
 
   const handleClearFile = useCallback(() => {
     setUploadedFileName('');

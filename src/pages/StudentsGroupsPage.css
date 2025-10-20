@@ -385,7 +385,7 @@
 }
 
 .students-table__icon-button:focus-visible {
-  outline: 3px solid rgba(37, 99, 235, 0.45);
+  /* outline: 3px solid rgba(37, 99, 235, 0.45); */
   outline-offset: 2px;
 }
 
