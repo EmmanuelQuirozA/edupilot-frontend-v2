@@ -244,10 +244,11 @@
 .bulk-upload__table-wrapper {
   border: 1px solid #e2e8f0;
   border-radius: 1.5rem;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: auto;
   background: #fff;
   position: relative;
+  width: 100%;
+  max-width: 100%;
 }
 
 .bulk-upload__table {
