@@ -80,12 +80,16 @@ const LoginPage = ({ language, onLanguageChange }) => {
             />
           </label>
           <div className="login-form__actions">
-            <button type="button" className="login-form__link">
+            <button type="button" className="btn btn-link p-0 text-decoration-none">
               {t.forgotPassword}
             </button>
           </div>
           {error ? <p className="login-form__error" role="alert">{error}</p> : null}
-          <button type="submit" className="login-form__submit" disabled={loading}>
+          <button
+            type="submit"
+            className="btn btn-primary rounded-pill fw-semibold w-100"
+            disabled={loading}
+          >
             {loading ? '...' : t.submit}
           </button>
         </form>

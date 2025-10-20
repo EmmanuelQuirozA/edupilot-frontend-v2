@@ -23,7 +23,11 @@ const Breadcrumbs = ({ items = [] }) => {
 
           return (
             <li key={key}>
-              <button type="button" onClick={item.onClick}>
+              <button
+                type="button"
+                className="btn btn-link p-0 text-decoration-none"
+                onClick={item.onClick}
+              >
                 {label}
               </button>
             </li>
