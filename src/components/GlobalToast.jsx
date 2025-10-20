@@ -12,7 +12,9 @@ const GlobalToast = ({ alert, onClose = () => {} }) => {
 
   const { type = 'info', message = '', closeLabel = 'Cerrar' } = alert;
   const variant = TOAST_VARIANTS[type] ?? TOAST_VARIANTS.info;
-  const closeButtonClassName = ['btn-close', variant.close].filter(Boolean).join(' ');
+  const closeButtonClassName = ['btn-close', 'me-2', 'm-auto', variant.close]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className="toast-container position-fixed top-0 end-0 p-3" style={{ zIndex: 1090 }}>
@@ -27,6 +29,7 @@ const GlobalToast = ({ alert, onClose = () => {} }) => {
           <button
             type="button"
             className={closeButtonClassName}
+            data-bs-dismiss="toast"
             aria-label={closeLabel}
             onClick={onClose}
           ></button>
