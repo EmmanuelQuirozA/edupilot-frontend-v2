@@ -244,15 +244,16 @@
 .bulk-upload__table-wrapper {
   border: 1px solid #e2e8f0;
   border-radius: 1.5rem;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: #fff;
   position: relative;
 }
 
 .bulk-upload__table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
-  min-width: 960px;
 }
 
 .bulk-upload__table thead {
@@ -266,6 +267,7 @@
   text-align: left;
   font-size: 0.9rem;
   border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
 }
 
 .bulk-upload__table th {
@@ -275,6 +277,7 @@
 .bulk-upload__table td input,
 .bulk-upload__table td select {
   width: 100%;
+  min-width: 12rem;
   border-radius: 0.75rem;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
@@ -306,21 +309,6 @@
 
 .bulk-upload__row.is-focused {
   box-shadow: inset 0 0 0 2px #1d4ed8;
-}
-
-.bulk-upload__row-errors td {
-  background: rgba(248, 250, 252, 0.85);
-  font-size: 0.85rem;
-  color: #b91c1c;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-}
-
-.bulk-upload__row-errors span {
-  display: inline-flex;
-  gap: 0.35rem;
-  align-items: center;
 }
 
 .bulk-upload__table-placeholder {
