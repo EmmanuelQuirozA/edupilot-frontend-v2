@@ -227,11 +227,9 @@
 
 .dashboard__main {
   padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
   position: relative;
   z-index: 20;
+  overflow: hidden;
 }
 
 .dashboard__header {

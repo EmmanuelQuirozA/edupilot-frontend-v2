@@ -1129,204 +1129,208 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
 
       <div className="bulk-upload__layout">
         <section className="bulk-upload__card bulk-upload__card--actions">
-          <h2>{strings.steps?.title ?? 'Pasos para la carga'}</h2>
-          <ol className="bulk-upload__steps">
-            <li>
-              <div>
-                <span>{strings.steps?.selectSchool?.title ?? 'Selecciona la escuela'}</span>
-                <p>{strings.steps?.selectSchool?.description ?? 'Elige la escuela para obtener los grupos disponibles.'}</p>
-              </div>
-              <select
-                className="bulk-upload__select"
-                value={selectedSchool}
-                onChange={handleSchoolChange}
-                disabled={isLoadingSchools || !schoolOptions.length}
-              >
-                {schoolOptions.length === 0 ? (
-                  <option value="">{strings.steps?.selectSchool?.empty ?? 'No hay escuelas disponibles'}</option>
-                ) : null}
-                {schoolOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </li>
-            <li>
-              <div>
-                <span>{strings.steps?.downloadTemplate?.title ?? 'Descarga el formato'}</span>
-                <p>{strings.steps?.downloadTemplate?.description ?? 'Utiliza el archivo CSV de referencia para evitar errores.'}</p>
-              </div>
-              <button type="button" className="bulk-upload__download" onClick={handleDownloadTemplate}>
-                {strings.actions?.downloadTemplate ?? 'Descargar aquí'}
-              </button>
-            </li>
-            <li>
-              <div>
-                <span>{strings.steps?.uploadFile?.title ?? 'Sube el archivo CSV'}</span>
-                <p>{strings.steps?.uploadFile?.description ?? 'Arrastra o selecciona un archivo con máximo 100 registros.'}</p>
-              </div>
-            </li>
-          </ol>
+          <div className='card-body'>
+            <h2>{strings.steps?.title ?? 'Pasos para la carga'}</h2>
+            <ol className="bulk-upload__steps">
+              <li>
+                <div>
+                  <span>{strings.steps?.selectSchool?.title ?? 'Selecciona la escuela'}</span>
+                  <p>{strings.steps?.selectSchool?.description ?? 'Elige la escuela para obtener los grupos disponibles.'}</p>
+                </div>
+                <select
+                  className="bulk-upload__select"
+                  value={selectedSchool}
+                  onChange={handleSchoolChange}
+                  disabled={isLoadingSchools || !schoolOptions.length}
+                >
+                  {schoolOptions.length === 0 ? (
+                    <option value="">{strings.steps?.selectSchool?.empty ?? 'No hay escuelas disponibles'}</option>
+                  ) : null}
+                  {schoolOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </li>
+              <li>
+                <div>
+                  <span>{strings.steps?.downloadTemplate?.title ?? 'Descarga el formato'}</span>
+                  <p>{strings.steps?.downloadTemplate?.description ?? 'Utiliza el archivo CSV de referencia para evitar errores.'}</p>
+                </div>
+                <button type="button" className="bulk-upload__download" onClick={handleDownloadTemplate}>
+                  {strings.actions?.downloadTemplate ?? 'Descargar aquí'}
+                </button>
+              </li>
+              <li>
+                <div>
+                  <span>{strings.steps?.uploadFile?.title ?? 'Sube el archivo CSV'}</span>
+                  <p>{strings.steps?.uploadFile?.description ?? 'Arrastra o selecciona un archivo con máximo 100 registros.'}</p>
+                </div>
+              </li>
+            </ol>
 
-          <div
-            className={`bulk-upload__dropzone${isDragging ? ' is-dragging' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <div>
-              <strong>{strings.dropzone?.title ?? 'Arrastra y suelta un archivo CSV aquí'}</strong>
-              <p>{strings.dropzone?.description ?? 'o haz clic para seleccionarlo desde tu computadora.'}</p>
-              <span>{strings.dropzone?.helper ?? 'Acepta máximo 100 registros por carga.'}</span>
+            <div
+              className={`bulk-upload__dropzone${isDragging ? ' is-dragging' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div>
+                <strong>{strings.dropzone?.title ?? 'Arrastra y suelta un archivo CSV aquí'}</strong>
+                <p>{strings.dropzone?.description ?? 'o haz clic para seleccionarlo desde tu computadora.'}</p>
+                <span>{strings.dropzone?.helper ?? 'Acepta máximo 100 registros por carga.'}</span>
+              </div>
+              <label className="bulk-upload__file-button">
+                <input type="file" accept=".csv,text/csv" onChange={handleFileInputChange} />
+                {strings.actions?.selectFile ?? 'Seleccionar archivo'}
+              </label>
             </div>
-            <label className="bulk-upload__file-button">
-              <input type="file" accept=".csv,text/csv" onChange={handleFileInputChange} />
-              {strings.actions?.selectFile ?? 'Seleccionar archivo'}
-            </label>
+
+            {uploadedFileName ? (
+              <div className="bulk-upload__file-info">
+                <span>{strings.fileInfo?.label ?? 'Archivo seleccionado'}:</span>
+                <strong>{uploadedFileName}</strong>
+                <button type="button" className="is-text" onClick={handleClearFile}>
+                  {strings.actions?.removeFile ?? 'Eliminar'}
+                </button>
+              </div>
+            ) : null}
+
+            <p className="bulk-upload__helper">{strings.helper ?? 'Recuerda completar todos los campos obligatorios marcados con *.'}</p>
           </div>
-
-          {uploadedFileName ? (
-            <div className="bulk-upload__file-info">
-              <span>{strings.fileInfo?.label ?? 'Archivo seleccionado'}:</span>
-              <strong>{uploadedFileName}</strong>
-              <button type="button" className="is-text" onClick={handleClearFile}>
-                {strings.actions?.removeFile ?? 'Eliminar'}
-              </button>
-            </div>
-          ) : null}
-
-          <p className="bulk-upload__helper">{strings.helper ?? 'Recuerda completar todos los campos obligatorios marcados con *.'}</p>
         </section>
 
         <section className="bulk-upload__card bulk-upload__card--preview">
-          <header className="bulk-upload__preview-header">
-            <div>
-              <h2>{strings.table?.title ?? 'Previsualización de registros'}</h2>
-              <p>{strings.table?.subtitle ?? 'Edita la información antes de confirmar la carga.'}</p>
-            </div>
-            <div className="bulk-upload__preview-actions">
-              <button
-                type="button"
-                className="is-text"
-                onClick={handleDownloadReport}
-                disabled={!rows.length}
-              >
-                {strings.report?.download ?? 'Descargar reporte'}
-              </button>
-              <button type="button" className="is-secondary" onClick={onNavigateBack}>
-                {strings.actions?.back ?? 'Volver a alumnos'}
-              </button>
-              <button type="button" onClick={handleCreateStudents} disabled={!rows.length}>
-                {isValidating ? strings.actions?.validating ?? 'Validando...' : strings.actions?.create ?? 'Crear alumnos válidos'}
-              </button>
-            </div>
-          </header>
+          <div className='card-body'>
+            <header className="bulk-upload__preview-header">
+              <div>
+                <h2>{strings.table?.title ?? 'Previsualización de registros'}</h2>
+                <p>{strings.table?.subtitle ?? 'Edita la información antes de confirmar la carga.'}</p>
+              </div>
+              <div className="bulk-upload__preview-actions">
+                <button
+                  type="button"
+                  className="is-text"
+                  onClick={handleDownloadReport}
+                  disabled={!rows.length}
+                >
+                  {strings.report?.download ?? 'Descargar reporte'}
+                </button>
+                <button type="button" className="is-secondary" onClick={onNavigateBack}>
+                  {strings.actions?.back ?? 'Volver a alumnos'}
+                </button>
+                <button type="button" onClick={handleCreateStudents} disabled={!rows.length}>
+                  {isValidating ? strings.actions?.validating ?? 'Validando...' : strings.actions?.create ?? 'Crear alumnos válidos'}
+                </button>
+              </div>
+            </header>
 
-          <div className="bulk-upload__table-wrapper">
-            {rows.length ? (
-              <table className="bulk-upload__table">
-                <thead>
-                  <tr>
-                    <th>{strings.table?.rowNumber ?? 'Fila'}</th>
-                    {columns.map((column) => (
-                      <th key={column}>
-                        {getFieldLabel(column)}{REQUIRED_FIELDS.includes(column) ? ' *' : ''}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <Fragment key={row.id}>
-                      <tr
-                        ref={(element) => {
-                          if (element) {
-                            rowRefs.current.set(row.id, element);
-                          } else {
-                            rowRefs.current.delete(row.id);
-                          }
-                        }}
-                        className={`bulk-upload__row bulk-upload__row--${row.status}${focusedRowId === row.id ? ' is-focused' : ''}`}
-                      >
-                        <td data-label={strings.table?.rowNumber ?? 'Fila'}>{row.displayRowNumber ?? ''}</td>
-                        {columns.map((column) => {
-                          if (column === 'birth_date') {
+            <div className="bulk-upload__table-wrapper">
+              {rows.length ? (
+                <table className="bulk-upload__table">
+                  <thead>
+                    <tr>
+                      <th>{strings.table?.rowNumber ?? 'Fila'}</th>
+                      {columns.map((column) => (
+                        <th key={column}>
+                          {getFieldLabel(column)}{REQUIRED_FIELDS.includes(column) ? ' *' : ''}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <Fragment key={row.id}>
+                        <tr
+                          ref={(element) => {
+                            if (element) {
+                              rowRefs.current.set(row.id, element);
+                            } else {
+                              rowRefs.current.delete(row.id);
+                            }
+                          }}
+                          className={`bulk-upload__row bulk-upload__row--${row.status}${focusedRowId === row.id ? ' is-focused' : ''}`}
+                        >
+                          <td data-label={strings.table?.rowNumber ?? 'Fila'}>{row.displayRowNumber ?? ''}</td>
+                          {columns.map((column) => {
+                            if (column === 'birth_date') {
+                              return (
+                                <td key={column} data-label={getFieldLabel(column)}>
+                                  <input
+                                    type="date"
+                                    value={row.values[column] ?? ''}
+                                    onChange={(event) => handleRowChange(row.id, column, event.target.value)}
+                                  />
+                                </td>
+                              );
+                            }
+
+                            if (column === 'group_id') {
+                              return (
+                                <td key={column} data-label={getFieldLabel(column)}>
+                                  <select
+                                    value={row.values[column] ?? ''}
+                                    onChange={(event) => handleRowChange(row.id, column, event.target.value)}
+                                    disabled={isLoadingGroups || !groupOptions.length}
+                                  >
+                                    <option value="">
+                                      {strings.table?.groupPlaceholder ?? 'Selecciona un grupo'}
+                                    </option>
+                                    {groupOptions.map((option) => (
+                                      <option key={option.value} value={option.value}>
+                                        {option.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+                              );
+                            }
+
                             return (
                               <td key={column} data-label={getFieldLabel(column)}>
                                 <input
-                                  type="date"
+                                  type="text"
                                   value={row.values[column] ?? ''}
                                   onChange={(event) => handleRowChange(row.id, column, event.target.value)}
                                 />
                               </td>
                             );
-                          }
-
-                          if (column === 'group_id') {
-                            return (
-                              <td key={column} data-label={getFieldLabel(column)}>
-                                <select
-                                  value={row.values[column] ?? ''}
-                                  onChange={(event) => handleRowChange(row.id, column, event.target.value)}
-                                  disabled={isLoadingGroups || !groupOptions.length}
-                                >
-                                  <option value="">
-                                    {strings.table?.groupPlaceholder ?? 'Selecciona un grupo'}
-                                  </option>
-                                  {groupOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                      {option.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </td>
-                            );
-                          }
-
-                          return (
-                            <td key={column} data-label={getFieldLabel(column)}>
-                              <input
-                                type="text"
-                                value={row.values[column] ?? ''}
-                                onChange={(event) => handleRowChange(row.id, column, event.target.value)}
-                              />
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="bulk-upload__table-placeholder">
-                <p>{strings.table?.empty ?? 'Selecciona un archivo CSV para mostrar una previsualización.'}</p>
-              </div>
-            )}
-          </div>
-
-          <aside className="bulk-upload__logs">
-            <div className="bulk-upload__logs-header">
-              <h3>{strings.logs?.title ?? 'Incidencias detectadas'}</h3>
-              <span>{logEntries.length}</span>
+                          })}
+                        </tr>
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="bulk-upload__table-placeholder">
+                  <p>{strings.table?.empty ?? 'Selecciona un archivo CSV para mostrar una previsualización.'}</p>
+                </div>
+              )}
             </div>
-            <p>{strings.logs?.hint ?? 'Haz clic en un elemento para ir al registro correspondiente.'}</p>
-            {logEntries.length ? (
-              <ul>
-                {logEntries.map((entry) => (
-                  <li key={entry.id}>
-                    <button type="button" onClick={() => handleFocusRow(entry.id)}>
-                      <strong>{entry.label}</strong>
-                      <span>{entry.messages[0]}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="bulk-upload__logs-empty">{strings.logs?.empty ?? 'No se detectaron incidencias.'}</p>
-            )}
-          </aside>
+
+            <aside className="bulk-upload__logs">
+              <div className="bulk-upload__logs-header">
+                <h3>{strings.logs?.title ?? 'Incidencias detectadas'}</h3>
+                <span>{logEntries.length}</span>
+              </div>
+              <p>{strings.logs?.hint ?? 'Haz clic en un elemento para ir al registro correspondiente.'}</p>
+              {logEntries.length ? (
+                <ul>
+                  {logEntries.map((entry) => (
+                    <li key={entry.id}>
+                      <button type="button" onClick={() => handleFocusRow(entry.id)}>
+                        <strong>{entry.label}</strong>
+                        <span>{entry.messages[0]}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="bulk-upload__logs-empty">{strings.logs?.empty ?? 'No se detectaron incidencias.'}</p>
+              )}
+            </aside>
+          </div>
         </section>
       </div>
 
