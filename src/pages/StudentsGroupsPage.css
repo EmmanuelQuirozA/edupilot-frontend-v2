@@ -33,113 +33,17 @@
   gap: 1rem;
 }
 
-.students-groups__add {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1.25rem;
-  border-radius: 999px;
-  border: none;
-  background: linear-gradient(135deg, #22d3ee, #2563eb);
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  box-shadow: 0 16px 45px -28px rgba(37, 99, 235, 0.85);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.students-groups__add span {
-  display: flex;
-  place-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  font-size: 1.25rem;
-}
-
-.students-groups__add:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 20px 50px -30px rgba(37, 99, 235, 0.9);
-}
-
-.students-groups__add:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: 0 16px 45px -28px rgba(37, 99, 235, 0.85);
-}
-
 .students-groups__tabs {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  background: #e0e7ff;
-  padding: 0.4rem;
-  border-radius: 999px;
-  width: fit-content;
-}
-
-.students-groups__tabs button {
-  border: none;
-  background: transparent;
-  padding: 0.45rem 1.35rem;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #475569;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.students-groups__tabs button.is-active {
-  background: #fff;
-  color: #1e3a8a;
-  box-shadow: 0 12px 24px -20px rgba(15, 23, 42, 0.35);
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .students-groups__tab-actions {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-}
-
-.students-groups__tab-action {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  border-radius: 0.9rem;
-  padding: 0.55rem 1.2rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  background: #1d4ed8;
-  color: #fff;
-  box-shadow: 0 18px 40px -30px rgba(29, 78, 216, 0.9);
-}
-
-.students-groups__tab-action svg {
-  width: 18px;
-  height: 18px;
-}
-
-.students-groups__tab-action:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 20px 45px -32px rgba(29, 78, 216, 0.95);
-}
-
-.students-groups__tab-action--secondary {
-  background: #e2e8f0;
-  color: #334155;
-  box-shadow: none;
-}
-
-.students-groups__tab-action--secondary:hover {
-  background: #cbd5f5;
-  box-shadow: none;
 }
 
 .students-view {
@@ -197,46 +101,6 @@
   color: #94a3b8;
 }
 
-.students-view__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.students-view__filters {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  border-radius: 0.9rem;
-  padding: 0.55rem 1.2rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-
-.students-view__filters {
-  background: #1d4ed8;
-  color: #fff;
-  box-shadow: 0 18px 40px -30px rgba(29, 78, 216, 0.9);
-}
-
-.students-view__filters:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 20px 45px -32px rgba(29, 78, 216, 0.95);
-}
-
-.students-view__filters svg {
-  width: 18px;
-  height: 18px;
-}
-
-.students-view__filters-count {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0 0.55rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-}
 
 .students-table__wrapper {
   position: relative;
@@ -301,23 +165,6 @@
   gap: 0.15rem;
 }
 
-.students-table__student-info button {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: #0f172a;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.students-table__student-info button:hover,
-.students-table__student-info button:focus {
-  color: #1d4ed8;
-}
-
 .students-table__student-meta {
   font-size: 0.8rem;
   color: #64748b;
@@ -360,40 +207,7 @@
   position: relative;
 }
 
-.students-table__actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-}
 
-.students-table__icon-button {
-  width: 30px;
-  height: 30px;
-  border-radius: 0.75rem;
-  border: none;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: #fff;
-  place-items: center;
-  cursor: pointer;
-  box-shadow: 0 14px 35px -25px rgba(37, 99, 235, 0.9);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.students-table__icon-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 18px 40px -28px rgba(37, 99, 235, 0.95);
-}
-
-.students-table__icon-button:focus-visible {
-  /* outline: 3px solid rgba(37, 99, 235, 0.45); */
-  outline-offset: 2px;
-}
-
-.students-table__icon-button svg {
-  width: 18px;
-  height: 18px;
-  fill: currentColor;
-}
 
 .students-table__switch {
   position: relative;
@@ -463,27 +277,10 @@
   z-index: 40;
 }
 
-.students-table__menu > button {
+.students-table__menu > .btn {
   width: 38px;
   height: 38px;
-  border-radius: 50%;
-  border: none;
-  background: #e2e8f0;
-  color: #334155;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.students-table__menu > button:hover,
-.students-table__menu.is-open > button {
-  background: #cbd5f5;
-}
-
-.students-table__menu svg {
-  width: 18px;
-  height: 18px;
+  padding: 0;
 }
 
 .students-table__menu ul {
@@ -504,23 +301,7 @@
   z-index: 50;
 }
 
-.students-table__menu li button {
-  width: 100%;
-  border: none;
-  background: none;
-  text-align: left;
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.65rem;
-  font-size: 0.88rem;
-  color: #0f172a;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
 
-.students-table__menu li button:hover,
-.students-table__menu li button:focus {
-  background: #f1f5f9;
-}
 
 .students-table__empty {
   text-align: center;
@@ -561,24 +342,10 @@
   gap: 0.75rem;
 }
 
-.students-table__pager button {
+.students-table__pager .btn {
   width: 36px;
   height: 36px;
-  border-radius: 0.75rem;
-  border: none;
-  background: #e2e8f0;
-  color: #334155;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.students-table__pager button:hover:not(:disabled) {
-  background: #cbd5f5;
-}
-
-.students-table__pager button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  padding: 0;
 }
 
 .students-groups__placeholder {
@@ -643,18 +410,6 @@
   font-size: 0.9rem;
 }
 
-.students-filters__header button {
-  border: none;
-  background: rgba(226, 232, 240, 0.65);
-  width: 36px;
-  height: 36px;
-  border-radius: 0.75rem;
-  font-size: 1.25rem;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-}
-
 .students-filters__form {
   display: grid;
   gap: 1rem;
@@ -684,24 +439,6 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-}
-
-.students-filters__actions button {
-  border: none;
-  border-radius: 0.9rem;
-  padding: 0.6rem 1.25rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.students-filters__actions button.is-text {
-  background: transparent;
-  color: #1d4ed8;
-}
-
-.students-filters__actions button:not(.is-text) {
-  background: #1d4ed8;
-  color: #fff;
 }
 
 .students-modal {
@@ -750,18 +487,6 @@
   font-size: 0.95rem;
 }
 
-.students-modal__header button {
-  border: none;
-  background: rgba(226, 232, 240, 0.65);
-  width: 36px;
-  height: 36px;
-  border-radius: 0.9rem;
-  font-size: 1.35rem;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-}
-
 .students-form section + section {
   margin-top: 1.5rem;
 }
@@ -807,24 +532,6 @@
   gap: 1rem;
 }
 
-.students-form__actions button {
-  border: none;
-  border-radius: 0.9rem;
-  padding: 0.65rem 1.5rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.students-form__actions button.is-secondary {
-  background: #e2e8f0;
-  color: #334155;
-}
-
-.students-form__actions button:not(.is-secondary) {
-  background: #1d4ed8;
-  color: #fff;
-}
-
 @media (max-width: 860px) {
   .students-view {
     padding: 1.5rem;
@@ -852,8 +559,7 @@
     justify-content: space-between;
   }
 
-  .students-groups__tab-actions .students-groups__tab-action,
-  .students-groups__tab-actions .students-groups__add {
+  .students-groups__tab-actions .btn {
     flex: 1;
     display: flex;
     justify-content: center;
@@ -869,7 +575,7 @@
     justify-content: space-between;
   }
 
-  .students-view__filters {
+  .students-view__actions .btn {
     flex: 1;
     justify-content: center;
   }
@@ -916,10 +622,6 @@
     justify-content: flex-start;
   }
 
-  .students-table__icon-button {
-    flex: 0 0 auto;
-  }
-
   .students-table__switch {
     flex: 1 1 160px;
     justify-content: space-between;
@@ -929,14 +631,19 @@
     width: 100%;
   }
 
-  .students-table__menu > button {
+  .students-table__menu > .btn {
     width: 100%;
-    border-radius: 0.75rem;
   }
 
   .students-table__menu ul {
     left: 0;
     right: 0;
   }
+}
+
+.students-table__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 

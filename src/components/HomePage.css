@@ -54,21 +54,6 @@
 
 .sidebar__close {
   align-self: flex-end;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-size: 1.75rem;
-  line-height: 1;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-
-.sidebar__close:hover {
-  background: rgba(255, 255, 255, 0.16);
 }
 
 .sidebar__brand {
@@ -175,19 +160,6 @@
 
 .sidebar__logout {
   margin-top: auto;
-  padding: 0.85rem 1.5rem;
-  border-radius: 0.75rem;
-  border: none;
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-
-.sidebar__logout:hover {
-  background: rgba(255, 255, 255, 0.24);
-  transform: translateY(-2px);
 }
 
 .dashboard__menu-toggle {
@@ -197,17 +169,12 @@
   width: 48px;
   height: 48px;
   border-radius: 1rem;
-  border: none;
-  background: #10194c;
-  color: #fff;
   display: none;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 0.35rem;
   z-index: 50;
-  box-shadow: 0 12px 30px -20px rgba(15, 23, 42, 0.65);
-  cursor: pointer;
 }
 
 .dashboard__menu-toggle span {
@@ -292,14 +259,10 @@
 }
 
 .dashboard__notification {
-  border: none;
-  background: #fff;
   width: 44px;
   height: 44px;
   border-radius: 0.9rem;
   position: relative;
-  box-shadow: 0 12px 30px -20px rgba(15, 23, 42, 0.35);
-  cursor: pointer;
   display: grid;
   place-items: center;
 }
@@ -307,7 +270,6 @@
 .dashboard__notification svg {
   width: 22px;
   height: 22px;
-  color: #1d4ed8;
 }
 
 .dashboard__notification span {
@@ -512,14 +474,8 @@
   color: #64748b;
 }
 
-.students-card__header button {
-  border: none;
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
+.students-card__header .btn {
   font-weight: 600;
-  padding: 0.6rem 1.1rem;
-  border-radius: 0.85rem;
-  cursor: pointer;
 }
 
 .students-card__list {
@@ -597,19 +553,8 @@
   gap: 0.75rem;
 }
 
-.payments-card__period button {
-  padding: 0.5rem 1rem;
-  border-radius: 0.85rem;
-  border: none;
-  background: rgba(148, 163, 184, 0.2);
-  color: #475569;
+.payments-card__period .btn {
   font-weight: 600;
-  cursor: pointer;
-}
-
-.payments-card__period button.is-active {
-  background: rgba(59, 130, 246, 0.18);
-  color: #1d4ed8;
 }
 
 .payments-card__content {

@@ -17,45 +17,6 @@
   color: #475569;
 }
 
-.students-bulk-upload button {
-  border: none;
-  border-radius: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.students-bulk-upload button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-  transform: none;
-  box-shadow: none;
-}
-
-.students-bulk-upload button:not(.is-text):not(.is-secondary) {
-  background: #1d4ed8;
-  color: #fff;
-  padding: 0.75rem 1.5rem;
-  box-shadow: 0 12px 20px -12px rgba(29, 78, 216, 0.75);
-}
-
-.students-bulk-upload button:not(.is-text):not(.is-secondary):hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 24px -14px rgba(29, 78, 216, 0.75);
-}
-
-.students-bulk-upload button.is-text {
-  background: transparent;
-  color: #1d4ed8;
-  padding: 0.35rem 0.65rem;
-}
-
-.students-bulk-upload button.is-secondary {
-  background: #e2e8f0;
-  color: #334155;
-  padding: 0.75rem 1.35rem;
-}
-
 .bulk-upload__header {
   display: flex;
   justify-content: space-between;
@@ -358,7 +319,7 @@
   gap: 0.65rem;
 }
 
-.bulk-upload__logs li button {
+.bulk-upload__logs li .btn {
   width: 100%;
   background: rgba(226, 232, 240, 0.5);
   border-radius: 1rem;
@@ -370,11 +331,11 @@
   color: #0f172a;
 }
 
-.bulk-upload__logs li button:hover {
+.bulk-upload__logs li .btn:hover {
   background: rgba(191, 219, 254, 0.6);
 }
 
-.bulk-upload__logs li button span {
+.bulk-upload__logs li .btn span {
   color: #b91c1c;
   font-size: 0.85rem;
 }
@@ -457,7 +418,7 @@
     width: 100%;
   }
 
-  .bulk-upload__preview-actions button {
+  .bulk-upload__preview-actions .btn {
     width: 100%;
   }
 
