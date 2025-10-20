@@ -69,7 +69,7 @@ const FIELD_TRANSLATION_MAP = {
   balance: 'balance',
 };
 
-const VALIDATION_DELAY_MS = 1200;
+const VALIDATION_DELAY_MS = 30000;
 
 const escapeCsvValue = (value) => {
   if (value == null) {
@@ -310,8 +310,6 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
   const validationTimerRef = useRef(null);
   const focusTimerRef = useRef(null);
   const rowRefs = useRef(new Map());
-  const duplicateValidationRef = useRef(new Map());
-  const duplicateRequestIdRef = useRef(new Map());
 
   useEffect(() => {
     rowsRef.current = rows;
@@ -330,28 +328,15 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
       if (focusTimerRef.current) {
         clearTimeout(focusTimerRef.current);
       }
-      duplicateValidationRef.current.clear();
-      duplicateRequestIdRef.current.clear();
     },
     [clearValidationTimer],
   );
 
   const getFieldLabel = useCallback(
     (field) => {
-      const tableHeaders = strings.table?.headers ?? {};
       const translationKey = FIELD_TRANSLATION_MAP[field];
-      if (translationKey) {
-        if (tableHeaders[translationKey]) {
-          return tableHeaders[translationKey];
-        }
-
-        if (strings.form?.fields?.[translationKey]) {
-          return strings.form.fields[translationKey];
-        }
-      }
-
-      if (tableHeaders[field]) {
-        return tableHeaders[field];
+      if (translationKey && strings.form?.fields?.[translationKey]) {
+        return strings.form.fields[translationKey];
       }
 
       if (strings.table?.[field]) {
@@ -380,122 +365,6 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
       return strings.statuses?.pending ?? 'Pendiente';
     },
     [strings.statuses],
-  );
-
-  const duplicateMessages = useMemo(
-    () => ({
-      register_id: strings.validation?.duplicateRegisterId ?? 'La matrícula ya está registrada.',
-      payment_reference:
-        strings.validation?.duplicatePaymentReference ?? 'La referencia de pago ya está registrada.',
-      username: strings.validation?.duplicateUsername ?? 'El usuario ya está registrado.',
-    }),
-    [
-      strings.validation?.duplicatePaymentReference,
-      strings.validation?.duplicateRegisterId,
-      strings.validation?.duplicateUsername,
-    ],
-  );
-
-  const getDuplicateMessage = useCallback(
-    (field) => duplicateMessages[field] ?? strings.validation?.duplicateInSystem ?? 'Registro duplicado.',
-    [duplicateMessages, strings.validation?.duplicateInSystem],
-  );
-
-  const updateRowWithDuplicateResult = useCallback(
-    (rowId, result) => {
-      setRows((previousRows) => {
-        let didUpdate = false;
-        const mapped = previousRows.map((row) => {
-          if (row.id !== rowId) {
-            return row;
-          }
-
-          didUpdate = true;
-          const duplicateMessagesList = DUPLICATE_KEY_FIELDS.map((field) => getDuplicateMessage(field));
-          const filteredErrors = row.errors.filter((error) => !duplicateMessagesList.includes(error));
-          const nextErrors = [...filteredErrors];
-
-          let hasDuplicate = false;
-          DUPLICATE_KEY_FIELDS.forEach((field) => {
-            if (Number(result?.[field]) === 1) {
-              hasDuplicate = true;
-              const message = getDuplicateMessage(field);
-              if (message && !nextErrors.includes(message)) {
-                nextErrors.push(message);
-              }
-            }
-          });
-
-          const nextStatus = hasDuplicate || filteredErrors.length > 0 ? 'invalid' : 'pending';
-
-          return {
-            ...row,
-            errors: nextErrors,
-            status: nextStatus,
-          };
-        });
-
-        if (didUpdate) {
-          rowsRef.current = mapped;
-        }
-
-        return mapped;
-      });
-    },
-    [getDuplicateMessage],
-  );
-
-  const validateDuplicateFields = useCallback(
-    async (rowId, values) => {
-      const params = new URLSearchParams({
-        register_id: values.register_id ?? '',
-        payment_reference: values.payment_reference ?? '',
-        username: values.username ?? '',
-      });
-
-      const hasAnyValue = Array.from(params.values()).some((value) => value);
-
-      if (!hasAnyValue) {
-        duplicateValidationRef.current.delete(rowId);
-        duplicateRequestIdRef.current.delete(rowId);
-        updateRowWithDuplicateResult(rowId, {});
-        return;
-      }
-
-      duplicateValidationRef.current.delete(rowId);
-      updateRowWithDuplicateResult(rowId, {});
-
-      const requestId = Date.now();
-      duplicateRequestIdRef.current.set(rowId, requestId);
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/students/validate-exist?${params.toString()}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Validation request failed');
-        }
-
-        const payload = await response.json();
-        if (duplicateRequestIdRef.current.get(rowId) !== requestId) {
-          return;
-        }
-
-        const resultArray = Array.isArray(payload) ? payload : [];
-        const result = resultArray[0] ?? {};
-        duplicateValidationRef.current.set(rowId, result);
-        duplicateRequestIdRef.current.delete(rowId);
-        updateRowWithDuplicateResult(rowId, result);
-      } catch (error) {
-        console.error('Validation error', error);
-        duplicateRequestIdRef.current.delete(rowId);
-      }
-    },
-    [token, updateRowWithDuplicateResult],
   );
 
   const handleSchoolChange = useCallback(
@@ -678,16 +547,6 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
           preliminaryRows[index].duplicateKey = duplicateKey;
         } else {
           preliminaryRows[index].duplicateKey = null;
-          duplicateValidationRef.current.delete(row.id);
-        }
-
-        const cachedDuplicateResult = duplicateValidationRef.current.get(row.id);
-        if (cachedDuplicateResult) {
-          DUPLICATE_KEY_FIELDS.forEach((field) => {
-            if (Number(cachedDuplicateResult[field]) === 1) {
-              preliminaryRows[index].errors.push(getDuplicateMessage(field));
-            }
-          });
         }
       });
 
@@ -705,8 +564,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
 
       const rowsForServer = preliminaryRows
         .map((row, index) => ({ row, index }))
-        .filter(({ row }) => !row.errors.length && row.duplicateKey)
-        .filter(({ row }) => !duplicateValidationRef.current.has(row.id));
+        .filter(({ row }) => !row.errors.length && row.duplicateKey);
 
       if (rowsForServer.length > 0) {
         const requests = rowsForServer.map(async ({ row, index }) => {
@@ -729,15 +587,14 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
             }
 
             const payload = await response.json();
-            const resultArray = Array.isArray(payload) ? payload : [];
-            const result = resultArray[0] ?? {};
-            duplicateValidationRef.current.set(row.id, result);
+            const success = payload.success !== false;
 
-            DUPLICATE_KEY_FIELDS.forEach((field) => {
-              if (Number(result[field]) === 1) {
-                preliminaryRows[index].errors.push(getDuplicateMessage(field));
-              }
-            });
+            if (!success) {
+              const message = payload.message ?? strings.validation?.duplicateInSystem ?? 'Registro duplicado.';
+              preliminaryRows[index].errors.push(message);
+            } else if (payload.message) {
+              preliminaryRows[index].serverMessage = payload.message;
+            }
           } catch (error) {
             console.error('Validation error', error);
             preliminaryRows[index].errors.push(
@@ -764,7 +621,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
       setRows(finalRows);
       setIsValidating(false);
     },
-    [getDuplicateMessage, getFieldLabel, groupOptions, strings.validation, token],
+    [getFieldLabel, groupOptions, strings.validation, token],
   );
 
   const scheduleValidation = useCallback(() => {
@@ -796,16 +653,9 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
         return mapped;
       });
 
-      if (DUPLICATE_KEY_FIELDS.includes(field)) {
-        const updatedRow = rowsRef.current.find((row) => row.id === rowId);
-        if (updatedRow) {
-          validateDuplicateFields(rowId, updatedRow.values);
-        }
-      }
-
       scheduleValidation();
     },
-    [scheduleValidation, validateDuplicateFields],
+    [scheduleValidation],
   );
 
   const handleDrop = useCallback(
@@ -935,8 +785,6 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
     setUploadedFileName('');
     setRows([]);
     rowsRef.current = [];
-    duplicateValidationRef.current.clear();
-    duplicateRequestIdRef.current.clear();
     clearValidationTimer();
   }, [clearValidationTimer]);
 
@@ -1277,6 +1125,15 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
                           );
                         })}
                       </tr>
+                      {row.errors.length ? (
+                        <tr className="bulk-upload__row-errors">
+                          <td colSpan={columns.length + 1}>
+                            {row.errors.map((error) => (
+                              <span key={error}>{error}</span>
+                            ))}
+                          </td>
+                        </tr>
+                      ) : null}
                     </Fragment>
                   ))}
                 </tbody>
