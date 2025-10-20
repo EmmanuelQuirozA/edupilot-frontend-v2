@@ -308,6 +308,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
   const [focusedRowId, setFocusedRowId] = useState(null);
 
   const rowsRef = useRef([]);
+  const handleFileRef = useRef(null);
   const validationTimerRef = useRef(null);
   const focusTimerRef = useRef(null);
   const rowRefs = useRef(new Map());
@@ -823,39 +824,6 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
       scheduleValidation();
     },
     [scheduleDuplicateValidation, scheduleValidation],
-  );
-
-  const handleDrop = useCallback(
-    (event) => {
-      event.preventDefault();
-      setIsDragging(false);
-
-      const file = event.dataTransfer?.files?.[0];
-      if (file) {
-        handleFile(file);
-      }
-    },
-    [handleFile],
-  );
-
-  const handleDragOver = useCallback((event) => {
-    event.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((event) => {
-    event.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const handleFileInputChange = useCallback(
-    (event) => {
-      const file = event.target.files?.[0];
-      if (file) {
-        handleFile(file);
-      }
-    },
-    [handleFile],
   );
 
   const handleFile = useCallback(
