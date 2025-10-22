@@ -274,6 +274,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [groupForm, setGroupForm] = useState(createInitialGroupForm);
   const [editingGroupId, setEditingGroupId] = useState(null);
+  const [groupModalMode, setGroupModalMode] = useState('edit');
   const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
   const [groupFormFeedback, setGroupFormFeedback] = useState('');
   const [pendingStatusGroupId, setPendingStatusGroupId] = useState(null);
@@ -1022,6 +1023,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       return;
     }
 
+    setGroupModalMode('edit');
     setEditingGroupId(groupId);
     setGroupForm({
       scholar_level_id:
@@ -1042,6 +1044,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     setEditingGroupId(null);
     setGroupForm(createInitialGroupForm());
     setGroupFormFeedback('');
+    setGroupModalMode('edit');
   };
 
   const handleGroupFormChange = (event) => {
@@ -1051,7 +1054,9 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
   const handleGroupSubmit = async (event) => {
     event.preventDefault();
-    if (!editingGroupId) {
+
+    const isEditGroup = groupModalMode === 'edit';
+    if (isEditGroup && !editingGroupId) {
       return;
     }
 
@@ -1078,38 +1083,59 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     );
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/groups/update/${encodeURIComponent(editingGroupId)}?lang=en`,
-        {
-          method: 'PUT',
+      let response;
+      if (isEditGroup) {
+        response = await fetch(
+          `${API_BASE_URL}/groups/update/${encodeURIComponent(editingGroupId)}?lang=${language ?? 'es'}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(sanitizedPayload),
+          },
+        );
+      } else {
+        response = await fetch(`${API_BASE_URL}/groups/create?lang=${language ?? 'es'}`, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify(sanitizedPayload),
-        },
-      );
+        });
+      }
 
       const payload = await response.json();
 
       if (!response.ok || payload?.success === false) {
         const feedbackMessage =
-          payload?.message || strings.actions.groupEditError || 'No fue posible actualizar el grupo.';
+          payload?.message ||
+          (isEditGroup
+            ? strings.actions.groupEditError || 'No fue posible actualizar el grupo.'
+            : strings.actions.groupCreateError || 'No fue posible crear el grupo.');
         setGroupFormFeedback(feedbackMessage);
         showGlobalAlert('error', feedbackMessage);
         return;
       }
 
       const successMessage =
-        payload?.message || strings.actions.groupEditSuccess || 'Grupo actualizado correctamente.';
+        payload?.message ||
+        (isEditGroup
+          ? strings.actions.groupEditSuccess || 'Grupo actualizado correctamente.'
+          : strings.actions.groupCreateSuccess || 'Grupo creado correctamente.');
       setGroupFormFeedback(successMessage);
       showGlobalAlert('success', successMessage);
       closeGroupModal();
       fetchGroups();
     } catch (error) {
-      console.error('Failed to update group', error);
-      const feedbackMessage = strings.actions.groupEditError || 'No fue posible actualizar el grupo.';
+      console.error('Failed to submit group form', error);
+      const feedbackMessage = isEditGroup
+        ? strings.actions.groupEditError || 'No fue posible actualizar el grupo.'
+        : strings.actions.groupCreateError || 'No fue posible crear el grupo.';
       setGroupFormFeedback(feedbackMessage);
       showGlobalAlert('error', feedbackMessage);
     } finally {
@@ -1306,6 +1332,23 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     return <span className={`students-table__status students-table__status--${tone}`}>{label}</span>;
   };
 
+  const groupFormStrings = strings.groupsView?.form ?? {};
+  const isGroupEditMode = groupModalMode === 'edit';
+  const groupFormTitle = isGroupEditMode
+    ? groupFormStrings.title ?? 'Editar grupo'
+    : groupFormStrings.createTitle ?? groupFormStrings.title ?? 'Agregar grupo';
+  const groupFormSubtitle = isGroupEditMode
+    ? groupFormStrings.subtitle ?? ''
+    : groupFormStrings.createSubtitle ?? groupFormStrings.subtitle ?? '';
+  const groupFormCloseLabel = groupFormStrings.close ?? 'Cerrar modal de grupo';
+  const groupFormCancelLabel = groupFormStrings.cancel ?? 'Cancelar';
+  const groupFormSavingLabel = groupFormStrings.saving ?? 'Guardando...';
+  const groupFormSubmitLabel = isSubmittingGroup
+    ? groupFormSavingLabel
+    : isGroupEditMode
+    ? groupFormStrings.submit ?? 'Guardar cambios'
+    : groupFormStrings.submitCreate ?? groupFormStrings.submit ?? 'Crear grupo';
+
   const handleStudentFiltersBackdropClick = (event) => {
     if (event.target.dataset.dismiss === 'filters') {
       setIsFiltersOpen(false);
@@ -1371,7 +1414,17 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
           </div>
         ) : (
           <div className="students-groups__tab-actions">
-            <button type="button" className="students-groups__add" onClick={handleOpenCreateGroup}>
+            <button
+              type="button"
+              className="students-groups__add"
+              onClick={() => {
+                setGroupModalMode('create');
+                setEditingGroupId(null);
+                setGroupForm(createInitialGroupForm());
+                setGroupFormFeedback('');
+                setIsGroupModalOpen(true);
+              }}
+            >
               <span>+</span>
               {strings.actions.addGroup}
             </button>
@@ -1892,7 +1945,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 <h3>{isEditMode ? strings.form.editTitle : strings.form.title}</h3>
                 <p>{isEditMode ? strings.form.editDescription : strings.form.description}</p>
               </div>
-              <button type="button" onClick={closeStudentModal} aria-label="Cerrar">
+              <button type="button" onClick={closeGroupModal} aria-label={groupFormCloseLabel}>
                 ×
               </button>
             </header>
@@ -2082,8 +2135,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
           <div className="students-modal__dialog" role="dialog" aria-modal="true">
             <header className="students-modal__header">
               <div>
-                <h3>{strings.groupsView.form.title}</h3>
-                <p>{strings.groupsView.form.subtitle}</p>
+                <h3>{groupFormTitle}</h3>
+                <p>{groupFormSubtitle}</p>
               </div>
               <button type="button" onClick={closeGroupModal} aria-label={strings.groupsView.form.close}>
                 ×
@@ -2127,10 +2180,10 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
               <footer className="students-form__actions">
                 <button type="button" onClick={closeGroupModal} className="is-secondary">
-                  {strings.groupsView.form.cancel}
+                  {groupFormCancelLabel}
                 </button>
                 <button type="submit" disabled={isSubmittingGroup}>
-                  {isSubmittingGroup ? strings.groupsView.form.saving : strings.groupsView.form.submit}
+                  {groupFormSubmitLabel}
                 </button>
               </footer>
             </form>
