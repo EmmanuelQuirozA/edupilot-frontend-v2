@@ -188,8 +188,6 @@ export const translations = {
           statusError: 'No fue posible actualizar el estado del alumno.',
           groupEditSuccess: 'Grupo actualizado correctamente.',
           groupEditError: 'No fue posible actualizar el grupo.',
-          groupCreateSuccess: 'Grupo creado correctamente.',
-          groupCreateError: 'No fue posible crear el grupo.',
           groupStatusEnableSuccess: 'Grupo habilitado correctamente.',
           groupStatusDisableSuccess: 'Grupo deshabilitado correctamente.',
           groupStatusError: 'No fue posible actualizar el estado del grupo.',
@@ -319,8 +317,6 @@ export const translations = {
           form: {
             title: 'Editar grupo',
             subtitle: 'Actualiza la información del grupo seleccionado.',
-            createTitle: 'Agregar grupo',
-            createSubtitle: 'Completa la información para registrar un nuevo grupo.',
             close: 'Cerrar modal de grupo',
             fields: {
               name: 'Nombre del grupo',
@@ -331,7 +327,6 @@ export const translations = {
             },
             cancel: 'Cancelar',
             submit: 'Guardar cambios',
-            submitCreate: 'Crear grupo',
             saving: 'Guardando...',
           },
         },
@@ -660,8 +655,6 @@ export const translations = {
           statusError: 'We could not update the student status.',
           groupEditSuccess: 'Group updated successfully.',
           groupEditError: 'We could not update the group.',
-          groupCreateSuccess: 'Group created successfully.',
-          groupCreateError: 'We could not create the group.',
           groupStatusEnableSuccess: 'Group enabled successfully.',
           groupStatusDisableSuccess: 'Group disabled successfully.',
           groupStatusError: 'We could not update the group status.',
@@ -791,8 +784,6 @@ export const translations = {
           form: {
             title: 'Edit group',
             subtitle: 'Update the information for the selected group.',
-            createTitle: 'Add group',
-            createSubtitle: 'Enter the information for the new group.',
             close: 'Close group modal',
             fields: {
               name: 'Group name',
@@ -803,7 +794,6 @@ export const translations = {
             },
             cancel: 'Cancel',
             submit: 'Save changes',
-            submitCreate: 'Create group',
             saving: 'Saving...',
           },
         },
