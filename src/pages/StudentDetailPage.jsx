@@ -164,11 +164,7 @@ const StudentDetailPage = ({
           </div>
         </div>
         {onNavigateToStudents ? (
-          <button
-            type="button"
-            className="btn btn-outline-primary rounded-pill fw-semibold"
-            onClick={onNavigateToStudents}
-          >
+          <button type="button" className="student-detail-page__back" onClick={onNavigateToStudents}>
             {backToStudents}
           </button>
         ) : null}

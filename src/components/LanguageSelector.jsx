@@ -11,9 +11,7 @@ const LanguageSelector = ({ value, onChange }) => (
       <button
         key={code}
         type="button"
-        className={`btn btn-sm rounded-pill fw-semibold ${
-          value === code ? 'btn-primary' : 'btn-outline-secondary'
-        }`}
+        className={`language-selector__button${value === code ? ' is-active' : ''}`}
         onClick={() => onChange?.(code)}
       >
         {label}

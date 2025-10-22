@@ -942,18 +942,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         <nav className="students-groups__tabs" aria-label="Tabs">
           <button
             type="button"
-            className={`btn btn-sm rounded-pill fw-semibold ${
-              activeTab === 'students' ? 'btn-primary' : 'btn-outline-primary'
-            }`}
+            className={activeTab === 'students' ? 'is-active' : ''}
             onClick={() => setActiveTab('students')}
           >
             {strings.tabs.students}
           </button>
           <button
             type="button"
-            className={`btn btn-sm rounded-pill fw-semibold ${
-              activeTab === 'groups' ? 'btn-primary' : 'btn-outline-primary'
-            }`}
+            className={activeTab === 'groups' ? 'is-active' : ''}
             onClick={() => setActiveTab('groups')}
           >
             {strings.tabs.groups}
@@ -964,10 +960,10 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
           <div className="students-groups__tab-actions">
             <button
               type="button"
-              className="btn btn-outline-secondary d-inline-flex align-items-center gap-2 fw-semibold"
+              className="students-groups__tab-action students-groups__tab-action--secondary"
               onClick={onBulkUpload}
             >
-              <svg className="me-1" viewBox="0 0 24 24" aria-hidden="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 20h16a1 1 0 0 0 1-1v-5h-2v4H5v-4H3v5a1 1 0 0 0 1 1z" />
                 <path d="M12 3 7 8h3v7h4V8h3l-5-5z" />
               </svg>
@@ -975,13 +971,11 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
             </button>
             <button
               type="button"
-              className="btn btn-primary d-inline-flex align-items-center gap-2 fw-semibold"
+              className="students-groups__add"
               onClick={handleOpenCreateStudent}
               disabled={isStudentPrefetching}
             >
-              <span className="badge rounded-circle text-bg-light text-primary d-inline-flex align-items-center justify-content-center">
-                +
-              </span>
+              <span>+</span>
               {strings.actions.addStudent}
             </button>
           </div>
@@ -1011,12 +1005,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
             </form>
 
             <div className="students-view__actions">
-              <button
-                type="button"
-                className="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
-                onClick={() => setIsFiltersOpen(true)}
-              >
-                <svg className="me-1" viewBox="0 0 24 24" aria-hidden="true">
+              <button type="button" className="students-view__filters" onClick={() => setIsFiltersOpen(true)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     d="M4 5h16M7 12h10M10 19h4"
                     fill="none"
@@ -1027,9 +1017,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                   />
                 </svg>
                 {strings.actions.filters}
-                {filtersCount > 0 && (
-                  <span className="badge rounded-pill text-bg-primary ms-2">{filtersCount}</span>
-                )}
+                {filtersCount > 0 && <span className="students-view__filters-count">{filtersCount}</span>}
               </button>
             </div>
           </div>
@@ -1100,7 +1088,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                             <div className="students-table__student-info">
                               <button
                                 type="button"
-                                className="btn btn-link p-0 text-decoration-none text-start fw-semibold"
                                 onClick={() => handleStudentDetailNavigation(student, fullName)}
                               >
                                 {fullName || strings.table.unknownStudent}
@@ -1120,7 +1107,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                           <div className="students-table__actions">
                             <button
                               type="button"
-                              className="btn btn-outline-secondary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center"
+                              className="students-table__icon-button"
                               onClick={() => handleEditStudent(student)}
                               aria-label={`${strings.actions.edit} ${fullName || strings.table.unknownStudent}`}
                             >
@@ -1146,7 +1133,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                             <div className={`students-table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
                               <button
                                 type="button"
-                                className="btn btn-outline-secondary btn-sm rounded-circle d-inline-flex align-items-center justify-content-center"
                                 aria-haspopup="menu"
                                 aria-expanded={openActionsMenuId === studentId}
                                 onClick={() => toggleActionsMenu(studentId)}
@@ -1161,32 +1147,17 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                               {openActionsMenuId === studentId ? (
                                 <ul role="menu">
                                   <li>
-                                    <button
-                                      type="button"
-                                      className="btn btn-light w-100 text-start"
-                                      onClick={handleMenuPlaceholder}
-                                      role="menuitem"
-                                    >
+                                    <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
                                       {strings.actions.registerPayment}
                                     </button>
                                   </li>
                                   <li>
-                                    <button
-                                      type="button"
-                                      className="btn btn-light w-100 text-start"
-                                      onClick={handleMenuPlaceholder}
-                                      role="menuitem"
-                                    >
+                                    <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
                                       {strings.actions.createPaymentRequest}
                                     </button>
                                   </li>
                                   <li>
-                                    <button
-                                      type="button"
-                                      className="btn btn-light w-100 text-start"
-                                      onClick={handleMenuPlaceholder}
-                                      role="menuitem"
-                                    >
+                                    <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
                                       {strings.actions.addBalance}
                                     </button>
                                   </li>
@@ -1217,7 +1188,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
             <div className="students-table__pager">
               <button
                 type="button"
-                className="btn btn-outline-primary btn-sm"
                 onClick={() => handlePaginationChange('prev')}
                 disabled={activePage <= 1}
               >
@@ -1228,7 +1198,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               </span>
               <button
                 type="button"
-                className="btn btn-outline-primary btn-sm"
                 onClick={() => handlePaginationChange('next')}
                 disabled={activePage >= totalPages}
               >
@@ -1255,12 +1224,9 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 <h3>{strings.filters.title}</h3>
                 <p>{strings.filters.subtitle}</p>
               </div>
-              <button
-                type="button"
-                className="btn-close"
-                onClick={() => setIsFiltersOpen(false)}
-                aria-label="Cerrar filtros"
-              />
+              <button type="button" onClick={() => setIsFiltersOpen(false)} aria-label="Cerrar filtros">
+                ×
+              </button>
             </header>
             <form className="students-filters__form" onSubmit={handleApplyFilters}>
               <label>
@@ -1292,16 +1258,10 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 </select>
               </label>
               <div className="students-filters__actions">
-                <button
-                  type="button"
-                  className="btn btn-link text-decoration-none p-0"
-                  onClick={handleClearFilters}
-                >
+                <button type="button" onClick={handleClearFilters} className="is-text">
                   {strings.filters.clear}
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {strings.filters.apply}
-                </button>
+                <button type="submit">{strings.filters.apply}</button>
               </div>
             </form>
           </aside>
@@ -1317,7 +1277,9 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 <h3>{isEditMode ? strings.form.editTitle : strings.form.title}</h3>
                 <p>{isEditMode ? strings.form.editDescription : strings.form.description}</p>
               </div>
-              <button type="button" className="btn-close" onClick={closeStudentModal} aria-label="Cerrar" />
+              <button type="button" onClick={closeStudentModal} aria-label="Cerrar">
+                ×
+              </button>
             </header>
             <form className="students-form" onSubmit={handleStudentSubmit}>
               <section>
@@ -1483,14 +1445,10 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               {formFeedback && <p className="students-form__feedback">{formFeedback}</p>}
 
               <footer className="students-form__actions">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={closeStudentModal}
-                >
+                <button type="button" onClick={closeStudentModal} className="is-secondary">
                   {strings.form.cancel}
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={isSubmittingStudent}>
+                <button type="submit" disabled={isSubmittingStudent}>
                   {isSubmittingStudent
                     ? '...'
                     : isEditMode
