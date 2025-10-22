@@ -152,6 +152,26 @@
   box-shadow: 0 32px 64px -48px rgba(15, 23, 42, 0.35);
 }
 
+.groups-view__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.groups-table td,
+.groups-table th {
+  vertical-align: middle;
+}
+
+.groups-table td {
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.groups-form__grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
 .students-view__toolbar {
   display: flex;
   flex-wrap: wrap;

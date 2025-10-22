@@ -15,6 +15,14 @@ const createInitialFilters = () => ({
   enabled: '',
 });
 
+const createInitialGroupFilters = () => ({
+  group_id: '',
+  generation: '',
+  grade_group: '',
+  scholar_level_name: '',
+  enabled: '',
+});
+
 const createInitialStudent = () => ({
   student_id: '',
   user_id: '',
@@ -41,6 +49,15 @@ const createInitialStudent = () => ({
   group_id: '',
   register_id: '',
   payment_reference: '',
+});
+
+const createInitialGroupForm = () => ({
+  school_id: '',
+  scholar_level_id: '',
+  name: '',
+  generation: '',
+  group: '',
+  grade: '',
 });
 
 const extractListFromPayload = (payload) => {
@@ -162,6 +179,29 @@ const normalizeStudentsResponse = (payload) => {
   return { students, total: Number.isFinite(total) ? total : students.length };
 };
 
+const normalizeGroupsResponse = (payload) => {
+  if (!payload) {
+    return { groups: [], total: 0 };
+  }
+
+  if (Array.isArray(payload)) {
+    return { groups: payload, total: payload.length };
+  }
+
+  const groups = extractListFromPayload(payload) ?? [];
+
+  const total =
+    payload.total ??
+    payload.count ??
+    payload.totalElements ??
+    payload.total_pages ??
+    payload.total_items ??
+    payload.pagination?.total ??
+    groups.length;
+
+  return { groups, total: Number.isFinite(total) ? total : groups.length };
+};
+
 const extractUserIdFromStudentDetail = (detail) => {
   if (!detail || typeof detail !== 'object') {
     return null;
@@ -224,6 +264,26 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   const [openActionsMenuId, setOpenActionsMenuId] = useState(null);
   const [pendingStatusStudentId, setPendingStatusStudentId] = useState(null);
 
+  const [groups, setGroups] = useState([]);
+  const [totalGroups, setTotalGroups] = useState(0);
+  const [groupPagination, setGroupPagination] = useState(DEFAULT_PAGINATION);
+  const [groupFilters, setGroupFilters] = useState(createInitialGroupFilters);
+  const [appliedGroupFilters, setAppliedGroupFilters] = useState(createInitialGroupFilters);
+  const [isGroupFiltersOpen, setIsGroupFiltersOpen] = useState(false);
+  const [isGroupsLoading, setIsGroupsLoading] = useState(false);
+  const [groupsError, setGroupsError] = useState('');
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [groupForm, setGroupForm] = useState(createInitialGroupForm);
+  const [editingGroupId, setEditingGroupId] = useState(null);
+  const [groupModalMode, setGroupModalMode] = useState('edit');
+  const [isGroupPrefetching, setIsGroupPrefetching] = useState(false);
+  const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
+  const [groupFormFeedback, setGroupFormFeedback] = useState('');
+  const [groupSchoolOptions, setGroupSchoolOptions] = useState([]);
+  const [scholarLevelOptions, setScholarLevelOptions] = useState([]);
+  const [scholarLevelSearch, setScholarLevelSearch] = useState('');
+  const [pendingStatusGroupId, setPendingStatusGroupId] = useState(null);
+
   const filtersCount = useMemo(
     () =>
       Object.entries(appliedFilters).reduce((count, [key, value]) => {
@@ -237,6 +297,43 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       }, 0),
     [appliedFilters],
   );
+
+  const groupFiltersCount = useMemo(
+    () =>
+      Object.entries(appliedGroupFilters).reduce((count, [key, value]) => {
+        if (key === 'enabled' && value === '') {
+          return count;
+        }
+        if (value === '' || value === null || value === undefined) {
+          return count;
+        }
+        return count + 1;
+      }, 0),
+    [appliedGroupFilters],
+  );
+
+  const filteredScholarLevelOptions = useMemo(() => {
+    const query = scholarLevelSearch.trim().toLowerCase();
+    if (!query) {
+      return scholarLevelOptions;
+    }
+
+    return scholarLevelOptions.filter((option) => {
+      if (!option) {
+        return false;
+      }
+
+      const label = typeof option.label === 'string' ? option.label : String(option.label ?? '');
+      return label.toLowerCase().includes(query);
+    });
+  }, [scholarLevelOptions, scholarLevelSearch]);
+
+  const groupFormLoadErrorMessage =
+    strings.groupsView?.form?.loadError ||
+    strings.form?.loadError ||
+    (language === 'en'
+      ? 'We could not load the group information. Please try again.'
+      : 'No fue posible cargar la información del grupo. Intenta nuevamente.');
 
   const fetchStudents = useCallback(async () => {
     setIsLoading(true);
@@ -298,6 +395,66 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     };
   }, [appliedFilters, language, pagination.limit, pagination.offset, token]);
 
+  const fetchGroups = useCallback(async () => {
+    setIsGroupsLoading(true);
+    setGroupsError('');
+
+    const params = new URLSearchParams({
+      lang: language ?? 'es',
+      offset: String(groupPagination.offset ?? 0),
+      limit: String(groupPagination.limit ?? 10),
+      export_all: 'false',
+    });
+
+    Object.entries(appliedGroupFilters).forEach(([key, value]) => {
+      if (value === '' || value === null || value === undefined) {
+        return;
+      }
+
+      if (key === 'enabled') {
+        params.set('enabled', value);
+        return;
+      }
+
+      params.set(key, value);
+    });
+
+    const controller = new AbortController();
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/classes?${params.toString()}`, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load groups');
+      }
+
+      const payload = await response.json();
+      const { groups: normalizedGroups, total } = normalizeGroupsResponse(payload);
+
+      setGroups(normalizedGroups);
+      setTotalGroups(total);
+    } catch (requestError) {
+      if (requestError.name !== 'AbortError') {
+        setGroupsError(requestError.message || 'Unable to load groups');
+        setGroups([]);
+        setTotalGroups(0);
+      }
+    } finally {
+      setIsGroupsLoading(false);
+    }
+
+    return () => {
+      controller.abort();
+    };
+  }, [appliedGroupFilters, groupPagination.limit, groupPagination.offset, language, token]);
+
   useEffect(() => {
     const abort = fetchStudents();
     return () => {
@@ -308,6 +465,19 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   }, [fetchStudents]);
 
   useEffect(() => {
+    if (activeTab !== 'groups') {
+      return () => {};
+    }
+
+    const abort = fetchGroups();
+    return () => {
+      if (typeof abort === 'function') {
+        abort();
+      }
+    };
+  }, [activeTab, fetchGroups]);
+
+  useEffect(() => {
     setSearchValue(appliedFilters.full_name ?? '');
   }, [appliedFilters.full_name]);
 
@@ -316,6 +486,12 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       setFilters(appliedFilters);
     }
   }, [appliedFilters, isFiltersOpen]);
+
+  useEffect(() => {
+    if (isGroupFiltersOpen) {
+      setGroupFilters(appliedGroupFilters);
+    }
+  }, [appliedGroupFilters, isGroupFiltersOpen]);
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
@@ -359,6 +535,40 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     setIsFiltersOpen(false);
   };
 
+  const handleGroupFilterChange = (event) => {
+    const { name, value } = event.target;
+    setGroupFilters((previous) => ({ ...previous, [name]: value }));
+  };
+
+  const handleApplyGroupFilters = (event) => {
+    event.preventDefault();
+    setAppliedGroupFilters(groupFilters);
+    setGroupPagination((previous) => ({ ...previous, offset: 0 }));
+    setIsGroupFiltersOpen(false);
+  };
+
+  const handleClearGroupFilters = () => {
+    const reset = createInitialGroupFilters();
+    setGroupFilters(reset);
+    setAppliedGroupFilters(reset);
+    setGroupPagination((previous) => ({ ...previous, offset: 0 }));
+    setIsGroupFiltersOpen(false);
+  };
+
+  const handleGroupPaginationChange = (direction) => {
+    setGroupPagination((previous) => {
+      const totalPages = Math.ceil((totalGroups || 0) / previous.limit) || 1;
+      const currentPage = Math.floor((previous.offset || 0) / previous.limit) + 1;
+      if (direction === 'next' && currentPage < totalPages) {
+        return { ...previous, offset: previous.offset + previous.limit };
+      }
+      if (direction === 'prev' && currentPage > 1) {
+        return { ...previous, offset: previous.offset - previous.limit };
+      }
+      return previous;
+    });
+  };
+
   const fetchClasses = useCallback(
     async (schoolId, preferredGroupId = '') => {
       if (!schoolId) {
@@ -374,7 +584,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
       try {
         const response = await fetch(
-          `${API_BASE_URL}/classes?lang=en&school_id=${encodeURIComponent(schoolId)}`,
+          `${API_BASE_URL}/classes?lang=${language ?? 'es'}&school_id=${encodeURIComponent(schoolId)}`,
           {
             method: 'GET',
             headers: {
@@ -411,13 +621,13 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         setStudentForm((previous) => ({ ...previous, group_id: '' }));
       }
     },
-    [token],
+    [language, token],
   );
 
   const fetchSchools = useCallback(
     async (preferredSchoolId = '', preferredGroupId = '') => {
       try {
-        const response = await fetch(`${API_BASE_URL}/schools/list?lang=es&status_filter=-1`, {
+        const response = await fetch(`${API_BASE_URL}/schools/list?lang=${language ?? 'es'}&status_filter=-1`, {
           method: 'GET',
           headers: {
             Accept: 'application/json',
@@ -468,7 +678,110 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         throw error;
       }
     },
-    [fetchClasses, token],
+    [fetchClasses, language, token],
+  );
+
+  const fetchGroupSchoolOptions = useCallback(
+    async (preferredSchoolId = '') => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/schools/list?lang=${language ?? 'es'}&status_filter=-1`, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load group schools');
+        }
+
+        const payload = await response.json();
+        const schoolsList = extractListFromPayload(payload);
+        let options = schoolsList
+          .map((item, index) => normalizeSelectOption(item, index))
+          .filter((option) => option.value !== '');
+
+        const normalizedPreferred =
+          preferredSchoolId === null || preferredSchoolId === undefined
+            ? ''
+            : String(preferredSchoolId);
+
+        if (
+          normalizedPreferred &&
+          !options.some((option) => option.value === normalizedPreferred)
+        ) {
+          options = [
+            ...options,
+            {
+              value: normalizedPreferred,
+              label: normalizedPreferred,
+            },
+          ];
+        }
+
+        setGroupSchoolOptions(options);
+        return options;
+      } catch (error) {
+        console.error('Failed to load group schools', error);
+        setGroupSchoolOptions([]);
+        throw error;
+      }
+    },
+    [language, token],
+  );
+
+  const fetchScholarLevels = useCallback(
+    async (preferredScholarLevelId = '') => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/catalog/scholar-levels?lang=${language ?? 'es'}`,
+          {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to load scholar levels');
+        }
+
+        const payload = await response.json();
+        const levelsList = extractListFromPayload(payload);
+        let options = levelsList
+          .map((item, index) => normalizeSelectOption(item, index))
+          .filter((option) => option.value !== '');
+
+        const normalizedPreferred =
+          preferredScholarLevelId === null || preferredScholarLevelId === undefined
+            ? ''
+            : String(preferredScholarLevelId);
+
+        if (
+          normalizedPreferred &&
+          !options.some((option) => option.value === normalizedPreferred)
+        ) {
+          options = [
+            ...options,
+            {
+              value: normalizedPreferred,
+              label: normalizedPreferred,
+            },
+          ];
+        }
+
+        setScholarLevelOptions(options);
+        return options;
+      } catch (error) {
+        console.error('Failed to load scholar levels', error);
+        setScholarLevelOptions([]);
+        throw error;
+      }
+    },
+    [language, token],
   );
 
   const fetchStudentDetail = useCallback(
@@ -738,6 +1051,34 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     }
   };
 
+  const handleOpenCreateGroup = async () => {
+    setGroupModalMode('create');
+    setEditingGroupId(null);
+    setGroupForm(createInitialGroupForm());
+    setGroupFormFeedback('');
+    setScholarLevelSearch('');
+    setIsGroupPrefetching(true);
+
+    try {
+      const [schools, levels] = await Promise.all([
+        fetchGroupSchoolOptions(),
+        fetchScholarLevels(),
+      ]);
+
+      setGroupForm((previous) => ({
+        ...previous,
+        school_id: schools[0]?.value ?? '',
+        scholar_level_id: levels[0]?.value ?? '',
+      }));
+      setIsGroupModalOpen(true);
+    } catch (error) {
+      console.error('Failed to prepare group creation form', error);
+      showGlobalAlert('error', groupFormLoadErrorMessage);
+    } finally {
+      setIsGroupPrefetching(false);
+    }
+  };
+
   const handleEditStudent = async (student) => {
     const studentId = student?.student_id ?? student?.id;
     if (!studentId) {
@@ -786,7 +1127,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/users/update/${encodeURIComponent(userIdFromDetail)}/status?lang=en`,
+        `${API_BASE_URL}/users/update/${encodeURIComponent(userIdFromDetail)}/status?lang=${language ?? 'es'}`,
         {
           method: 'POST',
           headers: {
@@ -829,6 +1170,277 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   const handleMenuPlaceholder = () => {
     setOpenActionsMenuId(null);
     showGlobalAlert('info', strings.actions.menuPlaceholder);
+  };
+
+  const handleOpenEditGroup = async (group) => {
+    if (!group) {
+      return;
+    }
+
+    const groupId = group.group_id ?? group.id;
+    if (!groupId) {
+      return;
+    }
+
+    const baseForm = {
+      school_id: group.school_id === null || group.school_id === undefined ? '' : String(group.school_id),
+      scholar_level_id:
+        group.scholar_level_id === null || group.scholar_level_id === undefined
+          ? ''
+          : String(group.scholar_level_id),
+      name: group.name ?? group.grade_group ?? '',
+      generation: group.generation ?? '',
+      group: group.group ?? '',
+      grade: group.grade === null || group.grade === undefined ? '' : String(group.grade),
+    };
+
+    setGroupModalMode('edit');
+    setEditingGroupId(groupId);
+    setGroupFormFeedback('');
+    setScholarLevelSearch('');
+    setIsGroupPrefetching(true);
+
+    try {
+      const [schools, levels] = await Promise.all([
+        fetchGroupSchoolOptions(baseForm.school_id),
+        fetchScholarLevels(baseForm.scholar_level_id),
+      ]);
+
+      const nextSchoolId =
+        baseForm.school_id && schools.some((option) => option.value === baseForm.school_id)
+          ? baseForm.school_id
+          : schools[0]?.value ?? '';
+
+      const nextScholarLevelId =
+        baseForm.scholar_level_id &&
+        levels.some((option) => option.value === baseForm.scholar_level_id)
+          ? baseForm.scholar_level_id
+          : levels[0]?.value ?? '';
+
+      setGroupForm({
+        ...baseForm,
+        school_id: nextSchoolId,
+        scholar_level_id: nextScholarLevelId,
+      });
+      setIsGroupModalOpen(true);
+    } catch (error) {
+      console.error('Failed to open group for editing', error);
+      showGlobalAlert('error', groupFormLoadErrorMessage);
+      setEditingGroupId(null);
+    } finally {
+      setIsGroupPrefetching(false);
+    }
+  };
+
+  const closeGroupModal = () => {
+    setIsGroupModalOpen(false);
+    setEditingGroupId(null);
+    setGroupForm(createInitialGroupForm());
+    setGroupFormFeedback('');
+    setGroupModalMode('edit');
+    setScholarLevelSearch('');
+  };
+
+  const handleGroupFormChange = (event) => {
+    const { name, value } = event.target;
+    setGroupForm((previous) => ({ ...previous, [name]: value }));
+  };
+
+  const handleGroupSubmit = async (event) => {
+    event.preventDefault();
+
+    const isEditGroup = groupModalMode === 'edit';
+    if (isEditGroup && !editingGroupId) {
+      return;
+    }
+
+    setIsSubmittingGroup(true);
+    setGroupFormFeedback('');
+
+    const normalizedScholarLevelId = (groupForm.scholar_level_id ?? '').toString().trim();
+    const normalizedSchoolId = (groupForm.school_id ?? '').toString().trim();
+    const parsedScholarLevelId = Number(normalizedScholarLevelId);
+    const parsedSchoolId = Number(normalizedSchoolId);
+    const bodyPayload = {
+      school_id:
+        normalizedSchoolId === ''
+          ? undefined
+          : Number.isNaN(parsedSchoolId)
+          ? normalizedSchoolId
+          : parsedSchoolId,
+      scholar_level_id:
+        normalizedScholarLevelId === ''
+          ? undefined
+          : Number.isNaN(parsedScholarLevelId)
+          ? normalizedScholarLevelId
+          : parsedScholarLevelId,
+      name: groupForm.name.trim(),
+      generation: groupForm.generation.trim(),
+      group: groupForm.group.trim(),
+      grade: groupForm.grade.trim(),
+    };
+
+    const sanitizedPayload = Object.fromEntries(
+      Object.entries(bodyPayload).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+    );
+
+    try {
+      let response;
+      if (isEditGroup) {
+        response = await fetch(
+          `${API_BASE_URL}/groups/update/${encodeURIComponent(editingGroupId)}?lang=${language ?? 'es'}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(sanitizedPayload),
+          },
+        );
+      } else {
+        response = await fetch(`${API_BASE_URL}/groups/create?lang=${language ?? 'es'}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(sanitizedPayload),
+        });
+      }
+
+      const payload = await response.json();
+
+      if (!response.ok || payload?.success === false) {
+        const feedbackMessage =
+          payload?.message ||
+          (isEditGroup
+            ? strings.actions.groupEditError || 'No fue posible actualizar el grupo.'
+            : strings.actions.groupCreateError || 'No fue posible crear el grupo.');
+        setGroupFormFeedback(feedbackMessage);
+        showGlobalAlert('error', feedbackMessage);
+        return;
+      }
+
+      const successMessage =
+        payload?.message ||
+        (isEditGroup
+          ? strings.actions.groupEditSuccess || 'Grupo actualizado correctamente.'
+          : strings.actions.groupCreateSuccess || 'Grupo creado correctamente.');
+      setGroupFormFeedback(successMessage);
+      showGlobalAlert('success', successMessage);
+      closeGroupModal();
+      fetchGroups();
+    } catch (error) {
+      console.error('Failed to submit group form', error);
+      const feedbackMessage = isEditGroup
+        ? strings.actions.groupEditError || 'No fue posible actualizar el grupo.'
+        : strings.actions.groupCreateError || 'No fue posible crear el grupo.';
+      setGroupFormFeedback(feedbackMessage);
+      showGlobalAlert('error', feedbackMessage);
+    } finally {
+      setIsSubmittingGroup(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isGroupModalOpen) {
+      return;
+    }
+
+    if (groupSchoolOptions.length === 0) {
+      if (groupForm.school_id !== '') {
+        setGroupForm((previous) => ({ ...previous, school_id: '' }));
+      }
+      return;
+    }
+
+    if (
+      groupForm.school_id &&
+      groupSchoolOptions.some((option) => option.value === groupForm.school_id)
+    ) {
+      return;
+    }
+
+    setGroupForm((previous) => ({
+      ...previous,
+      school_id: groupSchoolOptions[0].value,
+    }));
+  }, [groupSchoolOptions, groupForm.school_id, isGroupModalOpen]);
+
+  useEffect(() => {
+    if (!isGroupModalOpen) {
+      return;
+    }
+
+    if (filteredScholarLevelOptions.length === 0) {
+      if (groupForm.scholar_level_id !== '') {
+        setGroupForm((previous) => ({ ...previous, scholar_level_id: '' }));
+      }
+      return;
+    }
+
+    if (
+      groupForm.scholar_level_id &&
+      filteredScholarLevelOptions.some((option) => option.value === groupForm.scholar_level_id)
+    ) {
+      return;
+    }
+
+    setGroupForm((previous) => ({
+      ...previous,
+      scholar_level_id: filteredScholarLevelOptions[0].value,
+    }));
+  }, [filteredScholarLevelOptions, groupForm.scholar_level_id, isGroupModalOpen]);
+
+  const handleToggleGroupStatus = async (group, shouldEnable) => {
+    const groupId = group?.group_id ?? group?.id;
+    if (!groupId) {
+      return;
+    }
+
+    setPendingStatusGroupId(groupId);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/groups/update/${encodeURIComponent(groupId)}/status?lang=${language ?? 'es'}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ enabled: shouldEnable }),
+        },
+      );
+
+      const payload = await response.json();
+
+      if (!response.ok || payload?.success === false) {
+        const message =
+          payload?.message || strings.actions.groupStatusError || 'No fue posible actualizar el estado del grupo.';
+        showGlobalAlert('error', message);
+        return;
+      }
+
+      const successMessage =
+        payload?.message ||
+        (shouldEnable
+          ? strings.actions.groupStatusEnableSuccess
+          : strings.actions.groupStatusDisableSuccess) ||
+        'Estado del grupo actualizado correctamente.';
+      showGlobalAlert('success', successMessage);
+      fetchGroups();
+    } catch (error) {
+      console.error('Failed to toggle group status', error);
+      const message = strings.actions.groupStatusError || 'No fue posible actualizar el estado del grupo.';
+      showGlobalAlert('error', message);
+    } finally {
+      setPendingStatusGroupId(null);
+    }
   };
 
   useEffect(() => {
@@ -910,6 +1522,11 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   const showingFrom = Math.min(totalStudents, pagination.offset + 1);
   const showingTo = Math.min(totalStudents, pagination.offset + students.length);
 
+  const groupActivePage = Math.floor(groupPagination.offset / groupPagination.limit) + 1;
+  const groupTotalPages = Math.max(1, Math.ceil((totalGroups || 0) / groupPagination.limit));
+  const groupShowingFrom = Math.min(totalGroups, groupPagination.offset + 1);
+  const groupShowingTo = Math.min(totalGroups, groupPagination.offset + groups.length);
+
   const renderStatusPill = (student, isActive) => {
     const label =
       typeof student.user_status === 'string' && student.user_status.trim()
@@ -922,9 +1539,77 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     return <span className={`students-table__status students-table__status--${tone}`}>{label}</span>;
   };
 
-  const handleBackdropClick = (event) => {
+  const groupStatusLabels = strings.groupsView?.status ?? {
+    active: statusLabels?.active ?? 'Activo',
+    inactive: statusLabels?.inactive ?? 'Inactivo',
+  };
+
+  const getGroupStatusValue = (group) =>
+    group?.enabled ?? group?.group_status ?? group?.status ?? group?.state ?? group?.is_enabled;
+
+  const isGroupActive = (group) => {
+    const status = getGroupStatusValue(group);
+
+    if (typeof status === 'string') {
+      const normalized = status.trim().toLowerCase();
+      if (!normalized) {
+        return false;
+      }
+
+      const activeTokens = [
+        '1',
+        'true',
+        'active',
+        'enabled',
+        'activo',
+        'habilitado',
+        (groupStatusLabels?.active ?? '').toString().toLowerCase(),
+      ].filter(Boolean);
+
+      return activeTokens.includes(normalized);
+    }
+
+    return status === 1 || status === true;
+  };
+
+  const renderGroupStatusPill = (group, isActive) => {
+    const label =
+      typeof group.group_status === 'string' && group.group_status.trim()
+        ? group.group_status
+        : isActive
+        ? groupStatusLabels.active
+        : groupStatusLabels.inactive;
+    const tone = isActive ? 'active' : 'inactive';
+
+    return <span className={`students-table__status students-table__status--${tone}`}>{label}</span>;
+  };
+
+  const groupFormStrings = strings.groupsView?.form ?? {};
+  const isGroupEditMode = groupModalMode === 'edit';
+  const groupFormTitle = isGroupEditMode
+    ? groupFormStrings.title ?? 'Editar grupo'
+    : groupFormStrings.createTitle ?? groupFormStrings.title ?? 'Agregar grupo';
+  const groupFormSubtitle = isGroupEditMode
+    ? groupFormStrings.subtitle ?? ''
+    : groupFormStrings.createSubtitle ?? groupFormStrings.subtitle ?? '';
+  const groupFormCloseLabel = groupFormStrings.close ?? 'Cerrar modal de grupo';
+  const groupFormCancelLabel = groupFormStrings.cancel ?? 'Cancelar';
+  const groupFormSavingLabel = groupFormStrings.saving ?? 'Guardando...';
+  const groupFormSubmitLabel = isSubmittingGroup
+    ? groupFormSavingLabel
+    : isGroupEditMode
+    ? groupFormStrings.submit ?? 'Guardar cambios'
+    : groupFormStrings.submitCreate ?? groupFormStrings.submit ?? 'Crear grupo';
+
+  const handleStudentFiltersBackdropClick = (event) => {
     if (event.target.dataset.dismiss === 'filters') {
       setIsFiltersOpen(false);
+    }
+  };
+
+  const handleGroupFiltersBackdropClick = (event) => {
+    if (event.target.dataset.dismiss === 'group-filters') {
+      setIsGroupFiltersOpen(false);
     }
   };
 
@@ -979,7 +1664,19 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               {strings.actions.addStudent}
             </button>
           </div>
-        ) : null}
+        ) : (
+          <div className="students-groups__tab-actions">
+            <button
+              type="button"
+              className="students-groups__add"
+              onClick={handleOpenCreateGroup}
+              disabled={isGroupPrefetching}
+            >
+              <span>+</span>
+              {strings.actions.addGroup}
+            </button>
+          </div>
+        )}
       </div>
 
       {activeTab === 'students' ? (
@@ -1207,16 +1904,169 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
           </footer>
         </section>
       ) : (
-        <section className="students-groups__placeholder">
-          <div>
-            <h3>{strings.groupsPlaceholder.title}</h3>
-            <p>{strings.groupsPlaceholder.description}</p>
+        <section className="students-view groups-view">
+          <div className="groups-view__toolbar">
+            <button
+              type="button"
+              className="students-view__filters"
+              onClick={() => setIsGroupFiltersOpen(true)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M4 5h16M7 12h10M10 19h4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {strings.actions.filters}
+              {groupFiltersCount > 0 && (
+                <span className="students-view__filters-count">{groupFiltersCount}</span>
+              )}
+            </button>
           </div>
+
+          <div className="students-table__wrapper">
+            <table className="students-table groups-table">
+              <thead>
+                <tr>
+                  <th scope="col">{strings.groupsView.table.generation}</th>
+                  <th scope="col">{strings.groupsView.table.gradeGroup}</th>
+                  <th scope="col">{strings.groupsView.table.scholarLevel}</th>
+                  <th scope="col">{strings.groupsView.table.status}</th>
+                  <th scope="col">{strings.groupsView.table.actions}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isGroupsLoading ? (
+                  <tr>
+                    <td colSpan={5} className="students-table__empty">
+                      <span className="students-table__loader" aria-hidden="true" />
+                      {strings.groupsView.table.loading}
+                    </td>
+                  </tr>
+                ) : groupsError ? (
+                  <tr>
+                    <td colSpan={5} className="students-table__empty">
+                      {strings.groupsView.table.error}: {groupsError}
+                    </td>
+                  </tr>
+                ) : groups.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="students-table__empty">
+                      {strings.groupsView.table.empty}
+                    </td>
+                  </tr>
+                ) : (
+                  groups.map((group) => {
+                    const groupId = group.group_id ?? group.id ?? group.grade_group;
+                    const generation = group.generation ?? strings.groupsView.table.emptyValue;
+                    const gradeGroup =
+                      group.grade_group ??
+                      ([group.grade, group.group].filter(Boolean).join('-') ||
+                        strings.groupsView.table.emptyValue);
+                    const scholarLevel =
+                      group.scholar_level_name ?? strings.groupsView.table.emptyValue;
+                    const isActive = isGroupActive(group);
+                    const isStatusPending = pendingStatusGroupId === groupId;
+                    const switchTitle = isStatusPending
+                      ? (strings.actions.groupStatusUpdating ?? strings.actions.statusUpdating)
+                      : isActive
+                      ? groupStatusLabels.active
+                      : groupStatusLabels.inactive;
+                    const switchActionLabel = isActive ? strings.actions.disable : strings.actions.enable;
+
+                    return (
+                      <tr key={groupId}>
+                        <td data-title={strings.groupsView.table.generation}>{generation}</td>
+                        <td data-title={strings.groupsView.table.gradeGroup}>{gradeGroup}</td>
+                        <td data-title={strings.groupsView.table.scholarLevel}>{scholarLevel}</td>
+                        <td data-title={strings.groupsView.table.status}>
+                          {renderGroupStatusPill(group, isActive)}
+                        </td>
+                        <td data-title={strings.groupsView.table.actions} className="students-table__actions-cell">
+                          <div className="students-table__actions">
+                            <button
+                              type="button"
+                              className="students-table__icon-button"
+                              onClick={() => handleOpenEditGroup(group)}
+                              aria-label={`${strings.actions.edit} ${gradeGroup}`}
+                              disabled={isGroupPrefetching}
+                            >
+                              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                                <path d="M3 16.75V19h2.25l8.9-8.9-2.25-2.25Zm12.87-7.4a.75.75 0 0 0 0-1.06l-1.16-1.16a.75.75 0 0 0-1.06 0l-1.04 1.04 2.22 2.22Z" />
+                              </svg>
+                            </button>
+                            <label
+                              className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
+                              title={switchTitle}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isActive}
+                                onChange={() => handleToggleGroupStatus(group, !isActive)}
+                                disabled={isStatusPending}
+                                aria-label={`${switchActionLabel} ${gradeGroup}`}
+                              />
+                              <span className="students-table__switch-track">
+                                <span className="students-table__switch-thumb" />
+                              </span>
+                            </label>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <footer className="students-table__footer">
+            <div>
+              {totalGroups > 0 ? (
+                <span>
+                  {strings.groupsView.pagination.showing} {groupShowingFrom}-{groupShowingTo}{' '}
+                  {strings.groupsView.pagination.of} {totalGroups} {strings.groupsView.pagination.groups}
+                </span>
+              ) : (
+                <span>
+                  {strings.groupsView.pagination.showing} 0 {strings.groupsView.pagination.of} 0{' '}
+                  {strings.groupsView.pagination.groups}
+                </span>
+              )}
+            </div>
+            <div className="students-table__pager">
+              <button
+                type="button"
+                onClick={() => handleGroupPaginationChange('prev')}
+                disabled={groupActivePage <= 1}
+              >
+                ←
+              </button>
+              <span>
+                {groupActivePage} / {groupTotalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleGroupPaginationChange('next')}
+                disabled={groupActivePage >= groupTotalPages}
+              >
+                →
+              </button>
+            </div>
+          </footer>
         </section>
       )}
 
       {isFiltersOpen && (
-        <div className="students-filters is-open" data-dismiss="filters" onClick={handleBackdropClick}>
+        <div
+          className="students-filters is-open"
+          data-dismiss="filters"
+          onClick={handleStudentFiltersBackdropClick}
+        >
           <div className="students-filters__backdrop" aria-hidden="true" />
           <aside className="students-filters__panel" role="dialog" aria-modal="true">
             <header className="students-filters__header">
@@ -1262,6 +2112,72 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                   {strings.filters.clear}
                 </button>
                 <button type="submit">{strings.filters.apply}</button>
+              </div>
+            </form>
+          </aside>
+        </div>
+      )}
+
+      {isGroupFiltersOpen && (
+        <div
+          className="students-filters is-open"
+          data-dismiss="group-filters"
+          onClick={handleGroupFiltersBackdropClick}
+        >
+          <div className="students-filters__backdrop" aria-hidden="true" />
+          <aside className="students-filters__panel" role="dialog" aria-modal="true">
+            <header className="students-filters__header">
+              <div>
+                <h3>{strings.groupsView.filters.title}</h3>
+                <p>{strings.groupsView.filters.subtitle}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsGroupFiltersOpen(false)}
+                aria-label={strings.groupsView.filters.close}
+              >
+                ×
+              </button>
+            </header>
+            <form className="students-filters__form" onSubmit={handleApplyGroupFilters}>
+              <label>
+                <span>{strings.groupsView.filters.groupId}</span>
+                <input name="group_id" value={groupFilters.group_id} onChange={handleGroupFilterChange} />
+              </label>
+              <label>
+                <span>{strings.groupsView.filters.generation}</span>
+                <input name="generation" value={groupFilters.generation} onChange={handleGroupFilterChange} />
+              </label>
+              <label>
+                <span>{strings.groupsView.filters.gradeGroup}</span>
+                <input name="grade_group" value={groupFilters.grade_group} onChange={handleGroupFilterChange} />
+              </label>
+              <label>
+                <span>{strings.groupsView.filters.scholarLevel}</span>
+                <input
+                  name="scholar_level_name"
+                  value={groupFilters.scholar_level_name}
+                  onChange={handleGroupFilterChange}
+                />
+              </label>
+              <label>
+                <span>{strings.groupsView.filters.enabled}</span>
+                <select
+                  className="custom_select"
+                  name="enabled"
+                  value={groupFilters.enabled}
+                  onChange={handleGroupFilterChange}
+                >
+                  <option value="">{strings.groupsView.filters.enabledOptions.all}</option>
+                  <option value="true">{strings.groupsView.filters.enabledOptions.enabled}</option>
+                  <option value="false">{strings.groupsView.filters.enabledOptions.disabled}</option>
+                </select>
+              </label>
+              <div className="students-filters__actions">
+                <button type="button" onClick={handleClearGroupFilters} className="is-text">
+                  {strings.groupsView.filters.clear}
+                </button>
+                <button type="submit">{strings.groupsView.filters.apply}</button>
               </div>
             </form>
           </aside>
@@ -1454,6 +2370,106 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                     : isEditMode
                     ? strings.form.editSubmit
                     : strings.form.submit}
+                </button>
+              </footer>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isGroupModalOpen && (
+        <div className="students-modal">
+          <div className="students-modal__backdrop" aria-hidden="true" onClick={closeGroupModal} />
+          <div className="students-modal__dialog" role="dialog" aria-modal="true">
+            <header className="students-modal__header">
+              <div>
+                <h3>{groupFormTitle}</h3>
+                <p>{groupFormSubtitle}</p>
+              </div>
+              <button type="button" onClick={closeGroupModal} aria-label={groupFormCloseLabel}>
+                ×
+              </button>
+            </header>
+            <form className="students-form groups-form" onSubmit={handleGroupSubmit}>
+              <div className="students-form__grid groups-form__grid">
+                <label>
+                  <span>{strings.groupsView.form.fields.name}</span>
+                  <input name="name" value={groupForm.name} onChange={handleGroupFormChange} required />
+                </label>
+                <label>
+                  <span>{strings.groupsView.form.fields.generation}</span>
+                  <input
+                    name="generation"
+                    value={groupForm.generation}
+                    onChange={handleGroupFormChange}
+                    required
+                  />
+                </label>
+                <label>
+                  <span>{strings.groupsView.form.fields.grade}</span>
+                  <input name="grade" value={groupForm.grade} onChange={handleGroupFormChange} required />
+                </label>
+                <label>
+                  <span>{strings.groupsView.form.fields.group}</span>
+                  <input name="group" value={groupForm.group} onChange={handleGroupFormChange} required />
+                </label>
+                <label>
+                  <span>{strings.groupsView.form.fields.schoolId}</span>
+                  <select
+                    className="custom_select"
+                    name="school_id"
+                    value={groupForm.school_id}
+                    onChange={handleGroupFormChange}
+                    disabled={!groupSchoolOptions.length}
+                    required
+                  >
+                    {groupSchoolOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="groups-form__search">
+                  <span>{strings.groupsView.form.fields.scholarLevelSearch}</span>
+                  <input
+                    type="search"
+                    value={scholarLevelSearch}
+                    onChange={(event) => setScholarLevelSearch(event.target.value)}
+                    placeholder={
+                      strings.groupsView.form.fields.scholarLevelPlaceholder ||
+                      strings.searchPlaceholder ||
+                      ''
+                    }
+                  />
+                </label>
+                <label>
+                  <span>{strings.groupsView.form.fields.scholarLevel}</span>
+                  <select
+                    className="custom_select"
+                    name="scholar_level_id"
+                    value={groupForm.scholar_level_id}
+                    onChange={handleGroupFormChange}
+                    disabled={!filteredScholarLevelOptions.length}
+                    required
+                  >
+                    {filteredScholarLevelOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {groupFormFeedback && <p className="students-form__feedback">{groupFormFeedback}</p>}
+
+              <footer className="students-form__actions">
+                <button type="button" onClick={closeGroupModal} className="is-secondary">
+                  {groupFormCancelLabel}
+                </button>
+                <button type="submit" disabled={isSubmittingGroup}>
+                  {groupFormSubmitLabel}
                 </button>
               </footer>
             </form>
