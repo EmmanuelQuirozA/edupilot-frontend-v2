@@ -274,7 +274,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [groupForm, setGroupForm] = useState(createInitialGroupForm);
   const [editingGroupId, setEditingGroupId] = useState(null);
-  const [groupModalMode, setGroupModalMode] = useState('edit');
   const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
   const [groupFormFeedback, setGroupFormFeedback] = useState('');
   const [pendingStatusGroupId, setPendingStatusGroupId] = useState(null);
@@ -1023,7 +1022,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       return;
     }
 
-    setGroupModalMode('edit');
     setEditingGroupId(groupId);
     setGroupForm({
       scholar_level_id:
@@ -1039,20 +1037,11 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     setIsGroupModalOpen(true);
   };
 
-  const handleOpenCreateGroup = () => {
-    setGroupModalMode('create');
-    setEditingGroupId(null);
-    setGroupForm(createInitialGroupForm());
-    setGroupFormFeedback('');
-    setIsGroupModalOpen(true);
-  };
-
   const closeGroupModal = () => {
     setIsGroupModalOpen(false);
     setEditingGroupId(null);
     setGroupForm(createInitialGroupForm());
     setGroupFormFeedback('');
-    setGroupModalMode('edit');
   };
 
   const handleGroupFormChange = (event) => {
@@ -1062,9 +1051,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
   const handleGroupSubmit = async (event) => {
     event.preventDefault();
-
-    const isEditGroup = groupModalMode === 'edit';
-    if (isEditGroup && !editingGroupId) {
+    if (!editingGroupId) {
       return;
     }
 
@@ -1091,59 +1078,38 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     );
 
     try {
-      let response;
-      if (isEditGroup) {
-        response = await fetch(
-          `${API_BASE_URL}/groups/update/${encodeURIComponent(editingGroupId)}?lang=${language ?? 'es'}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify(sanitizedPayload),
-          },
-        );
-      } else {
-        response = await fetch(`${API_BASE_URL}/groups/create?lang=${language ?? 'es'}`, {
-          method: 'POST',
+      const response = await fetch(
+        `${API_BASE_URL}/groups/update/${encodeURIComponent(editingGroupId)}?lang=en`,
+        {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify(sanitizedPayload),
-        });
-      }
+        },
+      );
 
       const payload = await response.json();
 
       if (!response.ok || payload?.success === false) {
         const feedbackMessage =
-          payload?.message ||
-          (isEditGroup
-            ? strings.actions.groupEditError || 'No fue posible actualizar el grupo.'
-            : strings.actions.groupCreateError || 'No fue posible crear el grupo.');
+          payload?.message || strings.actions.groupEditError || 'No fue posible actualizar el grupo.';
         setGroupFormFeedback(feedbackMessage);
         showGlobalAlert('error', feedbackMessage);
         return;
       }
 
       const successMessage =
-        payload?.message ||
-        (isEditGroup
-          ? strings.actions.groupEditSuccess || 'Grupo actualizado correctamente.'
-          : strings.actions.groupCreateSuccess || 'Grupo creado correctamente.');
+        payload?.message || strings.actions.groupEditSuccess || 'Grupo actualizado correctamente.';
       setGroupFormFeedback(successMessage);
       showGlobalAlert('success', successMessage);
       closeGroupModal();
       fetchGroups();
     } catch (error) {
-      console.error('Failed to submit group form', error);
-      const feedbackMessage = isEditGroup
-        ? strings.actions.groupEditError || 'No fue posible actualizar el grupo.'
-        : strings.actions.groupCreateError || 'No fue posible crear el grupo.';
+      console.error('Failed to update group', error);
+      const feedbackMessage = strings.actions.groupEditError || 'No fue posible actualizar el grupo.';
       setGroupFormFeedback(feedbackMessage);
       showGlobalAlert('error', feedbackMessage);
     } finally {
@@ -1161,7 +1127,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/groups/update/${encodeURIComponent(groupId)}/status?lang=${language ?? 'es'}`,
+        `${API_BASE_URL}/groups/update/${encodeURIComponent(groupId)}/status?lang=en`,
         {
           method: 'POST',
           headers: {
@@ -1339,23 +1305,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
     return <span className={`students-table__status students-table__status--${tone}`}>{label}</span>;
   };
-
-  const groupFormStrings = strings.groupsView?.form ?? {};
-  const isGroupEditMode = groupModalMode === 'edit';
-  const groupFormTitle = isGroupEditMode
-    ? groupFormStrings.title ?? 'Editar grupo'
-    : groupFormStrings.createTitle ?? groupFormStrings.title ?? 'Agregar grupo';
-  const groupFormSubtitle = isGroupEditMode
-    ? groupFormStrings.subtitle ?? ''
-    : groupFormStrings.createSubtitle ?? groupFormStrings.subtitle ?? '';
-  const groupFormCloseLabel = groupFormStrings.close ?? 'Cerrar modal de grupo';
-  const groupFormCancelLabel = groupFormStrings.cancel ?? 'Cancelar';
-  const groupFormSavingLabel = groupFormStrings.saving ?? 'Guardando...';
-  const groupFormSubmitLabel = isSubmittingGroup
-    ? groupFormSavingLabel
-    : isGroupEditMode
-    ? groupFormStrings.submit ?? 'Guardar cambios'
-    : groupFormStrings.submitCreate ?? groupFormStrings.submit ?? 'Crear grupo';
 
   const handleStudentFiltersBackdropClick = (event) => {
     if (event.target.dataset.dismiss === 'filters') {
@@ -2133,10 +2082,10 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
           <div className="students-modal__dialog" role="dialog" aria-modal="true">
             <header className="students-modal__header">
               <div>
-                <h3>{groupFormTitle}</h3>
-                <p>{groupFormSubtitle}</p>
+                <h3>{strings.groupsView.form.title}</h3>
+                <p>{strings.groupsView.form.subtitle}</p>
               </div>
-              <button type="button" onClick={closeGroupModal} aria-label={groupFormCloseLabel}>
+              <button type="button" onClick={closeGroupModal} aria-label={strings.groupsView.form.close}>
                 ×
               </button>
             </header>
@@ -2178,10 +2127,10 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
               <footer className="students-form__actions">
                 <button type="button" onClick={closeGroupModal} className="is-secondary">
-                  {groupFormCancelLabel}
+                  {strings.groupsView.form.cancel}
                 </button>
                 <button type="submit" disabled={isSubmittingGroup}>
-                  {groupFormSubmitLabel}
+                  {isSubmittingGroup ? strings.groupsView.form.saving : strings.groupsView.form.submit}
                 </button>
               </footer>
             </form>
