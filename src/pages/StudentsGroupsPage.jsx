@@ -555,7 +555,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
       try {
         const response = await fetch(
-          `${API_BASE_URL}/classes?lang=en&school_id=${encodeURIComponent(schoolId)}`,
+          `${API_BASE_URL}/classes?lang=${language ?? 'es'}&school_id=${encodeURIComponent(schoolId)}`,
           {
             method: 'GET',
             headers: {
@@ -592,13 +592,13 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         setStudentForm((previous) => ({ ...previous, group_id: '' }));
       }
     },
-    [token],
+    [language, token],
   );
 
   const fetchSchools = useCallback(
     async (preferredSchoolId = '', preferredGroupId = '') => {
       try {
-        const response = await fetch(`${API_BASE_URL}/schools/list?lang=es&status_filter=-1`, {
+        const response = await fetch(`${API_BASE_URL}/schools/list?lang=${language ?? 'es'}&status_filter=-1`, {
           method: 'GET',
           headers: {
             Accept: 'application/json',
@@ -649,7 +649,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         throw error;
       }
     },
-    [fetchClasses, token],
+    [fetchClasses, language, token],
   );
 
   const fetchStudentDetail = useCallback(
@@ -967,7 +967,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/users/update/${encodeURIComponent(userIdFromDetail)}/status?lang=en`,
+        `${API_BASE_URL}/users/update/${encodeURIComponent(userIdFromDetail)}/status?lang=${language ?? 'es'}`,
         {
           method: 'POST',
           headers: {
@@ -1369,7 +1369,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               {strings.actions.addStudent}
             </button>
           </div>
-        ) : null}
+        ) : (
+          <div className="students-groups__tab-actions">
+            <button type="button" className="students-groups__add" onClick={handleOpenCreateGroup}>
+              <span>+</span>
+              {strings.actions.addGroup}
+            </button>
+          </div>
+        )}
       </div>
 
       {activeTab === 'students' ? (

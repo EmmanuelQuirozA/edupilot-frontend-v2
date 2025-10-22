@@ -169,6 +169,7 @@ export const translations = {
         searchPlaceholder: 'Buscar alumnos por nombre, grupo o matrícula',
         actions: {
           addStudent: 'Agregar alumno',
+          addGroup: 'Agregar grupo',
           bulkUpload: 'Carga Masiva (CSV)',
           filters: 'Filtros',
           edit: 'Editar',
@@ -635,6 +636,7 @@ export const translations = {
         searchPlaceholder: 'Search students by name, group or ID',
         actions: {
           addStudent: 'Add student',
+          addGroup: 'Add group',
           bulkUpload: 'Bulk upload (CSV)',
           filters: 'Filters',
           edit: 'Edit',
