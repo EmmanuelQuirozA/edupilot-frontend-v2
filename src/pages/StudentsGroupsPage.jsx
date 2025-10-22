@@ -52,6 +52,7 @@ const createInitialStudent = () => ({
 });
 
 const createInitialGroupForm = () => ({
+  school_id: '',
   scholar_level_id: '',
   name: '',
   generation: '',
@@ -275,8 +276,12 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   const [groupForm, setGroupForm] = useState(createInitialGroupForm);
   const [editingGroupId, setEditingGroupId] = useState(null);
   const [groupModalMode, setGroupModalMode] = useState('edit');
+  const [isGroupPrefetching, setIsGroupPrefetching] = useState(false);
   const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
   const [groupFormFeedback, setGroupFormFeedback] = useState('');
+  const [groupSchoolOptions, setGroupSchoolOptions] = useState([]);
+  const [scholarLevelOptions, setScholarLevelOptions] = useState([]);
+  const [scholarLevelSearch, setScholarLevelSearch] = useState('');
   const [pendingStatusGroupId, setPendingStatusGroupId] = useState(null);
 
   const filtersCount = useMemo(
@@ -306,6 +311,29 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       }, 0),
     [appliedGroupFilters],
   );
+
+  const filteredScholarLevelOptions = useMemo(() => {
+    const query = scholarLevelSearch.trim().toLowerCase();
+    if (!query) {
+      return scholarLevelOptions;
+    }
+
+    return scholarLevelOptions.filter((option) => {
+      if (!option) {
+        return false;
+      }
+
+      const label = typeof option.label === 'string' ? option.label : String(option.label ?? '');
+      return label.toLowerCase().includes(query);
+    });
+  }, [scholarLevelOptions, scholarLevelSearch]);
+
+  const groupFormLoadErrorMessage =
+    strings.groupsView?.form?.loadError ||
+    strings.form?.loadError ||
+    (language === 'en'
+      ? 'We could not load the group information. Please try again.'
+      : 'No fue posible cargar la información del grupo. Intenta nuevamente.');
 
   const fetchStudents = useCallback(async () => {
     setIsLoading(true);
@@ -653,6 +681,109 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     [fetchClasses, language, token],
   );
 
+  const fetchGroupSchoolOptions = useCallback(
+    async (preferredSchoolId = '') => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/schools/list?lang=${language ?? 'es'}&status_filter=-1`, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load group schools');
+        }
+
+        const payload = await response.json();
+        const schoolsList = extractListFromPayload(payload);
+        let options = schoolsList
+          .map((item, index) => normalizeSelectOption(item, index))
+          .filter((option) => option.value !== '');
+
+        const normalizedPreferred =
+          preferredSchoolId === null || preferredSchoolId === undefined
+            ? ''
+            : String(preferredSchoolId);
+
+        if (
+          normalizedPreferred &&
+          !options.some((option) => option.value === normalizedPreferred)
+        ) {
+          options = [
+            ...options,
+            {
+              value: normalizedPreferred,
+              label: normalizedPreferred,
+            },
+          ];
+        }
+
+        setGroupSchoolOptions(options);
+        return options;
+      } catch (error) {
+        console.error('Failed to load group schools', error);
+        setGroupSchoolOptions([]);
+        throw error;
+      }
+    },
+    [language, token],
+  );
+
+  const fetchScholarLevels = useCallback(
+    async (preferredScholarLevelId = '') => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/catalog/scholar-levels?lang=${language ?? 'es'}`,
+          {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to load scholar levels');
+        }
+
+        const payload = await response.json();
+        const levelsList = extractListFromPayload(payload);
+        let options = levelsList
+          .map((item, index) => normalizeSelectOption(item, index))
+          .filter((option) => option.value !== '');
+
+        const normalizedPreferred =
+          preferredScholarLevelId === null || preferredScholarLevelId === undefined
+            ? ''
+            : String(preferredScholarLevelId);
+
+        if (
+          normalizedPreferred &&
+          !options.some((option) => option.value === normalizedPreferred)
+        ) {
+          options = [
+            ...options,
+            {
+              value: normalizedPreferred,
+              label: normalizedPreferred,
+            },
+          ];
+        }
+
+        setScholarLevelOptions(options);
+        return options;
+      } catch (error) {
+        console.error('Failed to load scholar levels', error);
+        setScholarLevelOptions([]);
+        throw error;
+      }
+    },
+    [language, token],
+  );
+
   const fetchStudentDetail = useCallback(
     async (studentId) => {
       if (!studentId) {
@@ -920,6 +1051,34 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     }
   };
 
+  const handleOpenCreateGroup = async () => {
+    setGroupModalMode('create');
+    setEditingGroupId(null);
+    setGroupForm(createInitialGroupForm());
+    setGroupFormFeedback('');
+    setScholarLevelSearch('');
+    setIsGroupPrefetching(true);
+
+    try {
+      const [schools, levels] = await Promise.all([
+        fetchGroupSchoolOptions(),
+        fetchScholarLevels(),
+      ]);
+
+      setGroupForm((previous) => ({
+        ...previous,
+        school_id: schools[0]?.value ?? '',
+        scholar_level_id: levels[0]?.value ?? '',
+      }));
+      setIsGroupModalOpen(true);
+    } catch (error) {
+      console.error('Failed to prepare group creation form', error);
+      showGlobalAlert('error', groupFormLoadErrorMessage);
+    } finally {
+      setIsGroupPrefetching(false);
+    }
+  };
+
   const handleEditStudent = async (student) => {
     const studentId = student?.student_id ?? student?.id;
     if (!studentId) {
@@ -1013,7 +1172,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     showGlobalAlert('info', strings.actions.menuPlaceholder);
   };
 
-  const handleOpenEditGroup = (group) => {
+  const handleOpenEditGroup = async (group) => {
     if (!group) {
       return;
     }
@@ -1023,9 +1182,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       return;
     }
 
-    setGroupModalMode('edit');
-    setEditingGroupId(groupId);
-    setGroupForm({
+    const baseForm = {
+      school_id: group.school_id === null || group.school_id === undefined ? '' : String(group.school_id),
       scholar_level_id:
         group.scholar_level_id === null || group.scholar_level_id === undefined
           ? ''
@@ -1034,9 +1192,44 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       generation: group.generation ?? '',
       group: group.group ?? '',
       grade: group.grade === null || group.grade === undefined ? '' : String(group.grade),
-    });
+    };
+
+    setGroupModalMode('edit');
+    setEditingGroupId(groupId);
     setGroupFormFeedback('');
-    setIsGroupModalOpen(true);
+    setScholarLevelSearch('');
+    setIsGroupPrefetching(true);
+
+    try {
+      const [schools, levels] = await Promise.all([
+        fetchGroupSchoolOptions(baseForm.school_id),
+        fetchScholarLevels(baseForm.scholar_level_id),
+      ]);
+
+      const nextSchoolId =
+        baseForm.school_id && schools.some((option) => option.value === baseForm.school_id)
+          ? baseForm.school_id
+          : schools[0]?.value ?? '';
+
+      const nextScholarLevelId =
+        baseForm.scholar_level_id &&
+        levels.some((option) => option.value === baseForm.scholar_level_id)
+          ? baseForm.scholar_level_id
+          : levels[0]?.value ?? '';
+
+      setGroupForm({
+        ...baseForm,
+        school_id: nextSchoolId,
+        scholar_level_id: nextScholarLevelId,
+      });
+      setIsGroupModalOpen(true);
+    } catch (error) {
+      console.error('Failed to open group for editing', error);
+      showGlobalAlert('error', groupFormLoadErrorMessage);
+      setEditingGroupId(null);
+    } finally {
+      setIsGroupPrefetching(false);
+    }
   };
 
   const closeGroupModal = () => {
@@ -1045,6 +1238,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     setGroupForm(createInitialGroupForm());
     setGroupFormFeedback('');
     setGroupModalMode('edit');
+    setScholarLevelSearch('');
   };
 
   const handleGroupFormChange = (event) => {
@@ -1063,9 +1257,17 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     setIsSubmittingGroup(true);
     setGroupFormFeedback('');
 
-    const normalizedScholarLevelId = groupForm.scholar_level_id.trim();
+    const normalizedScholarLevelId = (groupForm.scholar_level_id ?? '').toString().trim();
+    const normalizedSchoolId = (groupForm.school_id ?? '').toString().trim();
     const parsedScholarLevelId = Number(normalizedScholarLevelId);
+    const parsedSchoolId = Number(normalizedSchoolId);
     const bodyPayload = {
+      school_id:
+        normalizedSchoolId === ''
+          ? undefined
+          : Number.isNaN(parsedSchoolId)
+          ? normalizedSchoolId
+          : parsedSchoolId,
       scholar_level_id:
         normalizedScholarLevelId === ''
           ? undefined
@@ -1143,6 +1345,56 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     }
   };
 
+  useEffect(() => {
+    if (!isGroupModalOpen) {
+      return;
+    }
+
+    if (groupSchoolOptions.length === 0) {
+      if (groupForm.school_id !== '') {
+        setGroupForm((previous) => ({ ...previous, school_id: '' }));
+      }
+      return;
+    }
+
+    if (
+      groupForm.school_id &&
+      groupSchoolOptions.some((option) => option.value === groupForm.school_id)
+    ) {
+      return;
+    }
+
+    setGroupForm((previous) => ({
+      ...previous,
+      school_id: groupSchoolOptions[0].value,
+    }));
+  }, [groupSchoolOptions, groupForm.school_id, isGroupModalOpen]);
+
+  useEffect(() => {
+    if (!isGroupModalOpen) {
+      return;
+    }
+
+    if (filteredScholarLevelOptions.length === 0) {
+      if (groupForm.scholar_level_id !== '') {
+        setGroupForm((previous) => ({ ...previous, scholar_level_id: '' }));
+      }
+      return;
+    }
+
+    if (
+      groupForm.scholar_level_id &&
+      filteredScholarLevelOptions.some((option) => option.value === groupForm.scholar_level_id)
+    ) {
+      return;
+    }
+
+    setGroupForm((previous) => ({
+      ...previous,
+      scholar_level_id: filteredScholarLevelOptions[0].value,
+    }));
+  }, [filteredScholarLevelOptions, groupForm.scholar_level_id, isGroupModalOpen]);
+
   const handleToggleGroupStatus = async (group, shouldEnable) => {
     const groupId = group?.group_id ?? group?.id;
     if (!groupId) {
@@ -1153,7 +1405,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/groups/update/${encodeURIComponent(groupId)}/status?lang=en`,
+        `${API_BASE_URL}/groups/update/${encodeURIComponent(groupId)}/status?lang=${language ?? 'es'}`,
         {
           method: 'POST',
           headers: {
@@ -1417,13 +1669,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
             <button
               type="button"
               className="students-groups__add"
-              onClick={() => {
-                setGroupModalMode('create');
-                setEditingGroupId(null);
-                setGroupForm(createInitialGroupForm());
-                setGroupFormFeedback('');
-                setIsGroupModalOpen(true);
-              }}
+              onClick={handleOpenCreateGroup}
+              disabled={isGroupPrefetching}
             >
               <span>+</span>
               {strings.actions.addGroup}
@@ -1746,6 +1993,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                               className="students-table__icon-button"
                               onClick={() => handleOpenEditGroup(group)}
                               aria-label={`${strings.actions.edit} ${gradeGroup}`}
+                              disabled={isGroupPrefetching}
                             >
                               <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                                 <path d="M3 16.75V19h2.25l8.9-8.9-2.25-2.25Zm12.87-7.4a.75.75 0 0 0 0-1.06l-1.16-1.16a.75.75 0 0 0-1.06 0l-1.04 1.04 2.22 2.22Z" />
@@ -2138,7 +2386,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 <h3>{groupFormTitle}</h3>
                 <p>{groupFormSubtitle}</p>
               </div>
-              <button type="button" onClick={closeGroupModal} aria-label={strings.groupsView.form.close}>
+              <button type="button" onClick={closeGroupModal} aria-label={groupFormCloseLabel}>
                 ×
               </button>
             </header>
@@ -2166,13 +2414,51 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                   <input name="group" value={groupForm.group} onChange={handleGroupFormChange} required />
                 </label>
                 <label>
-                  <span>{strings.groupsView.form.fields.scholarLevelId}</span>
+                  <span>{strings.groupsView.form.fields.schoolId}</span>
+                  <select
+                    className="custom_select"
+                    name="school_id"
+                    value={groupForm.school_id}
+                    onChange={handleGroupFormChange}
+                    disabled={!groupSchoolOptions.length}
+                    required
+                  >
+                    {groupSchoolOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="groups-form__search">
+                  <span>{strings.groupsView.form.fields.scholarLevelSearch}</span>
                   <input
+                    type="search"
+                    value={scholarLevelSearch}
+                    onChange={(event) => setScholarLevelSearch(event.target.value)}
+                    placeholder={
+                      strings.groupsView.form.fields.scholarLevelPlaceholder ||
+                      strings.searchPlaceholder ||
+                      ''
+                    }
+                  />
+                </label>
+                <label>
+                  <span>{strings.groupsView.form.fields.scholarLevel}</span>
+                  <select
+                    className="custom_select"
                     name="scholar_level_id"
                     value={groupForm.scholar_level_id}
                     onChange={handleGroupFormChange}
+                    disabled={!filteredScholarLevelOptions.length}
                     required
-                  />
+                  >
+                    {filteredScholarLevelOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
 
