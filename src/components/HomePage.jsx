@@ -348,9 +348,7 @@ const HomePage = ({
                 <h3>{studentsCard.title}</h3>
                 <p>{studentsCard.subtitle}</p>
               </div>
-              <button type="button" className="btn btn-outline-primary fw-semibold">
-                {studentsCard.actionLabel}
-              </button>
+              <button type="button">{studentsCard.actionLabel}</button>
             </header>
             <ul className="students-card__list">
               {studentsCard.list.map((student) => (
@@ -384,12 +382,10 @@ const HomePage = ({
                 <p>{paymentsCard.summary}</p>
               </div>
               <div className="payments-card__period">
-                <button type="button" className="btn btn-sm btn-primary">
+                <button type="button" className="is-active">
                   {paymentsCard.periodOptions[0]}
                 </button>
-                <button type="button" className="btn btn-sm btn-outline-primary">
-                  {paymentsCard.periodOptions[1]}
-                </button>
+                <button type="button">{paymentsCard.periodOptions[1]}</button>
               </div>
             </header>
 
@@ -482,10 +478,12 @@ const HomePage = ({
         {!isDesktop ? (
           <button
             type="button"
-            className="btn-close sidebar__close"
+            className="sidebar__close"
             onClick={closeSidebar}
             aria-label={t.home.header.closeMenu}
-          />
+          >
+            ×
+          </button>
         ) : null}
         {/* <div className="sidebar__brand">
           <span className="sidebar__brand-mark">school</span>
@@ -519,11 +517,7 @@ const HomePage = ({
             <li>{t.home.menu.configuration}</li>
           </ul>
         </nav>
-        <button
-          type="button"
-          className="btn btn-outline-light fw-semibold w-100 sidebar__logout"
-          onClick={logout}
-        >
+        <button type="button" className="sidebar__logout" onClick={logout}>
           {t.home.logout}
         </button>
       </aside>
@@ -531,7 +525,7 @@ const HomePage = ({
       {!isDesktop ? (
         <button
           type="button"
-          className="btn btn-outline-secondary dashboard__menu-toggle"
+          className="dashboard__menu-toggle"
           onClick={toggleSidebar}
           aria-label={isSidebarOpen ? t.home.header.closeMenu : t.home.header.openMenu}
         >
@@ -563,11 +557,7 @@ const HomePage = ({
               <input id="dashboard-search" type="search" placeholder={t.home.header.searchPlaceholder} />
             </label>
             <LanguageSelector value={language} onChange={onLanguageChange} />
-            <button
-              type="button"
-              className="btn btn-outline-secondary position-relative dashboard__notification"
-              aria-label={t.home.header.notifications}
-            >
+            <button type="button" className="dashboard__notification" aria-label={t.home.header.notifications}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   d="M12 3a5 5 0 0 0-5 5v2.17c0 .7-.28 1.37-.77 1.86L4.6 13.65A1 1 0 0 0 5.3 15h13.4a1 1 0 0 0 .7-1.35l-1.63-1.62a2.63 2.63 0 0 1-.77-1.86V8a5 5 0 0 0-5-5Zm0 18a2.5 2.5 0 0 1-2.45-2h4.9A2.5 2.5 0 0 1 12 21Z"

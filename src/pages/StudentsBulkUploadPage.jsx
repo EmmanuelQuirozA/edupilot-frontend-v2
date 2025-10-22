@@ -280,14 +280,10 @@ const ConfirmationDialog = ({ open, title, message, confirmLabel, cancelLabel, o
         </header>
         <p>{message}</p>
         <footer>
-          <button
-            type="button"
-            className="btn btn-link text-decoration-none p-0"
-            onClick={onCancel}
-          >
+          <button type="button" className="is-text" onClick={onCancel}>
             {cancelLabel}
           </button>
-          <button type="button" className="btn btn-primary" onClick={onConfirm}>
+          <button type="button" onClick={onConfirm}>
             {confirmLabel}
           </button>
         </footer>
@@ -1162,11 +1158,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
                   <span>{strings.steps?.downloadTemplate?.title ?? 'Descarga el formato'}</span>
                   <p>{strings.steps?.downloadTemplate?.description ?? 'Utiliza el archivo CSV de referencia para evitar errores.'}</p>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-outline-primary fw-semibold bulk-upload__download"
-                  onClick={handleDownloadTemplate}
-                >
+                <button type="button" className="bulk-upload__download" onClick={handleDownloadTemplate}>
                   {strings.actions?.downloadTemplate ?? 'Descargar aquí'}
                 </button>
               </li>
@@ -1199,11 +1191,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
               <div className="bulk-upload__file-info">
                 <span>{strings.fileInfo?.label ?? 'Archivo seleccionado'}:</span>
                 <strong>{uploadedFileName}</strong>
-                <button
-                  type="button"
-                  className="btn btn-link text-decoration-none p-0"
-                  onClick={handleClearFile}
-                >
+                <button type="button" className="is-text" onClick={handleClearFile}>
                   {strings.actions?.removeFile ?? 'Eliminar'}
                 </button>
               </div>
@@ -1223,21 +1211,16 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
               <div className="bulk-upload__preview-actions">
                 <button
                   type="button"
-                  className="btn btn-link text-decoration-none p-0"
+                  className="is-text"
                   onClick={handleDownloadReport}
                   disabled={!rows.length}
                 >
                   {strings.report?.download ?? 'Descargar reporte'}
                 </button>
-                <button type="button" className="btn btn-outline-secondary" onClick={onNavigateBack}>
+                <button type="button" className="is-secondary" onClick={onNavigateBack}>
                   {strings.actions?.back ?? 'Volver a alumnos'}
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleCreateStudents}
-                  disabled={!rows.length}
-                >
+                <button type="button" onClick={handleCreateStudents} disabled={!rows.length}>
                   {isValidating ? strings.actions?.validating ?? 'Validando...' : strings.actions?.create ?? 'Crear alumnos válidos'}
                 </button>
               </div>
@@ -1336,11 +1319,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
                 <ul>
                   {logEntries.map((entry) => (
                     <li key={entry.id}>
-                      <button
-                        type="button"
-                        className="btn btn-link text-start text-decoration-none p-0"
-                        onClick={() => handleFocusRow(entry.id)}
-                      >
+                      <button type="button" onClick={() => handleFocusRow(entry.id)}>
                         <strong>{entry.label}</strong>
                         <span>{entry.messages[0]}</span>
                       </button>
