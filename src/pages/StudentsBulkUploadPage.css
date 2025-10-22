@@ -399,6 +399,7 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
 }
 
 .bulk-upload__confirm-dialog {
@@ -408,6 +409,7 @@
   padding: clamp(1.5rem, 2vw, 2.25rem);
   max-width: 420px;
   width: min(90vw, 420px);
+  backdrop-filter: blur(8px);
   box-shadow: 0 40px 80px -48px rgba(15, 23, 42, 0.45);
   z-index: 1;
   display: flex;

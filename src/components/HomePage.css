@@ -24,7 +24,6 @@
   flex-direction: column;
   gap: 2.5rem;
   position: relative;
-  z-index: 40;
   transition: transform 0.35s ease, opacity 0.35s ease;
 }
 
@@ -226,6 +225,8 @@
 }
 
 .dashboard__main {
+  display: grid;
+  gap: 20px;
   padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem);
   position: relative;
   z-index: 20;

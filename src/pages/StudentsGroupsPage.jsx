@@ -2430,7 +2430,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                     ))}
                   </select>
                 </label>
-                <label className="groups-form__search">
+                {/* <label className="groups-form__search">
                   <span>{strings.groupsView.form.fields.scholarLevelSearch}</span>
                   <input
                     type="search"
@@ -2442,7 +2442,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                       ''
                     }
                   />
-                </label>
+                </label> */}
                 <label>
                   <span>{strings.groupsView.form.fields.scholarLevel}</span>
                   <select
