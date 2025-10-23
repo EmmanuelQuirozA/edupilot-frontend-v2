@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import GlobalToast from '../components/GlobalToast.jsx';
+import ActionButton from '../components/ui/ActionButton.jsx';
+import UiCard from '../components/ui/UiCard.jsx';
+import { Table, TableContainer } from '../components/ui/DataTable.jsx';
 import './StudentsGroupsPage.css';
 
 const DEFAULT_PAGINATION = { offset: 0, limit: 10 };
@@ -59,6 +62,39 @@ const createInitialGroupForm = () => ({
   group: '',
   grade: '',
 });
+
+const PlusIcon = (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M12 5v14M5 12h14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const UploadIcon = (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 20h16a1 1 0 0 0 1-1v-5h-2v4H5v-4H3v5a1 1 0 0 0 1 1z" />
+    <path d="M12 3 7 8h3v7h4V8h3l-5-5z" />
+  </svg>
+);
+
+const FilterIcon = (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M4 5h16M7 12h10M10 19h4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 const extractListFromPayload = (payload) => {
   if (!payload) {
@@ -1643,44 +1679,41 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
         {activeTab === 'students' ? (
           <div className="students-groups__tab-actions">
-            <button
-              type="button"
-              className="students-groups__tab-action students-groups__tab-action--secondary"
+            <ActionButton
+              variant="upload"
               onClick={onBulkUpload}
+              icon={UploadIcon}
+              className="students-groups__tab-action"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 20h16a1 1 0 0 0 1-1v-5h-2v4H5v-4H3v5a1 1 0 0 0 1 1z" />
-                <path d="M12 3 7 8h3v7h4V8h3l-5-5z" />
-              </svg>
               {strings.actions.bulkUpload}
-            </button>
-            <button
-              type="button"
-              className="students-groups__add"
+            </ActionButton>
+            <ActionButton
+              variant="primary"
               onClick={handleOpenCreateStudent}
               disabled={isStudentPrefetching}
+              icon={PlusIcon}
+              className="students-groups__add"
             >
-              <span>+</span>
               {strings.actions.addStudent}
-            </button>
+            </ActionButton>
           </div>
         ) : (
           <div className="students-groups__tab-actions">
-            <button
-              type="button"
-              className="students-groups__add"
+            <ActionButton
+              variant="primary"
               onClick={handleOpenCreateGroup}
               disabled={isGroupPrefetching}
+              icon={PlusIcon}
+              className="students-groups__add"
             >
-              <span>+</span>
               {strings.actions.addGroup}
-            </button>
+            </ActionButton>
           </div>
         )}
       </div>
 
       {activeTab === 'students' ? (
-        <section className="students-view">
+        <UiCard className="students-view">
           <div className="students-view__toolbar">
             <form className="students-view__search" onSubmit={handleSearchSubmit}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1702,25 +1735,20 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
             </form>
 
             <div className="students-view__actions">
-              <button type="button" className="students-view__filters" onClick={() => setIsFiltersOpen(true)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M4 5h16M7 12h10M10 19h4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {strings.actions.filters}
+              <ActionButton
+                variant="filter"
+                onClick={() => setIsFiltersOpen(true)}
+                icon={FilterIcon}
+                className="students-view__filters"
+              >
+                <span className="students-view__filters-text">{strings.actions.filters}</span>
                 {filtersCount > 0 && <span className="students-view__filters-count">{filtersCount}</span>}
-              </button>
+              </ActionButton>
             </div>
           </div>
 
-          <div className="students-table__wrapper">
-            <table className="students-table">
+          <TableContainer className="students-table__wrapper">
+            <Table className="students-table">
               <thead>
                 <tr>
                   <th scope="col">{strings.table.student}</th>
@@ -1802,16 +1830,18 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                         <td data-title={strings.table.status}>{renderStatusPill(student, isActive)}</td>
                         <td data-title={strings.table.actions} className="students-table__actions-cell">
                           <div className="students-table__actions">
-                            <button
-                              type="button"
+                            <ActionButton
+                              variant="ghost"
+                              size="icon"
                               className="students-table__icon-button"
                               onClick={() => handleEditStudent(student)}
                               aria-label={`${strings.actions.edit} ${fullName || strings.table.unknownStudent}`}
-                            >
-                              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-                                <path d="M3 16.75V19h2.25l8.9-8.9-2.25-2.25Zm12.87-7.4a.75.75 0 0 0 0-1.06l-1.16-1.16a.75.75 0 0 0-1.06 0l-1.04 1.04 2.22 2.22Z" />
-                              </svg>
-                            </button>
+                              icon={
+                                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                                  <path d="M3 16.75V19h2.25l8.9-8.9-2.25-2.25Zm12.87-7.4a.75.75 0 0 0 0-1.06l-1.16-1.16a.75.75 0 0 0-1.06 0l-1.04 1.04 2.22 2.22Z" />
+                                </svg>
+                              }
+                            />
                             <label
                               className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
                               title={switchTitle}
@@ -1828,19 +1858,23 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                               </span>
                             </label>
                             <div className={`students-table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
-                              <button
-                                type="button"
+                              <ActionButton
+                                variant="ghost"
+                                size="icon"
                                 aria-haspopup="menu"
                                 aria-expanded={openActionsMenuId === studentId}
                                 onClick={() => toggleActionsMenu(studentId)}
+                                className="students-table__icon-button"
+                                icon={
+                                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="5" r="1.8" />
+                                    <circle cx="12" cy="12" r="1.8" />
+                                    <circle cx="12" cy="19" r="1.8" />
+                                  </svg>
+                                }
                               >
                                 <span className="visually-hidden">{strings.actions.more}</span>
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                  <circle cx="12" cy="5" r="1.8" />
-                                  <circle cx="12" cy="12" r="1.8" />
-                                  <circle cx="12" cy="19" r="1.8" />
-                                </svg>
-                              </button>
+                              </ActionButton>
                               {openActionsMenuId === studentId ? (
                                 <ul role="menu">
                                   <li>
@@ -1868,8 +1902,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                   })
                 )}
               </tbody>
-            </table>
-          </div>
+            </Table>
+          </TableContainer>
 
           <footer className="students-table__footer">
             <div>
@@ -1902,34 +1936,25 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               </button>
             </div>
           </footer>
-        </section>
+        </UiCard>
       ) : (
-        <section className="students-view groups-view">
+        <UiCard className="students-view groups-view">
           <div className="groups-view__toolbar">
-            <button
-              type="button"
-              className="students-view__filters"
+            <ActionButton
+              variant="filter"
               onClick={() => setIsGroupFiltersOpen(true)}
+              icon={FilterIcon}
+              className="students-view__filters"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M4 5h16M7 12h10M10 19h4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {strings.actions.filters}
+              <span className="students-view__filters-text">{strings.actions.filters}</span>
               {groupFiltersCount > 0 && (
                 <span className="students-view__filters-count">{groupFiltersCount}</span>
               )}
-            </button>
+            </ActionButton>
           </div>
 
-          <div className="students-table__wrapper">
-            <table className="students-table groups-table">
+          <TableContainer className="students-table__wrapper">
+            <Table className="students-table groups-table">
               <thead>
                 <tr>
                   <th scope="col">{strings.groupsView.table.generation}</th>
@@ -1988,17 +2013,19 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                         </td>
                         <td data-title={strings.groupsView.table.actions} className="students-table__actions-cell">
                           <div className="students-table__actions">
-                            <button
-                              type="button"
+                            <ActionButton
+                              variant="ghost"
+                              size="icon"
                               className="students-table__icon-button"
                               onClick={() => handleOpenEditGroup(group)}
                               aria-label={`${strings.actions.edit} ${gradeGroup}`}
                               disabled={isGroupPrefetching}
-                            >
-                              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-                                <path d="M3 16.75V19h2.25l8.9-8.9-2.25-2.25Zm12.87-7.4a.75.75 0 0 0 0-1.06l-1.16-1.16a.75.75 0 0 0-1.06 0l-1.04 1.04 2.22 2.22Z" />
-                              </svg>
-                            </button>
+                              icon={
+                                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                                  <path d="M3 16.75V19h2.25l8.9-8.9-2.25-2.25Zm12.87-7.4a.75.75 0 0 0 0-1.06l-1.16-1.16a.75.75 0 0 0-1.06 0l-1.04 1.04 2.22 2.22Z" />
+                                </svg>
+                              }
+                            />
                             <label
                               className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
                               title={switchTitle}
@@ -2021,8 +2048,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                   })
                 )}
               </tbody>
-            </table>
-          </div>
+            </Table>
+          </TableContainer>
 
           <footer className="students-table__footer">
             <div>
@@ -2058,7 +2085,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               </button>
             </div>
           </footer>
-        </section>
+        </UiCard>
       )}
 
       {isFiltersOpen && (
@@ -2074,9 +2101,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 <h3>{strings.filters.title}</h3>
                 <p>{strings.filters.subtitle}</p>
               </div>
-              <button type="button" onClick={() => setIsFiltersOpen(false)} aria-label="Cerrar filtros">
-                ×
-              </button>
+              <ActionButton
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsFiltersOpen(false)}
+                aria-label="Cerrar filtros"
+                className="students-filters__close"
+                icon={<span aria-hidden="true">×</span>}
+              />
             </header>
             <form className="students-filters__form" onSubmit={handleApplyFilters}>
               <label>
@@ -2108,10 +2140,16 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 </select>
               </label>
               <div className="students-filters__actions">
-                <button type="button" onClick={handleClearFilters} className="is-text">
+                <ActionButton
+                  variant="text"
+                  onClick={handleClearFilters}
+                  className="students-filters__link"
+                >
                   {strings.filters.clear}
-                </button>
-                <button type="submit">{strings.filters.apply}</button>
+                </ActionButton>
+                <ActionButton type="submit" className="students-filters__submit">
+                  {strings.filters.apply}
+                </ActionButton>
               </div>
             </form>
           </aside>
@@ -2131,13 +2169,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 <h3>{strings.groupsView.filters.title}</h3>
                 <p>{strings.groupsView.filters.subtitle}</p>
               </div>
-              <button
-                type="button"
+              <ActionButton
+                variant="ghost"
+                size="icon"
                 onClick={() => setIsGroupFiltersOpen(false)}
                 aria-label={strings.groupsView.filters.close}
-              >
-                ×
-              </button>
+                className="students-filters__close"
+                icon={<span aria-hidden="true">×</span>}
+              />
             </header>
             <form className="students-filters__form" onSubmit={handleApplyGroupFilters}>
               <label>
@@ -2174,10 +2213,16 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 </select>
               </label>
               <div className="students-filters__actions">
-                <button type="button" onClick={handleClearGroupFilters} className="is-text">
+                <ActionButton
+                  variant="text"
+                  onClick={handleClearGroupFilters}
+                  className="students-filters__link"
+                >
                   {strings.groupsView.filters.clear}
-                </button>
-                <button type="submit">{strings.groupsView.filters.apply}</button>
+                </ActionButton>
+                <ActionButton type="submit" className="students-filters__submit">
+                  {strings.groupsView.filters.apply}
+                </ActionButton>
               </div>
             </form>
           </aside>
@@ -2193,9 +2238,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 <h3>{isEditMode ? strings.form.editTitle : strings.form.title}</h3>
                 <p>{isEditMode ? strings.form.editDescription : strings.form.description}</p>
               </div>
-              <button type="button" onClick={closeGroupModal} aria-label={groupFormCloseLabel}>
-                ×
-              </button>
+              <ActionButton
+                variant="ghost"
+                size="icon"
+                onClick={closeGroupModal}
+                aria-label={groupFormCloseLabel}
+                className="students-modal__close"
+                icon={<span aria-hidden="true">×</span>}
+              />
             </header>
             <form className="students-form" onSubmit={handleStudentSubmit}>
               <section>
@@ -2361,16 +2411,25 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               {formFeedback && <p className="students-form__feedback">{formFeedback}</p>}
 
               <footer className="students-form__actions">
-                <button type="button" onClick={closeStudentModal} className="is-secondary">
+                <ActionButton
+                  type="button"
+                  variant="secondary"
+                  onClick={closeStudentModal}
+                  className="students-form__cancel"
+                >
                   {strings.form.cancel}
-                </button>
-                <button type="submit" disabled={isSubmittingStudent}>
+                </ActionButton>
+                <ActionButton
+                  type="submit"
+                  disabled={isSubmittingStudent}
+                  className="students-form__submit"
+                >
                   {isSubmittingStudent
                     ? '...'
                     : isEditMode
                     ? strings.form.editSubmit
                     : strings.form.submit}
-                </button>
+                </ActionButton>
               </footer>
             </form>
           </div>
@@ -2386,9 +2445,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 <h3>{groupFormTitle}</h3>
                 <p>{groupFormSubtitle}</p>
               </div>
-              <button type="button" onClick={closeGroupModal} aria-label={groupFormCloseLabel}>
-                ×
-              </button>
+              <ActionButton
+                variant="ghost"
+                size="icon"
+                onClick={closeGroupModal}
+                aria-label={groupFormCloseLabel}
+                className="students-modal__close"
+                icon={<span aria-hidden="true">×</span>}
+              />
             </header>
             <form className="students-form groups-form" onSubmit={handleGroupSubmit}>
               <div className="students-form__grid groups-form__grid">
@@ -2465,12 +2529,21 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               {groupFormFeedback && <p className="students-form__feedback">{groupFormFeedback}</p>}
 
               <footer className="students-form__actions">
-                <button type="button" onClick={closeGroupModal} className="is-secondary">
+                <ActionButton
+                  type="button"
+                  variant="secondary"
+                  onClick={closeGroupModal}
+                  className="students-form__cancel"
+                >
                   {groupFormCancelLabel}
-                </button>
-                <button type="submit" disabled={isSubmittingGroup}>
+                </ActionButton>
+                <ActionButton
+                  type="submit"
+                  disabled={isSubmittingGroup}
+                  className="students-form__submit"
+                >
                   {groupFormSubmitLabel}
-                </button>
+                </ActionButton>
               </footer>
             </form>
           </div>

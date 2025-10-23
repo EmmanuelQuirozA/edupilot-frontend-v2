@@ -17,43 +17,57 @@
   color: #475569;
 }
 
-.students-bulk-upload button {
-  border: none;
-  border-radius: 0.9rem;
+.students-bulk-upload .ui-button {
   font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.students-bulk-upload button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-  transform: none;
-  box-shadow: none;
+.bulk-upload__download {
+  --ui-button-shadow: none;
+  --ui-button-hover-shadow: none;
 }
 
-.students-bulk-upload button:not(.is-text):not(.is-secondary) {
-  background: #1d4ed8;
-  color: #fff;
-  padding: 0.75rem 1.5rem;
-  box-shadow: 0 12px 20px -12px rgba(29, 78, 216, 0.75);
+.bulk-upload__remove-file {
+  --ui-button-shadow: none;
+  --ui-button-hover-shadow: none;
+  --ui-button-color: #1d4ed8;
+  padding-inline: 0.35rem;
 }
 
-.students-bulk-upload button:not(.is-text):not(.is-secondary):hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 24px -14px rgba(29, 78, 216, 0.75);
+.bulk-upload__preview-action {
+  --ui-button-shadow: none;
+  --ui-button-hover-shadow: none;
 }
 
-.students-bulk-upload button.is-text {
-  background: transparent;
-  color: #1d4ed8;
-  padding: 0.35rem 0.65rem;
+.bulk-upload__preview-action:disabled {
+  --ui-button-color: #9ca3af;
 }
 
-.students-bulk-upload button.is-secondary {
-  background: #e2e8f0;
-  color: #334155;
-  padding: 0.75rem 1.35rem;
+.bulk-upload__log-button {
+  --ui-button-shadow: none;
+  --ui-button-hover-shadow: none;
+  padding-inline: 0;
+}
+
+.bulk-upload__log-button strong {
+  display: block;
+  color: #0f172a;
+}
+
+.bulk-upload__log-button span {
+  display: block;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.bulk-upload__confirm-cancel {
+  --ui-button-color: #1d4ed8;
+  --ui-button-shadow: none;
+  --ui-button-hover-shadow: none;
+}
+
+.bulk-upload__confirm-submit {
+  --ui-button-shadow: none;
+  --ui-button-hover-shadow: none;
 }
 
 .bulk-upload__header {
@@ -92,15 +106,13 @@
 }
 
 .bulk-upload__card {
-  background: #fff;
-  border-radius: 1.75rem;
-  padding: clamp(1.5rem, 2.5vw, 2.5rem);
-  box-shadow: 0 40px 80px -48px rgba(15, 23, 42, 0.35);
+  --ui-card-padding: clamp(1.5rem, 2.5vw, 2.5rem);
+  --ui-card-gap: 1.5rem;
+  --ui-card-shadow: 0 40px 80px -48px rgba(15, 23, 42, 0.35);
   max-width: 100%;
-  overflow: hidden;
 }
 
-.card-body{
+.card-body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;

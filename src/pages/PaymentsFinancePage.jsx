@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import GlobalToast from '../components/GlobalToast.jsx';
+import ActionButton from '../components/ui/ActionButton.jsx';
+import UiCard from '../components/ui/UiCard.jsx';
+import { Table, TableContainer } from '../components/ui/DataTable.jsx';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import './PaymentsFinancePage.css';
@@ -473,6 +476,37 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
     );
   };
 
+  const FiltersIcon = (
+    <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
+      <path d="M3 4h14l-5 6v4l-4 2v-6L3 4Z" fill="currentColor" fillRule="evenodd" />
+    </svg>
+  );
+
+  const DebtIcon = (
+    <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
+      <path d="M4 5h12v2H4zm0 4h8v2H4zm0 4h5v2H4z" fill="currentColor" />
+    </svg>
+  );
+
+  const AddPaymentIcon = (
+    <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
+      <path d="M10 3v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+
+  const ExportIcon = (
+    <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
+      <path
+        d="M10 3v8m0 0 3-3m-3 3-3-3M4 12v4h12v-4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  );
+
   const renderTable = () => {
     if (loading) {
       return <div className="payments-page__empty-state">Cargando información de pagos...</div>;
@@ -487,9 +521,9 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
     }
 
     return (
-      <div className="payments-page__table-card">
-        <div className="payments-page__table-wrapper">
-          <table className="payments-page__table">
+      <UiCard className="payments-page__table-card">
+        <TableContainer className="payments-page__table-wrapper">
+          <Table className="payments-page__table">
             <thead>
               <tr>
                 {displayedColumns.map((column) => (
@@ -545,14 +579,14 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                 return (
                   <tr key={rowKey}>
                     <td>
-                      <button
-                        type="button"
-                        className="payments-page__student-button"
+                      <ActionButton
+                        variant="text"
                         onClick={() => handleStudentDetailClick(row)}
                         disabled={!canNavigateToStudent}
+                        className="payments-page__student-button"
                       >
                         {row.student ?? 'Sin nombre'}
-                      </button>
+                      </ActionButton>
                       {row.payment_reference ? (
                         <span className="payments-page__student-id">Matrícula: {row.payment_reference}</span>
                       ) : null}
@@ -565,7 +599,11 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                       const isNullish = value === null || value === undefined;
                       return (
                         <td key={`${rowKey}-${month}`} className={isNullish ? 'payments-page__amount-null' : ''}>
-                          {isNullish || value === '' ? '--' : value}
+                          {isNullish || value === '' ? (
+                            <span className="ui-table__empty-indicator">--</span>
+                          ) : (
+                            value
+                          )}
                         </td>
                       );
                     })}
@@ -573,8 +611,8 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                 );
               })}
             </tbody>
-          </table>
-        </div>
+          </Table>
+        </TableContainer>
         <div className="payments-page__pagination">
           {(() => {
             const startRecord = totalElements === 0 ? 0 : offset + 1;
@@ -588,22 +626,30 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
             );
           })()}
           <div className="payments-page__pagination-controls">
-            <button type="button" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage <= 1}>
+            <ActionButton
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+            >
               Anterior
-            </button>
+            </ActionButton>
             <span>
               Página {currentPage} de {totalPages}
             </span>
-            <button
+            <ActionButton
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage >= totalPages}
             >
               Siguiente
-            </button>
+            </ActionButton>
           </div>
         </div>
-      </div>
+      </UiCard>
     );
   };
 
@@ -633,59 +679,40 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
 
       {isTuitionTab ? (
         <div className="payments-page__actions">
-          <button
-            type="button"
-            className="payments-page__button payments-page__button--outline"
+          <ActionButton
+            variant="filter"
             onClick={handleToggleFilters}
             aria-expanded={showFilters}
             aria-controls="payments-page-filters"
+            icon={FiltersIcon}
+            className="payments-page__action-button"
           >
-            <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
-              <path
-                d="M3 4h14l-5 6v4l-4 2v-6L3 4Z"
-                fill="currentColor"
-                fillRule="evenodd"
-              />
-            </svg>
             Filtros
-          </button>
-          <button
-            type="button"
-            className={`payments-page__button ${showDebtOnly ? 'payments-page__debt-button-active' : 'payments-page__button--ghost'}`}
+          </ActionButton>
+          <ActionButton
+            variant="ghost"
             onClick={handleToggleDebt}
+            icon={DebtIcon}
+            className={`payments-page__action-button payments-page__debt-button ${showDebtOnly ? 'is-active' : ''}`}
           >
-            <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
-              <path
-                d="M4 5h12v2H4zm0 4h8v2H4zm0 4h5v2H4z"
-                fill="currentColor"
-              />
-            </svg>
             {showDebtOnly ? 'Mostrando morosos' : 'Alumnos con deuda'}
-          </button>
-          <button type="button" className="payments-page__button payments-page__button--primary">
-            <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
-              <path d="M10 3v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+          </ActionButton>
+          <ActionButton
+            variant="primary"
+            icon={AddPaymentIcon}
+            className="payments-page__action-button"
+          >
             Agregar pago
-          </button>
-          <button
-            type="button"
-            className="payments-page__button payments-page__button--outline"
+          </ActionButton>
+          <ActionButton
+            variant="outline"
             onClick={handleExport}
             disabled={isExporting}
+            icon={ExportIcon}
+            className="payments-page__action-button"
           >
-            <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
-              <path
-                d="M10 3v8m0 0 3-3m-3 3-3-3M4 12v4h12v-4"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </svg>
             {isExporting ? 'Exportando…' : 'Exportar CSV'}
-          </button>
+          </ActionButton>
         </div>
       ) : null}
 
@@ -761,18 +788,24 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                 <h2 id="payments-page-filters-title" className="payments-page__filters-title">
                   Filtros
                 </h2>
-                <button type="button" className="payments-page__filters-reset" onClick={handleResetFilters}>
+                <ActionButton
+                  type="button"
+                  variant="text"
+                  onClick={handleResetFilters}
+                  className="payments-page__filters-reset"
+                >
                   Reiniciar
-                </button>
+                </ActionButton>
               </div>
-              <button
+              <ActionButton
                 type="button"
+                variant="ghost"
+                size="icon"
                 className="payments-page__filters-close"
                 onClick={() => setShowFilters(false)}
                 aria-label="Cerrar filtros"
-              >
-                ×
-              </button>
+                icon={<span aria-hidden="true">×</span>}
+              />
             </header>
             <div className="payments-page__filters-form">
               <div className="payments-page__field">
