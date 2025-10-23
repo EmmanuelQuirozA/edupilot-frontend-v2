@@ -203,7 +203,10 @@ const HomePage = ({
     () => ({
       payments: (
         <PaymentsFinancePage
-          {...t.home.pages.payments}
+          title={t.home.pages.payments.title}
+          description={t.home.pages.payments.description}
+          language={language}
+          strings={t.home.paymentsPage}
           onStudentDetail={handleStudentDetailNavigate}
         />
       ),

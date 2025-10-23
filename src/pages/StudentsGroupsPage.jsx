@@ -3,6 +3,9 @@ import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import GlobalToast from '../components/GlobalToast.jsx';
 import ActionButton from '../components/ui/ActionButton.jsx';
+import AddRecordButton from '../components/ui/buttons/AddRecordButton.jsx';
+import EditRecordButton from '../components/ui/buttons/EditRecordButton.jsx';
+import FilterButton from '../components/ui/buttons/FilterButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
 import { Table, TableContainer } from '../components/ui/DataTable.jsx';
 import './StudentsGroupsPage.css';
@@ -63,36 +66,10 @@ const createInitialGroupForm = () => ({
   grade: '',
 });
 
-const PlusIcon = (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M12 5v14M5 12h14"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 const UploadIcon = (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M4 20h16a1 1 0 0 0 1-1v-5h-2v4H5v-4H3v5a1 1 0 0 0 1 1z" />
     <path d="M12 3 7 8h3v7h4V8h3l-5-5z" />
-  </svg>
-);
-
-const FilterIcon = (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M4 5h16M7 12h10M10 19h4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
   </svg>
 );
 
@@ -1687,27 +1664,25 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
             >
               {strings.actions.bulkUpload}
             </ActionButton>
-            <ActionButton
-              variant="primary"
+            <AddRecordButton
+              type="button"
               onClick={handleOpenCreateStudent}
               disabled={isStudentPrefetching}
-              icon={PlusIcon}
               className="students-groups__add"
             >
               {strings.actions.addStudent}
-            </ActionButton>
+            </AddRecordButton>
           </div>
         ) : (
           <div className="students-groups__tab-actions">
-            <ActionButton
-              variant="primary"
+            <AddRecordButton
+              type="button"
               onClick={handleOpenCreateGroup}
               disabled={isGroupPrefetching}
-              icon={PlusIcon}
               className="students-groups__add"
             >
               {strings.actions.addGroup}
-            </ActionButton>
+            </AddRecordButton>
           </div>
         )}
       </div>
@@ -1735,15 +1710,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
             </form>
 
             <div className="students-view__actions">
-              <ActionButton
-                variant="filter"
+              <FilterButton
+                type="button"
                 onClick={() => setIsFiltersOpen(true)}
-                icon={FilterIcon}
                 className="students-view__filters"
               >
                 <span className="students-view__filters-text">{strings.actions.filters}</span>
                 {filtersCount > 0 && <span className="students-view__filters-count">{filtersCount}</span>}
-              </ActionButton>
+              </FilterButton>
             </div>
           </div>
 
@@ -1830,17 +1804,13 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                         <td data-title={strings.table.status}>{renderStatusPill(student, isActive)}</td>
                         <td data-title={strings.table.actions} className="students-table__actions-cell">
                           <div className="students-table__actions">
-                            <ActionButton
+                            <EditRecordButton
+                              type="button"
                               variant="ghost"
                               size="icon"
                               className="students-table__icon-button"
                               onClick={() => handleEditStudent(student)}
                               aria-label={`${strings.actions.edit} ${fullName || strings.table.unknownStudent}`}
-                              icon={
-                                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-                                  <path d="M3 16.75V19h2.25l8.9-8.9-2.25-2.25Zm12.87-7.4a.75.75 0 0 0 0-1.06l-1.16-1.16a.75.75 0 0 0-1.06 0l-1.04 1.04 2.22 2.22Z" />
-                                </svg>
-                              }
                             />
                             <label
                               className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
@@ -1940,17 +1910,16 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       ) : (
         <UiCard className="students-view groups-view">
           <div className="groups-view__toolbar">
-            <ActionButton
-              variant="filter"
+            <FilterButton
+              type="button"
               onClick={() => setIsGroupFiltersOpen(true)}
-              icon={FilterIcon}
               className="students-view__filters"
             >
               <span className="students-view__filters-text">{strings.actions.filters}</span>
               {groupFiltersCount > 0 && (
                 <span className="students-view__filters-count">{groupFiltersCount}</span>
               )}
-            </ActionButton>
+            </FilterButton>
           </div>
 
           <TableContainer className="students-table__wrapper">
@@ -2013,18 +1982,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                         </td>
                         <td data-title={strings.groupsView.table.actions} className="students-table__actions-cell">
                           <div className="students-table__actions">
-                            <ActionButton
+                            <EditRecordButton
+                              type="button"
                               variant="ghost"
                               size="icon"
                               className="students-table__icon-button"
                               onClick={() => handleOpenEditGroup(group)}
                               aria-label={`${strings.actions.edit} ${gradeGroup}`}
                               disabled={isGroupPrefetching}
-                              icon={
-                                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-                                  <path d="M3 16.75V19h2.25l8.9-8.9-2.25-2.25Zm12.87-7.4a.75.75 0 0 0 0-1.06l-1.16-1.16a.75.75 0 0 0-1.06 0l-1.04 1.04 2.22 2.22Z" />
-                                </svg>
-                              }
                             />
                             <label
                               className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}

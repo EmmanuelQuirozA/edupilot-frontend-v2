@@ -81,6 +81,16 @@
   min-height: 2.75rem;
 }
 
+.ui-action-button {
+  --ui-button-shadow: none;
+  --ui-button-hover-shadow: none;
+}
+
+.ui-action-button .ui-button__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
 .ui-button:disabled {
   cursor: not-allowed;
   opacity: var(--ui-button-disabled-opacity);

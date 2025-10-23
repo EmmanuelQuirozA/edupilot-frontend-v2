@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import GlobalToast from '../components/GlobalToast.jsx';
 import ActionButton from '../components/ui/ActionButton.jsx';
+import AddRecordButton from '../components/ui/buttons/AddRecordButton.jsx';
+import ExportButton from '../components/ui/buttons/ExportButton.jsx';
+import FilterButton from '../components/ui/buttons/FilterButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
 import { Table, TableContainer } from '../components/ui/DataTable.jsx';
 import { API_BASE_URL } from '../config';
@@ -73,8 +76,195 @@ const normalizeSelectOption = (item, index = 0) => {
   return { value, label };
 };
 
-const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onStudentDetail }) => {
+const DEFAULT_PAYMENTS_STRINGS = {
+  placeholder: 'Esta sección estará disponible próximamente.',
+  tabs: {
+    tuition: 'Colegiaturas',
+    requests: 'Solicitudes de pago',
+    payments: 'Pagos',
+  },
+  actions: {
+    filter: 'Filtros',
+    debtActive: 'Mostrando morosos',
+    debtInactive: 'Alumnos con deuda',
+    add: 'Agregar pago',
+    export: 'Exportar CSV',
+    exporting: 'Exportando…',
+  },
+  search: {
+    placeholder: 'Buscar alumno por nombre',
+  },
+  dateRange: {
+    start: 'Fecha inicio',
+    end: 'Fecha fin',
+  },
+  table: {
+    columns: {
+      student: 'Alumno',
+      class: 'Grupo',
+      generation: 'Generación',
+      scholarLevel: 'Nivel académico',
+    },
+    loading: 'Cargando información de pagos...',
+    empty: 'No se encontraron registros con los filtros seleccionados.',
+    error: 'No fue posible cargar los pagos.',
+    unknownError: 'Error desconocido',
+    studentFallback: 'Sin nombre',
+    studentIdLabel: 'Matrícula',
+    pagination: {
+      summary: 'Mostrando {start} - {end} de {total} registros',
+      page: 'Página {current} de {total}',
+      previous: 'Anterior',
+      next: 'Siguiente',
+    },
+  },
+  filters: {
+    title: 'Filtros',
+    reset: 'Reiniciar',
+    closeAria: 'Cerrar filtros',
+    fields: {
+      student: { label: 'Nombre del alumno', placeholder: 'Ej. FATIMA MONTSERRAT' },
+      reference: { label: 'Matrícula', placeholder: 'Ej. 1376' },
+      generation: { label: 'Generación', placeholder: 'Ej. 2024-2025' },
+      gradeGroup: { label: 'Grado y grupo', placeholder: 'Ej. 6-A' },
+      scholarLevel: { label: 'Nivel académico', placeholder: 'Ej. Primaria' },
+      school: { label: 'Escuela' },
+    },
+    schoolOptions: { all: 'Todas' },
+    toggles: {
+      activeGroups: 'Sólo grupos activos',
+      activeStudents: 'Sólo alumnos activos',
+    },
+  },
+  toggles: {
+    debtActive: 'Mostrando morosos',
+    debtInactive: 'Alumnos con deuda',
+  },
+  toasts: {
+    loadSchoolsError: 'No fue posible cargar las escuelas.',
+    exportSuccess: 'Exportación generada correctamente.',
+    exportEmpty: 'No hay información para exportar con los filtros actuales.',
+    exportError: 'Error al exportar.',
+  },
+  errors: {
+    loadSchools: 'No fue posible cargar las escuelas',
+    export: 'No fue posible exportar la información.',
+  },
+  csv: {
+    fileNamePrefix: 'reporte-pagos',
+    headers: {
+      student: 'Alumno',
+      class: 'Grupo',
+      generation: 'Generación',
+      scholarLevel: 'Nivel académico',
+    },
+    studentIdLabel: 'Matrícula',
+  },
+};
+
+const SUPPORTED_LANGUAGES = ['es', 'en'];
+
+const getLocaleFromLanguage = (language) => (language === 'en' ? 'en-US' : 'es-MX');
+
+const PaymentsFinancePage = ({
+  title = 'Pagos y Finanzas',
+  description = '',
+  language = 'es',
+  strings = {},
+  onStudentDetail,
+}) => {
   const { token } = useAuth();
+
+  const normalizedLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : 'es';
+  const locale = getLocaleFromLanguage(normalizedLanguage);
+
+  const tabStrings = useMemo(
+    () => ({ ...DEFAULT_PAYMENTS_STRINGS.tabs, ...(strings.tabs ?? {}) }),
+    [strings.tabs],
+  );
+  const actionStrings = useMemo(
+    () => ({ ...DEFAULT_PAYMENTS_STRINGS.actions, ...(strings.actions ?? {}) }),
+    [strings.actions],
+  );
+  const dateRangeStrings = useMemo(
+    () => ({ ...DEFAULT_PAYMENTS_STRINGS.dateRange, ...(strings.dateRange ?? {}) }),
+    [strings.dateRange],
+  );
+  const tableStrings = useMemo(() => {
+    const tableOverrides = strings.table ?? {};
+    const columns = {
+      ...DEFAULT_PAYMENTS_STRINGS.table.columns,
+      ...(tableOverrides.columns ?? {}),
+    };
+    const pagination = {
+      ...DEFAULT_PAYMENTS_STRINGS.table.pagination,
+      ...(tableOverrides.pagination ?? {}),
+    };
+
+    return {
+      ...DEFAULT_PAYMENTS_STRINGS.table,
+      ...tableOverrides,
+      columns,
+      pagination,
+    };
+  }, [strings.table]);
+  const filterStrings = useMemo(() => {
+    const filterOverrides = strings.filters ?? {};
+    const fieldDefaults = DEFAULT_PAYMENTS_STRINGS.filters.fields;
+    const fieldOverrides = filterOverrides.fields ?? {};
+    const fields = {
+      student: { ...fieldDefaults.student, ...(fieldOverrides.student ?? {}) },
+      reference: { ...fieldDefaults.reference, ...(fieldOverrides.reference ?? {}) },
+      generation: { ...fieldDefaults.generation, ...(fieldOverrides.generation ?? {}) },
+      gradeGroup: { ...fieldDefaults.gradeGroup, ...(fieldOverrides.gradeGroup ?? {}) },
+      scholarLevel: { ...fieldDefaults.scholarLevel, ...(fieldOverrides.scholarLevel ?? {}) },
+      school: { ...fieldDefaults.school, ...(fieldOverrides.school ?? {}) },
+    };
+
+    return {
+      ...DEFAULT_PAYMENTS_STRINGS.filters,
+      ...filterOverrides,
+      fields,
+      schoolOptions: {
+        ...DEFAULT_PAYMENTS_STRINGS.filters.schoolOptions,
+        ...(filterOverrides.schoolOptions ?? {}),
+      },
+      toggles: {
+        ...DEFAULT_PAYMENTS_STRINGS.filters.toggles,
+        ...(filterOverrides.toggles ?? {}),
+      },
+    };
+  }, [strings.filters]);
+  const debtToggleStrings = useMemo(
+    () => ({ ...DEFAULT_PAYMENTS_STRINGS.toggles, ...(strings.toggles ?? {}) }),
+    [strings.toggles],
+  );
+  const toastStrings = useMemo(
+    () => ({ ...DEFAULT_PAYMENTS_STRINGS.toasts, ...(strings.toasts ?? {}) }),
+    [strings.toasts],
+  );
+  const errorStrings = useMemo(
+    () => ({ ...DEFAULT_PAYMENTS_STRINGS.errors, ...(strings.errors ?? {}) }),
+    [strings.errors],
+  );
+  const csvStrings = useMemo(() => {
+    const csvOverrides = strings.csv ?? {};
+    const headers = {
+      ...DEFAULT_PAYMENTS_STRINGS.csv.headers,
+      ...(csvOverrides.headers ?? {}),
+    };
+
+    return {
+      ...DEFAULT_PAYMENTS_STRINGS.csv,
+      ...csvOverrides,
+      headers,
+      studentIdLabel:
+        csvOverrides.studentIdLabel ?? DEFAULT_PAYMENTS_STRINGS.csv.studentIdLabel,
+    };
+  }, [strings.csv]);
+  const placeholderMessage = strings.placeholder ?? DEFAULT_PAYMENTS_STRINGS.placeholder;
+  const searchPlaceholder =
+    strings.search?.placeholder ?? DEFAULT_PAYMENTS_STRINGS.search.placeholder;
 
   const [activeTab, setActiveTab] = useState('tuition');
   const [filters, setFilters] = useState({
@@ -111,23 +301,24 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
 
   const tabs = useMemo(
     () => [
-      { key: 'tuition', label: 'Colegiaturas' },
-      { key: 'requests', label: 'Solicitudes de pago' },
-      { key: 'payments', label: 'Pagos' },
+      { key: 'tuition', label: tabStrings.tuition },
+      { key: 'requests', label: tabStrings.requests },
+      { key: 'payments', label: tabStrings.payments },
     ],
-    [],
+    [tabStrings.payments, tabStrings.requests, tabStrings.tuition],
   );
 
   const isTuitionTab = activeTab === 'tuition';
 
+  const columnLabels = tableStrings.columns;
   const displayedColumns = useMemo(
     () => [
-      { key: 'student', label: 'Alumno', sortable: true, orderKey: 'student' },
-      { key: 'class', label: 'Grupo', sortable: true, orderKey: 'class' },
-      { key: 'generation', label: 'Generación', sortable: false },
-      { key: 'scholar_level_name', label: 'Nivel académico', sortable: false },
+      { key: 'student', label: columnLabels.student, sortable: true, orderKey: 'student' },
+      { key: 'class', label: columnLabels.class, sortable: true, orderKey: 'class' },
+      { key: 'generation', label: columnLabels.generation, sortable: false },
+      { key: 'scholar_level_name', label: columnLabels.scholarLevel, sortable: false },
     ],
-    [],
+    [columnLabels.class, columnLabels.generation, columnLabels.scholarLevel, columnLabels.student],
   );
 
   const monthColumns = useMemo(() => {
@@ -158,7 +349,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
   const appliedFilters = useMemo(() => {
     const params = new URLSearchParams();
 
-    params.set('lang', 'es');
+    params.set('lang', normalizedLanguage);
     params.set('offset', String(offset));
     params.set('limit', String(limit));
     params.set('export_all', 'false');
@@ -195,7 +386,17 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
     }
 
     return params;
-  }, [filters, offset, limit, orderBy, orderDir, startMonth, endMonth, showDebtOnly]);
+  }, [
+    filters,
+    offset,
+    limit,
+    orderBy,
+    orderDir,
+    startMonth,
+    endMonth,
+    showDebtOnly,
+    normalizedLanguage,
+  ]);
 
   const fetchPayments = useCallback(async () => {
     if (activeTab !== 'tuition') {
@@ -215,7 +416,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
       });
 
       if (!response.ok) {
-        throw new Error('No fue posible cargar los pagos.');
+        throw new Error(tableStrings.error);
       }
 
       const payload = await response.json();
@@ -224,11 +425,15 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
       setTotalElements(Number(payload?.totalElements) || content.length || 0);
     } catch (requestError) {
       console.error('Payments fetch error', requestError);
-      setError(requestError instanceof Error ? requestError.message : 'Error desconocido');
+      const fallbackMessage =
+        requestError instanceof Error && requestError.message
+          ? requestError.message
+          : tableStrings.unknownError;
+      setError(fallbackMessage);
     } finally {
       setLoading(false);
     }
-  }, [activeTab, appliedFilters, token]);
+  }, [activeTab, appliedFilters, tableStrings.error, tableStrings.unknownError, token]);
 
   useEffect(() => {
     fetchPayments();
@@ -238,15 +443,18 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
     setIsLoadingSchools(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/schools/list?lang=es&status_filter=-1`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      const response = await fetch(
+        `${API_BASE_URL}/schools/list?lang=${normalizedLanguage}&status_filter=-1`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
         },
-      });
+      );
 
       if (!response.ok) {
-        throw new Error('No fue posible cargar las escuelas');
+        throw new Error(errorStrings.loadSchools);
       }
 
       const payload = await response.json();
@@ -255,12 +463,12 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
       setSchoolOptions(options);
     } catch (schoolError) {
       console.error('Schools fetch error', schoolError);
-      setToast({ type: 'error', message: 'No fue posible cargar las escuelas.' });
+      setToast({ type: 'error', message: toastStrings.loadSchoolsError });
       setSchoolOptions([]);
     } finally {
       setIsLoadingSchools(false);
     }
-  }, [token]);
+  }, [errorStrings.loadSchools, normalizedLanguage, toastStrings.loadSchoolsError, token]);
 
   useEffect(() => {
     fetchSchools();
@@ -361,25 +569,27 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
     [limit, totalPages],
   );
 
-  const buildCsvRow = useCallback((row, headerKeys) =>
-    headerKeys
-      .map((key) => {
-        if (key === 'student_combined') {
-          const studentName = row?.student ?? '';
-          const paymentReference = row?.payment_reference ?? '';
-          const combined = paymentReference
-            ? `${studentName} (Matrícula: ${paymentReference})`
-            : studentName;
-          return `"${String(combined ?? '').replace(/"/g, '""')}"`;
-        }
+  const buildCsvRow = useCallback(
+    (row, headerKeys) =>
+      headerKeys
+        .map((key) => {
+          if (key === 'student_combined') {
+            const studentName = row?.student ?? '';
+            const paymentReference = row?.payment_reference ?? '';
+            const combined = paymentReference
+              ? `${studentName} (${csvStrings.studentIdLabel}: ${paymentReference})`
+              : studentName;
+            return `"${String(combined ?? '').replace(/"/g, '""')}"`;
+          }
 
-        const value = row?.[key] ?? '';
-        const normalized =
-          value === null || value === undefined || value === '' ? '' : String(value);
-        return `"${normalized.replace(/"/g, '""')}"`;
-      })
-      .join(','),
-  []);
+          const value = row?.[key] ?? '';
+          const normalized =
+            value === null || value === undefined || value === '' ? '' : String(value);
+          return `"${normalized.replace(/"/g, '""')}"`;
+        })
+        .join(','),
+    [csvStrings.studentIdLabel],
+  );
 
   const handleExport = useCallback(async () => {
     setIsExporting(true);
@@ -398,14 +608,14 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
       });
 
       if (!response.ok) {
-        throw new Error('No fue posible exportar la información.');
+        throw new Error(errorStrings.export);
       }
 
       const payload = await response.json();
       const content = Array.isArray(payload?.content) ? payload.content : [];
 
       if (content.length === 0) {
-        setToast({ type: 'warning', message: 'No hay información para exportar con los filtros actuales.' });
+        setToast({ type: 'warning', message: toastStrings.exportEmpty });
         return;
       }
 
@@ -424,10 +634,10 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
 
       const headerKeys = ['student_combined', 'class', 'generation', 'scholar_level_name', ...monthKeys];
       const headerLabels = [
-        'Alumno',
-        'Grupo',
-        'Generación',
-        'Nivel académico',
+        csvStrings.headers.student,
+        csvStrings.headers.class,
+        csvStrings.headers.generation,
+        csvStrings.headers.scholarLevel,
         ...monthKeys,
       ];
 
@@ -441,20 +651,33 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
       const downloadUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `reporte-pagos-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.download = `${csvStrings.fileNamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(downloadUrl);
 
-      setToast({ type: 'success', message: 'Exportación generada correctamente.' });
+      setToast({ type: 'success', message: toastStrings.exportSuccess });
     } catch (exportError) {
       console.error('Export error', exportError);
-      setToast({ type: 'error', message: exportError instanceof Error ? exportError.message : 'Error al exportar.' });
+      const errorMessage =
+        exportError instanceof Error && exportError.message
+          ? exportError.message
+          : toastStrings.exportError;
+      setToast({ type: 'error', message: errorMessage });
     } finally {
       setIsExporting(false);
     }
-  }, [appliedFilters, buildCsvRow, token]);
+  }, [
+    appliedFilters,
+    buildCsvRow,
+    csvStrings,
+    errorStrings.export,
+    toastStrings.exportEmpty,
+    toastStrings.exportError,
+    toastStrings.exportSuccess,
+    token,
+  ]);
 
   useEffect(() => {
     if (!isTuitionTab && showFilters) {
@@ -476,49 +699,35 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
     );
   };
 
-  const FiltersIcon = (
-    <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
-      <path d="M3 4h14l-5 6v4l-4 2v-6L3 4Z" fill="currentColor" fillRule="evenodd" />
-    </svg>
-  );
-
   const DebtIcon = (
     <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
       <path d="M4 5h12v2H4zm0 4h8v2H4zm0 4h5v2H4z" fill="currentColor" />
     </svg>
   );
 
-  const AddPaymentIcon = (
-    <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
-      <path d="M10 3v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-
-  const ExportIcon = (
-    <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
-      <path
-        d="M10 3v8m0 0 3-3m-3 3-3-3M4 12v4h12v-4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </svg>
-  );
-
   const renderTable = () => {
     if (loading) {
-      return <div className="payments-page__empty-state">Cargando información de pagos...</div>;
+      return <div className="payments-page__empty-state">{tableStrings.loading}</div>;
     }
 
     if (error) {
-      return <div className="payments-page__empty-state">{error}</div>;
+      return <div className="payments-page__empty-state">{error || tableStrings.error}</div>;
     }
 
     if (!rows.length) {
-      return <div className="payments-page__empty-state">No se encontraron registros con los filtros seleccionados.</div>;
+      return <div className="payments-page__empty-state">{tableStrings.empty}</div>;
     }
+
+    const studentIdLabel = tableStrings.studentIdLabel;
+    const startRecord = totalElements === 0 ? 0 : offset + 1;
+    const endRecord = totalElements === 0 ? 0 : Math.min(offset + limit, totalElements);
+    const summaryText = tableStrings.pagination.summary
+      .replace('{start}', startRecord.toLocaleString(locale))
+      .replace('{end}', endRecord.toLocaleString(locale))
+      .replace('{total}', totalElements.toLocaleString(locale));
+    const pageText = tableStrings.pagination.page
+      .replace('{current}', currentPage.toLocaleString(locale))
+      .replace('{total}', totalPages.toLocaleString(locale));
 
     return (
       <UiCard className="payments-page__table-card">
@@ -585,10 +794,12 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                         disabled={!canNavigateToStudent}
                         className="payments-page__student-button"
                       >
-                        {row.student ?? 'Sin nombre'}
+                        {row.student ?? tableStrings.studentFallback}
                       </ActionButton>
                       {row.payment_reference ? (
-                        <span className="payments-page__student-id">Matrícula: {row.payment_reference}</span>
+                        <span className="payments-page__student-id">
+                          {`${studentIdLabel}: ${row.payment_reference}`}
+                        </span>
                       ) : null}
                     </td>
                     <td>{row.class ?? '--'}</td>
@@ -614,17 +825,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
           </Table>
         </TableContainer>
         <div className="payments-page__pagination">
-          {(() => {
-            const startRecord = totalElements === 0 ? 0 : offset + 1;
-            const endRecord = totalElements === 0 ? 0 : Math.min(offset + limit, totalElements);
-
-            return (
-              <div>
-                Mostrando {startRecord.toLocaleString('es-MX')} -
-                {endRecord.toLocaleString('es-MX')} de {totalElements.toLocaleString('es-MX')} registros
-              </div>
-            );
-          })()}
+          <div>{summaryText}</div>
           <div className="payments-page__pagination-controls">
             <ActionButton
               type="button"
@@ -633,10 +834,10 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage <= 1}
             >
-              Anterior
+              {tableStrings.pagination.previous}
             </ActionButton>
             <span>
-              Página {currentPage} de {totalPages}
+              {pageText}
             </span>
             <ActionButton
               type="button"
@@ -645,7 +846,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage >= totalPages}
             >
-              Siguiente
+              {tableStrings.pagination.next}
             </ActionButton>
           </div>
         </div>
@@ -653,67 +854,57 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
     );
   };
 
+  const pageTitle = title || tabStrings.tuition;
+
   return (
     <div className="payments-page">
       <GlobalToast alert={toast} onClose={() => setToast(null)} />
 
       <div className="payments-page__header">
         <div className="payments-page__title-block">
+          <h1 className="payments-page__title">{pageTitle}</h1>
           {description ? <p className="payments-page__description">{description}</p> : null}
         </div>
-      </div>
-
-      <div className="payments-page__tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            className={`payments-page__tab ${activeTab === tab.key ? 'payments-page__tab--active' : ''}`}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {isTuitionTab ? (
-        <div className="payments-page__actions">
-          <ActionButton
-            variant="filter"
-            onClick={handleToggleFilters}
-            aria-expanded={showFilters}
-            aria-controls="payments-page-filters"
-            icon={FiltersIcon}
-            className="payments-page__action-button"
-          >
-            Filtros
-          </ActionButton>
-          <ActionButton
-            variant="ghost"
-            onClick={handleToggleDebt}
-            icon={DebtIcon}
-            className={`payments-page__action-button payments-page__debt-button ${showDebtOnly ? 'is-active' : ''}`}
-          >
-            {showDebtOnly ? 'Mostrando morosos' : 'Alumnos con deuda'}
-          </ActionButton>
-          <ActionButton
-            variant="primary"
-            icon={AddPaymentIcon}
-            className="payments-page__action-button"
-          >
-            Agregar pago
-          </ActionButton>
-          <ActionButton
-            variant="outline"
-            onClick={handleExport}
-            disabled={isExporting}
-            icon={ExportIcon}
-            className="payments-page__action-button"
-          >
-            {isExporting ? 'Exportando…' : 'Exportar CSV'}
-          </ActionButton>
+        <div className="payments-page__navigation">
+          <div className="payments-page__tabs">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                className={`payments-page__tab ${activeTab === tab.key ? 'payments-page__tab--active' : ''}`}
+                onClick={() => setActiveTab(tab.key)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {isTuitionTab ? (
+            <div className="payments-page__actions">
+              <FilterButton
+                onClick={handleToggleFilters}
+                aria-expanded={showFilters}
+                aria-controls="payments-page-filters"
+              >
+                {actionStrings.filter}
+              </FilterButton>
+              <ActionButton
+                variant="ghost"
+                onClick={handleToggleDebt}
+                icon={DebtIcon}
+                className={`payments-page__debt-button ${showDebtOnly ? 'is-active' : ''}`}
+              >
+                {showDebtOnly ? debtToggleStrings.debtActive : debtToggleStrings.debtInactive}
+              </ActionButton>
+              <AddRecordButton type="button">
+                {actionStrings.add}
+              </AddRecordButton>
+              <ExportButton type="button" onClick={handleExport} disabled={isExporting}>
+                {isExporting ? actionStrings.exporting : actionStrings.export}
+              </ExportButton>
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </div>
 
       {isTuitionTab ? (
         <UiCard className="card-view">
@@ -728,14 +919,14 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
               <input
                 type="search"
                 className="payments-page__search"
-                placeholder="Buscar alumno por nombre"
+                placeholder={searchPlaceholder}
                 value={filters.student_full_name}
                 onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
               />
             </div>
             <div className="payments-page__toolbar-controls">
               <label className="payments-page__month-input">
-                Fecha inicio
+                {dateRangeStrings.start}
                 <input
                   type="month"
                   value={startMonth}
@@ -744,7 +935,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                 />
               </label>
               <label className="payments-page__month-input">
-                Fecha fin
+                {dateRangeStrings.end}
                 <input
                   type="month"
                   value={endMonth}
@@ -763,7 +954,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
             renderTable()
           ) : (
             <div className="payments-page__empty-state">
-              Esta sección estará disponible próximamente.
+              {placeholderMessage}
             </div>
           )}
         </section>
@@ -787,7 +978,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
             <header className="payments-page__filters-header">
               <div className="payments-page__filters-heading">
                 <h2 id="payments-page-filters-title" className="payments-page__filters-title">
-                  Filtros
+                  {filterStrings.title}
                 </h2>
                 <ActionButton
                   type="button"
@@ -795,7 +986,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                   onClick={handleResetFilters}
                   className="payments-page__filters-reset"
                 >
-                  Reiniciar
+                  {filterStrings.reset}
                 </ActionButton>
               </div>
               <ActionButton
@@ -804,14 +995,14 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                 size="icon"
                 className="payments-page__filters-close"
                 onClick={() => setShowFilters(false)}
-                aria-label="Cerrar filtros"
+                aria-label={filterStrings.closeAria}
                 icon={<span aria-hidden="true">×</span>}
               />
             </header>
             <div className="payments-page__filters-form">
               <div className="payments-page__field">
                 <label htmlFor="filter-student" className="payments-page__label">
-                  Nombre del alumno
+                  {filterStrings.fields.student.label}
                 </label>
                 <input
                   id="filter-student"
@@ -819,12 +1010,12 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                   className="payments-page__input"
                   value={filters.student_full_name}
                   onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
-                  placeholder="Ej. FATIMA MONTSERRAT"
+                  placeholder={filterStrings.fields.student.placeholder}
                 />
               </div>
               <div className="payments-page__field">
                 <label htmlFor="filter-reference" className="payments-page__label">
-                  Matrícula
+                  {filterStrings.fields.reference.label}
                 </label>
                 <input
                   id="filter-reference"
@@ -832,12 +1023,12 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                   className="payments-page__input"
                   value={filters.payment_reference}
                   onChange={(event) => handleFilterChange('payment_reference', event.target.value)}
-                  placeholder="Ej. 1376"
+                  placeholder={filterStrings.fields.reference.placeholder}
                 />
               </div>
               <div className="payments-page__field">
                 <label htmlFor="filter-generation" className="payments-page__label">
-                  Generación
+                  {filterStrings.fields.generation.label}
                 </label>
                 <input
                   id="filter-generation"
@@ -845,12 +1036,12 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                   className="payments-page__input"
                   value={filters.generation}
                   onChange={(event) => handleFilterChange('generation', event.target.value)}
-                  placeholder="Ej. 2024-2025"
+                  placeholder={filterStrings.fields.generation.placeholder}
                 />
               </div>
               <div className="payments-page__field">
                 <label htmlFor="filter-grade" className="payments-page__label">
-                  Grado y grupo
+                  {filterStrings.fields.gradeGroup.label}
                 </label>
                 <input
                   id="filter-grade"
@@ -858,12 +1049,12 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                   className="payments-page__input"
                   value={filters.grade_group}
                   onChange={(event) => handleFilterChange('grade_group', event.target.value)}
-                  placeholder="Ej. 6-A"
+                  placeholder={filterStrings.fields.gradeGroup.placeholder}
                 />
               </div>
               <div className="payments-page__field">
                 <label htmlFor="filter-scholar" className="payments-page__label">
-                  Nivel académico
+                  {filterStrings.fields.scholarLevel.label}
                 </label>
                 <input
                   id="filter-scholar"
@@ -871,12 +1062,12 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                   className="payments-page__input"
                   value={filters.scholar_level}
                   onChange={(event) => handleFilterChange('scholar_level', event.target.value)}
-                  placeholder="Ej. Primaria"
+                  placeholder={filterStrings.fields.scholarLevel.placeholder}
                 />
               </div>
               <div className="payments-page__field">
                 <label htmlFor="filter-school" className="payments-page__label">
-                  Escuela
+                  {filterStrings.fields.school.label}
                 </label>
                 <select
                   id="filter-school"
@@ -885,7 +1076,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                   onChange={(event) => handleFilterChange('school_id', event.target.value)}
                   disabled={isLoadingSchools}
                 >
-                  <option value="">Todas</option>
+                  <option value="">{filterStrings.schoolOptions.all}</option>
                   {schoolOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -899,7 +1090,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                   checked={filters.group_status === 'true'}
                   onChange={(event) => handleFilterChange('group_status', event.target.checked ? 'true' : '')}
                 />
-                Sólo grupos activos
+                {filterStrings.toggles.activeGroups}
               </label>
               <label className="payments-page__checkbox">
                 <input
@@ -907,7 +1098,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
                   checked={filters.user_status === 'true'}
                   onChange={(event) => handleFilterChange('user_status', event.target.checked ? 'true' : '')}
                 />
-                Sólo alumnos activos
+                {filterStrings.toggles.activeStudents}
               </label>
             </div>
           </aside>
