@@ -659,7 +659,6 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
 
       <div className="payments-page__header">
         <div className="payments-page__title-block">
-          <h1 className="payments-page__title">{title}</h1>
           {description ? <p className="payments-page__description">{description}</p> : null}
         </div>
       </div>
@@ -717,43 +716,45 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
       ) : null}
 
       {isTuitionTab ? (
-        <div className="payments-page__toolbar">
-          <div className="payments-page__search-wrapper">
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path
-                d="m14.5 13.1 3.4 3.4-1.4 1.4-3.4-3.4a7 7 0 1 1 1.4-1.4ZM8.5 13a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z"
-                fill="currentColor"
-              />
-            </svg>
-            <input
-              type="search"
-              className="payments-page__search"
-              placeholder="Buscar alumno por nombre"
-              value={filters.student_full_name}
-              onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
-            />
-          </div>
-          <div className="payments-page__toolbar-controls">
-            <label className="payments-page__month-input">
-              Fecha inicio
+        <UiCard className="card-view">
+          <div className="payments-page__toolbar">
+            <div className="payments-page__search-wrapper">
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path
+                  d="m14.5 13.1 3.4 3.4-1.4 1.4-3.4-3.4a7 7 0 1 1 1.4-1.4ZM8.5 13a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z"
+                  fill="currentColor"
+                />
+              </svg>
               <input
-                type="month"
-                value={startMonth}
-                onChange={(event) => handleStartMonthChange(event.target.value)}
-                max={endMonth || undefined}
+                type="search"
+                className="payments-page__search"
+                placeholder="Buscar alumno por nombre"
+                value={filters.student_full_name}
+                onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
               />
-            </label>
-            <label className="payments-page__month-input">
-              Fecha fin
-              <input
-                type="month"
-                value={endMonth}
-                onChange={(event) => handleEndMonthChange(event.target.value)}
-                min={startMonth || undefined}
-              />
-            </label>
+            </div>
+            <div className="payments-page__toolbar-controls">
+              <label className="payments-page__month-input">
+                Fecha inicio
+                <input
+                  type="month"
+                  value={startMonth}
+                  onChange={(event) => handleStartMonthChange(event.target.value)}
+                  max={endMonth || undefined}
+                />
+              </label>
+              <label className="payments-page__month-input">
+                Fecha fin
+                <input
+                  type="month"
+                  value={endMonth}
+                  onChange={(event) => handleEndMonthChange(event.target.value)}
+                  min={startMonth || undefined}
+                />
+              </label>
+            </div>
           </div>
-        </div>
+        </UiCard>
       ) : null}
 
       <div className="payments-page__layout">

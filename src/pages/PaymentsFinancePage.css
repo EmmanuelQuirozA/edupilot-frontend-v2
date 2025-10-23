@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 1.5rem;
   color: #1f2937;
 }
 
@@ -135,7 +134,7 @@
   display: inline-flex;
   padding: 0.35rem;
   border-radius: 0.9rem;
-  background: rgba(99, 102, 241, 0.08);
+  background: #e0e7ff;
   width: fit-content;
   align-self: flex-start;
 }
@@ -259,7 +258,6 @@
 .payments-page__filters-close .ui-button__icon {
   font-size: 1.3rem;
   color: inherit;
-}
   justify-content: center;
   line-height: 1;
 }
