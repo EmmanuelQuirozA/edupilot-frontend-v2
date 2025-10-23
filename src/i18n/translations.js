@@ -157,6 +157,91 @@ export const translations = {
           description: 'Centraliza los mensajes de tu comunidad educativa aquí.',
         },
       },
+      paymentsPage: {
+        placeholder: 'Esta sección estará disponible próximamente.',
+        tabs: {
+          tuition: 'Colegiaturas',
+          requests: 'Solicitudes de pago',
+          payments: 'Pagos',
+        },
+        actions: {
+          filter: 'Filtros',
+          debtActive: 'Mostrando morosos',
+          debtInactive: 'Alumnos con deuda',
+          add: 'Agregar pago',
+          export: 'Exportar CSV',
+          exporting: 'Exportando…',
+        },
+        search: {
+          placeholder: 'Buscar alumno por nombre',
+        },
+        dateRange: {
+          start: 'Fecha inicio',
+          end: 'Fecha fin',
+        },
+        table: {
+          columns: {
+            student: 'Alumno',
+            class: 'Grupo',
+            generation: 'Generación',
+            scholarLevel: 'Nivel académico',
+          },
+          loading: 'Cargando información de pagos...',
+          empty: 'No se encontraron registros con los filtros seleccionados.',
+          error: 'No fue posible cargar los pagos.',
+          unknownError: 'Error desconocido',
+          studentFallback: 'Sin nombre',
+          studentIdLabel: 'Matrícula',
+          pagination: {
+            summary: 'Mostrando {start} - {end} de {total} registros',
+            page: 'Página {current} de {total}',
+            previous: 'Anterior',
+            next: 'Siguiente',
+          },
+        },
+        filters: {
+          title: 'Filtros',
+          reset: 'Reiniciar',
+          closeAria: 'Cerrar filtros',
+          fields: {
+            student: { label: 'Nombre del alumno', placeholder: 'Ej. FATIMA MONTSERRAT' },
+            reference: { label: 'Matrícula', placeholder: 'Ej. 1376' },
+            generation: { label: 'Generación', placeholder: 'Ej. 2024-2025' },
+            gradeGroup: { label: 'Grado y grupo', placeholder: 'Ej. 6-A' },
+            scholarLevel: { label: 'Nivel académico', placeholder: 'Ej. Primaria' },
+            school: { label: 'Escuela' },
+          },
+          schoolOptions: { all: 'Todas' },
+          toggles: {
+            activeGroups: 'Sólo grupos activos',
+            activeStudents: 'Sólo alumnos activos',
+          },
+        },
+        toggles: {
+          debtActive: 'Mostrando morosos',
+          debtInactive: 'Alumnos con deuda',
+        },
+        toasts: {
+          loadSchoolsError: 'No fue posible cargar las escuelas.',
+          exportSuccess: 'Exportación generada correctamente.',
+          exportEmpty: 'No hay información para exportar con los filtros actuales.',
+          exportError: 'Error al exportar.',
+        },
+        errors: {
+          loadSchools: 'No fue posible cargar las escuelas',
+          export: 'No fue posible exportar la información.',
+        },
+        csv: {
+          fileNamePrefix: 'reporte-pagos',
+          headers: {
+            student: 'Alumno',
+            class: 'Grupo',
+            generation: 'Generación',
+            scholarLevel: 'Nivel académico',
+          },
+          studentIdLabel: 'Matrícula',
+        },
+      },
       studentsPage: {
         header: {
           title: 'Alumnos y Grupos',
@@ -631,6 +716,91 @@ export const translations = {
         communications: {
           title: 'Communications',
           description: 'Centralize your community messages here.',
+        },
+      },
+      paymentsPage: {
+        placeholder: 'This section will be available soon.',
+        tabs: {
+          tuition: 'Tuition',
+          requests: 'Payment requests',
+          payments: 'Payments',
+        },
+        actions: {
+          filter: 'Filters',
+          debtActive: 'Showing past due',
+          debtInactive: 'Students in debt',
+          add: 'Add payment',
+          export: 'Export CSV',
+          exporting: 'Exporting…',
+        },
+        search: {
+          placeholder: 'Search student by name',
+        },
+        dateRange: {
+          start: 'Start date',
+          end: 'End date',
+        },
+        table: {
+          columns: {
+            student: 'Student',
+            class: 'Group',
+            generation: 'Generation',
+            scholarLevel: 'Academic level',
+          },
+          loading: 'Loading payments information...',
+          empty: 'No records found for the selected filters.',
+          error: 'Payments could not be loaded.',
+          unknownError: 'Unknown error',
+          studentFallback: 'No name',
+          studentIdLabel: 'Registration',
+          pagination: {
+            summary: 'Showing {start} - {end} of {total} records',
+            page: 'Page {current} of {total}',
+            previous: 'Previous',
+            next: 'Next',
+          },
+        },
+        filters: {
+          title: 'Filters',
+          reset: 'Reset',
+          closeAria: 'Close filters',
+          fields: {
+            student: { label: 'Student name', placeholder: 'e.g. FATIMA MONTSERRAT' },
+            reference: { label: 'Registration ID', placeholder: 'e.g. 1376' },
+            generation: { label: 'Generation', placeholder: 'e.g. 2024-2025' },
+            gradeGroup: { label: 'Grade and group', placeholder: 'e.g. 6-A' },
+            scholarLevel: { label: 'Academic level', placeholder: 'e.g. Elementary' },
+            school: { label: 'School' },
+          },
+          schoolOptions: { all: 'All' },
+          toggles: {
+            activeGroups: 'Only active groups',
+            activeStudents: 'Only active students',
+          },
+        },
+        toggles: {
+          debtActive: 'Showing past due',
+          debtInactive: 'Students in debt',
+        },
+        toasts: {
+          loadSchoolsError: 'Schools could not be loaded.',
+          exportSuccess: 'Export generated successfully.',
+          exportEmpty: 'There is no information to export with the current filters.',
+          exportError: 'Error exporting data.',
+        },
+        errors: {
+          loadSchools: 'Schools could not be loaded',
+          export: 'The information could not be exported.',
+        },
+        csv: {
+          fileNamePrefix: 'payments-report',
+          headers: {
+            student: 'Student',
+            class: 'Group',
+            generation: 'Generation',
+            scholarLevel: 'Academic level',
+          },
+          studentIdLabel: 'Registration',
         },
       },
       studentsPage: {
