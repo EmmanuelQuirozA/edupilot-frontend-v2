@@ -1,5 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GlobalToast from '../components/GlobalToast.jsx';
+import ActionButton from '../components/ui/ActionButton.jsx';
+import UiCard from '../components/ui/UiCard.jsx';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import './StudentsBulkUploadPage.css';
@@ -280,12 +282,12 @@ const ConfirmationDialog = ({ open, title, message, confirmLabel, cancelLabel, o
         </header>
         <p>{message}</p>
         <footer>
-          <button type="button" className="is-text" onClick={onCancel}>
+          <ActionButton variant="text" onClick={onCancel} className="bulk-upload__confirm-cancel">
             {cancelLabel}
-          </button>
-          <button type="button" onClick={onConfirm}>
+          </ActionButton>
+          <ActionButton onClick={onConfirm} className="bulk-upload__confirm-submit">
             {confirmLabel}
-          </button>
+          </ActionButton>
         </footer>
       </div>
     </div>
@@ -1128,7 +1130,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
       </header>
 
       <div className="bulk-upload__layout">
-        <section className="bulk-upload__card bulk-upload__card--actions">
+        <UiCard className="bulk-upload__card bulk-upload__card--actions">
           <div className='card-body'>
             <h2>{strings.steps?.title ?? 'Pasos para la carga'}</h2>
             <ol className="bulk-upload__steps">
@@ -1158,9 +1160,14 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
                   <span>{strings.steps?.downloadTemplate?.title ?? 'Descarga el formato'}</span>
                   <p>{strings.steps?.downloadTemplate?.description ?? 'Utiliza el archivo CSV de referencia para evitar errores.'}</p>
                 </div>
-                <button type="button" className="bulk-upload__download" onClick={handleDownloadTemplate}>
+                <ActionButton
+                  type="button"
+                  variant="outline"
+                  onClick={handleDownloadTemplate}
+                  className="bulk-upload__download"
+                >
                   {strings.actions?.downloadTemplate ?? 'Descargar aquí'}
-                </button>
+                </ActionButton>
               </li>
               <li>
                 <div>
@@ -1191,17 +1198,22 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
               <div className="bulk-upload__file-info">
                 <span>{strings.fileInfo?.label ?? 'Archivo seleccionado'}:</span>
                 <strong>{uploadedFileName}</strong>
-                <button type="button" className="is-text" onClick={handleClearFile}>
+                <ActionButton
+                  type="button"
+                  variant="text"
+                  onClick={handleClearFile}
+                  className="bulk-upload__remove-file"
+                >
                   {strings.actions?.removeFile ?? 'Eliminar'}
-                </button>
+                </ActionButton>
               </div>
             ) : null}
 
             <p className="bulk-upload__helper">{strings.helper ?? 'Recuerda completar todos los campos obligatorios marcados con *.'}</p>
           </div>
-        </section>
+        </UiCard>
 
-        <section className="bulk-upload__card bulk-upload__card--preview">
+        <UiCard className="bulk-upload__card bulk-upload__card--preview">
           <div className='card-body'>
             <header className="bulk-upload__preview-header">
               <div>
@@ -1209,20 +1221,33 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
                 <p>{strings.table?.subtitle ?? 'Edita la información antes de confirmar la carga.'}</p>
               </div>
               <div className="bulk-upload__preview-actions">
-                <button
+                <ActionButton
                   type="button"
-                  className="is-text"
+                  variant="text"
                   onClick={handleDownloadReport}
                   disabled={!rows.length}
+                  className="bulk-upload__preview-action"
                 >
                   {strings.report?.download ?? 'Descargar reporte'}
-                </button>
-                <button type="button" className="is-secondary" onClick={onNavigateBack}>
+                </ActionButton>
+                <ActionButton
+                  type="button"
+                  variant="secondary"
+                  onClick={onNavigateBack}
+                  className="bulk-upload__preview-action"
+                >
                   {strings.actions?.back ?? 'Volver a alumnos'}
-                </button>
-                <button type="button" onClick={handleCreateStudents} disabled={!rows.length}>
-                  {isValidating ? strings.actions?.validating ?? 'Validando...' : strings.actions?.create ?? 'Crear alumnos válidos'}
-                </button>
+                </ActionButton>
+                <ActionButton
+                  type="button"
+                  onClick={handleCreateStudents}
+                  disabled={!rows.length}
+                  className="bulk-upload__preview-action"
+                >
+                  {isValidating
+                    ? strings.actions?.validando ?? strings.actions?.validating ?? 'Validando...'
+                    : strings.actions?.create ?? 'Crear alumnos válidos'}
+                </ActionButton>
               </div>
             </header>
 
@@ -1319,10 +1344,15 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
                 <ul>
                   {logEntries.map((entry) => (
                     <li key={entry.id}>
-                      <button type="button" onClick={() => handleFocusRow(entry.id)}>
+                      <ActionButton
+                        type="button"
+                        variant="text"
+                        onClick={() => handleFocusRow(entry.id)}
+                        className="bulk-upload__log-button"
+                      >
                         <strong>{entry.label}</strong>
                         <span>{entry.messages[0]}</span>
-                      </button>
+                      </ActionButton>
                     </li>
                   ))}
                 </ul>
@@ -1331,7 +1361,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
               )}
             </aside>
           </div>
-        </section>
+        </UiCard>
       </div>
 
       <ConfirmationDialog
