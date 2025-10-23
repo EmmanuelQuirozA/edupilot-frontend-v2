@@ -201,7 +201,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '' }) =
     setError(null);
 
     try {
-      const url = `${API_BASE_URL}/api/reports/payments/report?${appliedFilters.toString()}`;
+      const url = `${API_BASE_URL}/reports/payments/report?${appliedFilters.toString()}`;
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
@@ -361,7 +361,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '' }) =
       params.set('offset', '0');
       params.set('export_all', 'true');
 
-      const url = `${API_BASE_URL}/api/reports/payments/report?${params.toString()}`;
+      const url = `${API_BASE_URL}/reports/payments/report?${params.toString()}`;
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
