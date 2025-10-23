@@ -177,7 +177,7 @@
 
 .payments-page__layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
 }
 
@@ -187,25 +187,58 @@
   gap: 1rem;
 }
 
+.payments-filters {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  z-index: 60;
+}
+
+.payments-filters__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+}
+
 .payments-page__filters {
+  position: relative;
+  width: min(420px, 92%);
+  max-width: 420px;
   background: #ffffff;
-  border-radius: 1rem;
-  padding: 1.25rem;
-  box-shadow: 0 15px 45px rgba(15, 23, 42, 0.08);
+  border-radius: 1.25rem 0 0 1.25rem;
+  padding: 2rem 2rem 2.5rem;
+  box-shadow: -20px 0 60px -40px rgba(15, 23, 42, 0.45);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 1;
+}
+
+.payments-filters.is-open .payments-page__filters {
+  transform: translateX(0);
 }
 
 .payments-page__filters-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.payments-page__filters-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .payments-page__filters-title {
-  font-size: 1rem;
+  margin: 0;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #1f2937;
 }
@@ -213,15 +246,51 @@
 .payments-page__filters-reset {
   background: none;
   border: none;
-  color: #6b7280;
-  font-size: 0.85rem;
+  color: #6366f1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0;
   cursor: pointer;
+  text-align: left;
+}
+
+.payments-page__filters-reset:hover,
+.payments-page__filters-reset:focus-visible {
+  text-decoration: underline;
+}
+
+.payments-page__filters-close {
+  border: none;
+  background: rgba(226, 232, 240, 0.65);
+  width: 36px;
+  height: 36px;
+  border-radius: 0.75rem;
+  font-size: 1.3rem;
+  color: #1f2937;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.payments-page__filters-close:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+.payments-page__filters-close:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.45);
+  outline-offset: 2px;
 }
 
 .payments-page__filters-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding-right: 0.25rem;
 }
 
 .payments-page__field {
@@ -318,9 +387,37 @@
   vertical-align: middle;
 }
 
-.payments-page__student-name {
+.payments-page__student-button {
   font-weight: 600;
-  color: #111827;
+  color: #4338ca;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.payments-page__student-button:hover {
+  text-decoration: underline;
+}
+
+.payments-page__student-button:focus-visible {
+  outline: 2px solid rgba(67, 56, 202, 0.35);
+  outline-offset: 2px;
+  text-decoration: underline;
+}
+
+.payments-page__student-button:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.payments-page__student-button:disabled:hover,
+.payments-page__student-button:disabled:focus-visible {
+  text-decoration: none;
+  outline: none;
 }
 
 .payments-page__student-id {
@@ -391,34 +488,29 @@
   }
 
   .payments-page__filters {
-    display: none;
-    position: fixed;
-    top: 0;
-    right: -110%;
-    bottom: 0;
-    width: min(340px, 90vw);
-    z-index: 30;
-    border-radius: 0;
-    padding: 1.5rem;
-    overflow-y: auto;
-    transition: right 0.3s ease;
+    width: min(360px, 92%);
+    border-radius: 1.25rem 0 0 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .payments-filters {
+    align-items: flex-end;
   }
 
-  .payments-page__filters.is-open {
-    display: flex;
-    right: 0;
+  .payments-page__filters {
+    width: 100%;
+    border-radius: 1.5rem 1.5rem 0 0;
+    box-shadow: 0 -20px 60px -40px rgba(15, 23, 42, 0.45);
+    transform: translateY(100%);
   }
 
-  .payments-page__filters-toggle {
-    display: inline-flex;
+  .payments-filters.is-open .payments-page__filters {
+    transform: translateY(0);
   }
 
-  .payments-page__filters-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.45);
-    backdrop-filter: blur(2px);
-    z-index: 20;
+  .payments-page__filters-close {
+    border-radius: 999px;
   }
 }
 
