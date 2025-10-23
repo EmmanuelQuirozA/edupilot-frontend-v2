@@ -70,7 +70,7 @@ const normalizeSelectOption = (item, index = 0) => {
   return { value, label };
 };
 
-const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onStudentDetail }) => {
+const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '' }) => {
   const { token } = useAuth();
 
   const [activeTab, setActiveTab] = useState('tuition');
@@ -201,7 +201,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
     setError(null);
 
     try {
-      const url = `${API_BASE_URL}/api/reports/payments/report?${appliedFilters.toString()}`;
+      const url = `${API_BASE_URL}/reports/payments/report?${appliedFilters.toString()}`;
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
@@ -282,11 +282,11 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
   }, []);
 
   const handleToggleFilters = useCallback(() => {
-    setShowFilters((previous) => !previous);
-  }, []);
+    if (typeof window !== 'undefined' && window.innerWidth > 1100) {
+      return;
+    }
 
-  const handleCloseFilters = useCallback(() => {
-    setShowFilters(false);
+    setShowFilters((previous) => !previous);
   }, []);
 
   const handleResetFilters = useCallback(() => {
@@ -308,54 +308,22 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
     setOffset(0);
   }, []);
 
-  const handleStudentDetailNavigation = useCallback(
-    (student) => {
-      if (!student || typeof onStudentDetail !== 'function') {
-        return;
+  const handleSort = useCallback((orderKey) => {
+    if (!orderKey) {
+      return;
+    }
+
+    setOrderBy((previousOrderKey) => {
+      if (previousOrderKey === orderKey) {
+        setOrderDir((previousDir) => (previousDir === 'ASC' ? 'DESC' : 'ASC'));
+        return previousOrderKey;
       }
 
-      const { id, name, registerId } = student;
-      if (!id) {
-        return;
-      }
-
-      const normalizedId = typeof id === 'string' ? id : String(id);
-      const normalizedName = typeof name === 'string' && name.trim() ? name : undefined;
-      const normalizedRegisterId =
-        typeof registerId === 'string' && registerId.trim()
-          ? registerId
-          : registerId
-          ? String(registerId)
-          : undefined;
-
-      onStudentDetail({
-        id: normalizedId,
-        name: normalizedName,
-        registerId: normalizedRegisterId,
-      });
-    },
-    [onStudentDetail],
-  );
-
-  const handleSort = useCallback(
-    (orderKey) => {
-      if (!orderKey) {
-        return;
-      }
-
-      setOrderDir((previousDir) => {
-        if (orderBy === orderKey) {
-          return previousDir === 'ASC' ? 'DESC' : 'ASC';
-        }
-
-        return 'ASC';
-      });
-
-      setOrderBy((previousOrderKey) => (previousOrderKey === orderKey ? previousOrderKey : orderKey));
-      setOffset(0);
-    },
-    [orderBy],
-  );
+      setOrderDir('ASC');
+      return orderKey;
+    });
+    setOffset(0);
+  }, []);
 
   const handlePageChange = useCallback(
     (nextPage) => {
@@ -393,7 +361,7 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
       params.set('offset', '0');
       params.set('export_all', 'true');
 
-      const url = `${API_BASE_URL}/api/reports/payments/report?${params.toString()}`;
+      const url = `${API_BASE_URL}/reports/payments/report?${params.toString()}`;
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
@@ -539,35 +507,15 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
             </thead>
             <tbody>
               {rows.map((row, index) => {
-                const studentId = row?.student_id ?? row?.id ?? row?.user_id ?? null;
-                const registerId = row?.payment_reference ?? row?.register_id ?? row?.registration_id ?? '';
-                const studentName = row?.student ?? row?.full_name ?? 'Sin nombre';
-                const rowKey = studentId ?? registerId ?? `${studentName}-${index}`;
-                const canNavigate = Boolean(studentId);
+                const rowKey =
+                  row?.student_id ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
 
                 return (
                   <tr key={rowKey}>
                     <td>
-                      <button
-                        type="button"
-                        className="payments-page__student-button"
-                        onClick={() => {
-                          if (!canNavigate) {
-                            return;
-                          }
-
-                          handleStudentDetailNavigation({
-                            id: studentId,
-                            name: studentName,
-                            registerId,
-                          });
-                        }}
-                        disabled={!canNavigate}
-                      >
-                        {studentName}
-                      </button>
-                      {registerId ? (
-                        <span className="payments-page__student-id">Matrícula: {registerId}</span>
+                      <span className="payments-page__student-name">{row.student ?? 'Sin nombre'}</span>
+                      {row.payment_reference ? (
+                        <span className="payments-page__student-id">Matrícula: {row.payment_reference}</span>
                       ) : null}
                     </td>
                     <td>{row.class ?? '--'}</td>
@@ -732,6 +680,116 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
       </div>
 
       <div className="payments-page__layout">
+        <aside className={`payments-page__filters ${showFilters ? 'is-open' : ''}`}>
+          <div className="payments-page__filters-header">
+            <span className="payments-page__filters-title">Filtros</span>
+            <button type="button" className="payments-page__filters-reset" onClick={handleResetFilters}>
+              Reiniciar
+            </button>
+          </div>
+          <div className="payments-page__filters-form">
+            <div className="payments-page__field">
+              <label htmlFor="filter-student" className="payments-page__label">
+                Nombre del alumno
+              </label>
+              <input
+                id="filter-student"
+                type="text"
+                className="payments-page__input"
+                value={filters.student_full_name}
+                onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
+                placeholder="Ej. FATIMA MONTSERRAT"
+              />
+            </div>
+            <div className="payments-page__field">
+              <label htmlFor="filter-reference" className="payments-page__label">
+                Matrícula
+              </label>
+              <input
+                id="filter-reference"
+                type="text"
+                className="payments-page__input"
+                value={filters.payment_reference}
+                onChange={(event) => handleFilterChange('payment_reference', event.target.value)}
+                placeholder="Ej. 1376"
+              />
+            </div>
+            <div className="payments-page__field">
+              <label htmlFor="filter-generation" className="payments-page__label">
+                Generación
+              </label>
+              <input
+                id="filter-generation"
+                type="text"
+                className="payments-page__input"
+                value={filters.generation}
+                onChange={(event) => handleFilterChange('generation', event.target.value)}
+                placeholder="Ej. 2024-2025"
+              />
+            </div>
+            <div className="payments-page__field">
+              <label htmlFor="filter-grade" className="payments-page__label">
+                Grado y grupo
+              </label>
+              <input
+                id="filter-grade"
+                type="text"
+                className="payments-page__input"
+                value={filters.grade_group}
+                onChange={(event) => handleFilterChange('grade_group', event.target.value)}
+                placeholder="Ej. 6-A"
+              />
+            </div>
+            <div className="payments-page__field">
+              <label htmlFor="filter-scholar" className="payments-page__label">
+                Nivel académico
+              </label>
+              <input
+                id="filter-scholar"
+                type="text"
+                className="payments-page__input"
+                value={filters.scholar_level}
+                onChange={(event) => handleFilterChange('scholar_level', event.target.value)}
+                placeholder="Ej. Primaria"
+              />
+            </div>
+            <div className="payments-page__field">
+              <label htmlFor="filter-school" className="payments-page__label">
+                Escuela
+              </label>
+              <select
+                id="filter-school"
+                className="payments-page__select"
+                value={filters.school_id}
+                onChange={(event) => handleFilterChange('school_id', event.target.value)}
+                disabled={isLoadingSchools}
+              >
+                <option value="">Todas</option>
+                {schoolOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label className="payments-page__checkbox">
+              <input
+                type="checkbox"
+                checked={filters.group_status === 'true'}
+                onChange={(event) => handleFilterChange('group_status', event.target.checked ? 'true' : '')}
+              />
+              Sólo grupos activos
+            </label>
+            <label className="payments-page__checkbox">
+              <input
+                type="checkbox"
+                checked={filters.user_status === 'true'}
+                onChange={(event) => handleFilterChange('user_status', event.target.checked ? 'true' : '')}
+              />
+              Sólo alumnos activos
+            </label>
+          </div>
+        </aside>
         <section className="payments-page__content">
           {activeTab === 'tuition' ? (
             renderTable()
@@ -743,144 +801,13 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onS
         </section>
       </div>
 
-      <aside
-        className={`payments-page__filters ${showFilters ? 'is-open' : ''}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Filtros"
-        aria-hidden={!showFilters}
-        tabIndex={showFilters ? 0 : -1}
-      >
-        <div className="payments-page__filters-header">
-          <span className="payments-page__filters-title">Filtros</span>
-          <div className="payments-page__filters-header-actions">
-            <button type="button" className="payments-page__filters-reset" onClick={handleResetFilters}>
-              Reiniciar
-            </button>
-            <button
-              type="button"
-              className="payments-page__filters-close"
-              onClick={handleCloseFilters}
-              aria-label="Cerrar filtros"
-            >
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M4.22 4.22 8 8m0 0 3.78 3.78M8 8l3.78-3.78M8 8 4.22 11.78"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div className="payments-page__filters-form">
-          <div className="payments-page__field">
-            <label htmlFor="filter-student" className="payments-page__label">
-              Nombre del alumno
-            </label>
-            <input
-              id="filter-student"
-              type="text"
-              className="payments-page__input"
-              value={filters.student_full_name}
-              onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
-              placeholder="Ej. FATIMA MONTSERRAT"
-            />
-          </div>
-          <div className="payments-page__field">
-            <label htmlFor="filter-reference" className="payments-page__label">
-              Matrícula
-            </label>
-            <input
-              id="filter-reference"
-              type="text"
-              className="payments-page__input"
-              value={filters.payment_reference}
-              onChange={(event) => handleFilterChange('payment_reference', event.target.value)}
-              placeholder="Ej. 1376"
-            />
-          </div>
-          <div className="payments-page__field">
-            <label htmlFor="filter-generation" className="payments-page__label">
-              Generación
-            </label>
-            <input
-              id="filter-generation"
-              type="text"
-              className="payments-page__input"
-              value={filters.generation}
-              onChange={(event) => handleFilterChange('generation', event.target.value)}
-              placeholder="Ej. 2024-2025"
-            />
-          </div>
-          <div className="payments-page__field">
-            <label htmlFor="filter-grade" className="payments-page__label">
-              Grado y grupo
-            </label>
-            <input
-              id="filter-grade"
-              type="text"
-              className="payments-page__input"
-              value={filters.grade_group}
-              onChange={(event) => handleFilterChange('grade_group', event.target.value)}
-              placeholder="Ej. 6-A"
-            />
-          </div>
-          <div className="payments-page__field">
-            <label htmlFor="filter-scholar" className="payments-page__label">
-              Nivel académico
-            </label>
-            <input
-              id="filter-scholar"
-              type="text"
-              className="payments-page__input"
-              value={filters.scholar_level}
-              onChange={(event) => handleFilterChange('scholar_level', event.target.value)}
-              placeholder="Ej. Primaria"
-            />
-          </div>
-          <div className="payments-page__field">
-            <label htmlFor="filter-school" className="payments-page__label">
-              Escuela
-            </label>
-            <select
-              id="filter-school"
-              className="payments-page__select"
-              value={filters.school_id}
-              onChange={(event) => handleFilterChange('school_id', event.target.value)}
-              disabled={isLoadingSchools}
-            >
-              <option value="">Todas</option>
-              {schoolOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <label className="payments-page__checkbox">
-            <input
-              type="checkbox"
-              checked={filters.group_status === 'true'}
-              onChange={(event) => handleFilterChange('group_status', event.target.checked ? 'true' : '')}
-            />
-            Sólo grupos activos
-          </label>
-          <label className="payments-page__checkbox">
-            <input
-              type="checkbox"
-              checked={filters.user_status === 'true'}
-              onChange={(event) => handleFilterChange('user_status', event.target.checked ? 'true' : '')}
-            />
-            Sólo alumnos activos
-          </label>
-        </div>
-      </aside>
-
-      {showFilters ? (
-        <div className="payments-page__filters-backdrop" role="presentation" onClick={handleCloseFilters} />
-      ) : null}
+      {showFilters && (
+        <div
+          className="payments-page__filters-backdrop"
+          role="presentation"
+          onClick={() => setShowFilters(false)}
+        />
+      )}
     </div>
   );
 };

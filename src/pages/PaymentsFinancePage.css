@@ -176,10 +176,9 @@
 }
 
 .payments-page__layout {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 280px 1fr;
   gap: 1.5rem;
-  position: relative;
 }
 
 .payments-page__content {
@@ -189,23 +188,13 @@
 }
 
 .payments-page__filters {
-  display: none;
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(360px, 92vw);
   background: #ffffff;
-  box-shadow: 0 15px 45px rgba(15, 23, 42, 0.12);
-  padding: 1.5rem;
-  overflow-y: auto;
-  z-index: 40;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 15px 45px rgba(15, 23, 42, 0.08);
+  display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.payments-page__filters.is-open {
-  display: flex;
 }
 
 .payments-page__filters-header {
@@ -221,54 +210,12 @@
   color: #1f2937;
 }
 
-.payments-page__filters-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .payments-page__filters-reset {
   background: none;
   border: none;
   color: #6b7280;
   font-size: 0.85rem;
   cursor: pointer;
-}
-
-.payments-page__filters-reset:hover {
-  color: #4338ca;
-}
-
-.payments-page__filters-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: none;
-  border-radius: 9999px;
-  background: rgba(99, 102, 241, 0.08);
-  color: #4b5563;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.payments-page__filters-close:hover {
-  background: rgba(99, 102, 241, 0.18);
-  color: #3730a3;
-}
-
-.payments-page__filters-close svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.payments-page__filters-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(2px);
-  z-index: 30;
 }
 
 .payments-page__filters-form {
@@ -371,35 +318,9 @@
   vertical-align: middle;
 }
 
-.payments-page__student-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0;
-  border: none;
-  background: none;
+.payments-page__student-name {
   font-weight: 600;
-  color: #4338ca;
-  cursor: pointer;
-  text-align: left;
-}
-
-.payments-page__student-button:hover:not(:disabled) {
-  text-decoration: underline;
-}
-
-.payments-page__student-button:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
-  border-radius: 0.5rem;
-  padding: 0.1rem 0.4rem;
-  margin: -0.1rem -0.4rem;
-  background: rgba(99, 102, 241, 0.1);
-}
-
-.payments-page__student-button:disabled {
-  color: #9ca3af;
-  cursor: not-allowed;
+  color: #111827;
 }
 
 .payments-page__student-id {
@@ -460,14 +381,50 @@
   border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
-@media (max-width: 640px) {
-  .payments-page {
-    padding: 1rem;
+.payments-page__filters-toggle {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .payments-page__layout {
+    grid-template-columns: 1fr;
   }
 
   .payments-page__filters {
-    width: min(420px, 100vw);
-    padding: 1.25rem;
+    display: none;
+    position: fixed;
+    top: 0;
+    right: -110%;
+    bottom: 0;
+    width: min(340px, 90vw);
+    z-index: 30;
+    border-radius: 0;
+    padding: 1.5rem;
+    overflow-y: auto;
+    transition: right 0.3s ease;
+  }
+
+  .payments-page__filters.is-open {
+    display: flex;
+    right: 0;
+  }
+
+  .payments-page__filters-toggle {
+    display: inline-flex;
+  }
+
+  .payments-page__filters-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 20;
+  }
+}
+
+@media (max-width: 640px) {
+  .payments-page {
+    padding: 1rem;
   }
 
   .payments-page__toolbar {
