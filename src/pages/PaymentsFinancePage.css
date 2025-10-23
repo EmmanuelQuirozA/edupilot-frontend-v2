@@ -8,10 +8,9 @@
 
 .payments-page__header {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .payments-page__title-block {
@@ -37,6 +36,7 @@
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .payments-page__button {
@@ -156,6 +156,7 @@
   border-radius: 0.9rem;
   background: rgba(99, 102, 241, 0.08);
   width: fit-content;
+  align-self: flex-start;
 }
 
 .payments-page__tab {
@@ -176,15 +177,9 @@
 }
 
 .payments-page__layout {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
-}
-
-@media (min-width: 1101px) {
-  .payments-page__layout.is-open {
-    grid-template-columns: 280px 1fr;
-  }
 }
 
 .payments-page__content {
@@ -213,24 +208,22 @@
   position: relative;
   width: min(420px, 92%);
   max-width: 420px;
+  max-height: calc(100vh - 2rem);
   background: #ffffff;
   border-radius: 1rem;
   padding: 1.25rem;
   box-shadow: 0 15px 45px rgba(15, 23, 42, 0.08);
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 1.5rem;
   transform: translateX(100%);
   transition: transform 0.3s ease;
   z-index: 1;
+  overflow: hidden;
 }
 
 .payments-filters.is-open .payments-page__filters {
   transform: translateX(0);
-}
-
-.payments-page__filters.is-open {
-  display: flex;
 }
 
 .payments-page__filters-backdrop {
