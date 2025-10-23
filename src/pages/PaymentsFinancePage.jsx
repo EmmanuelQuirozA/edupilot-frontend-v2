@@ -70,7 +70,7 @@ const normalizeSelectOption = (item, index = 0) => {
   return { value, label };
 };
 
-const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '' }) => {
+const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '', onStudentDetail }) => {
   const { token } = useAuth();
 
   const [activeTab, setActiveTab] = useState('tuition');
@@ -282,10 +282,6 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '' }) =
   }, []);
 
   const handleToggleFilters = useCallback(() => {
-    if (typeof window !== 'undefined' && window.innerWidth > 1100) {
-      return;
-    }
-
     setShowFilters((previous) => !previous);
   }, []);
 
@@ -308,22 +304,43 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '' }) =
     setOffset(0);
   }, []);
 
-  const handleSort = useCallback((orderKey) => {
-    if (!orderKey) {
-      return;
-    }
-
-    setOrderBy((previousOrderKey) => {
-      if (previousOrderKey === orderKey) {
-        setOrderDir((previousDir) => (previousDir === 'ASC' ? 'DESC' : 'ASC'));
-        return previousOrderKey;
+  const handleSort = useCallback(
+    (orderKey) => {
+      if (!orderKey) {
+        return;
       }
 
-      setOrderDir('ASC');
-      return orderKey;
-    });
-    setOffset(0);
-  }, []);
+      const isSameColumn = orderBy === orderKey;
+
+      setOrderDir((previousDir) => {
+        if (isSameColumn) {
+          return previousDir === 'ASC' ? 'DESC' : 'ASC';
+        }
+
+        return 'ASC';
+      });
+
+      setOrderBy((previousOrderKey) => (previousOrderKey === orderKey ? previousOrderKey : orderKey));
+      setOffset(0);
+    },
+    [orderBy],
+  );
+
+  const handleStudentDetailClick = useCallback(
+    (row) => {
+      const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
+
+      if (!studentId) {
+        return;
+      }
+
+      const fullName = row?.student ?? '';
+      const registerId = row?.payment_reference ?? row?.register_id ?? row?.registration_id ?? '';
+
+      onStudentDetail?.({ id: studentId, name: fullName, registerId });
+    },
+    [onStudentDetail],
+  );
 
   const handlePageChange = useCallback(
     (nextPage) => {
@@ -507,13 +524,21 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '' }) =
             </thead>
             <tbody>
               {rows.map((row, index) => {
-                const rowKey =
-                  row?.student_id ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+                const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
+                const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+                const canNavigateToStudent = Boolean(studentId);
 
                 return (
                   <tr key={rowKey}>
                     <td>
-                      <span className="payments-page__student-name">{row.student ?? 'Sin nombre'}</span>
+                      <button
+                        type="button"
+                        className="payments-page__student-button"
+                        onClick={() => handleStudentDetailClick(row)}
+                        disabled={!canNavigateToStudent}
+                      >
+                        {row.student ?? 'Sin nombre'}
+                      </button>
                       {row.payment_reference ? (
                         <span className="payments-page__student-id">Matrícula: {row.payment_reference}</span>
                       ) : null}
@@ -578,7 +603,13 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '' }) =
           {description ? <p className="payments-page__description">{description}</p> : null}
         </div>
         <div className="payments-page__actions">
-          <button type="button" className="payments-page__button payments-page__button--outline" onClick={handleToggleFilters}>
+          <button
+            type="button"
+            className="payments-page__button payments-page__button--outline"
+            onClick={handleToggleFilters}
+            aria-expanded={showFilters}
+            aria-controls="payments-page-filters"
+          >
             <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
               <path
                 d="M3 4h14l-5 6v4l-4 2v-6L3 4Z"
@@ -679,8 +710,12 @@ const PaymentsFinancePage = ({ title = 'Pagos y Finanzas', description = '' }) =
         ))}
       </div>
 
-      <div className="payments-page__layout">
-        <aside className={`payments-page__filters ${showFilters ? 'is-open' : ''}`}>
+      <div className={`payments-page__layout ${showFilters ? 'is-open' : ''}`}>
+        <aside
+          id="payments-page-filters"
+          className={`payments-page__filters ${showFilters ? 'is-open' : ''}`}
+          aria-hidden={!showFilters}
+        >
           <div className="payments-page__filters-header">
             <span className="payments-page__filters-title">Filtros</span>
             <button type="button" className="payments-page__filters-reset" onClick={handleResetFilters}>
