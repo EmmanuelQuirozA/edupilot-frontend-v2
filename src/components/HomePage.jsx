@@ -162,17 +162,6 @@ const HomePage = ({
   const studentsBulkStrings = studentsPageStrings.bulkUploadPage ?? {};
   const studentsDetailStrings = studentsPageStrings.detail ?? {};
 
-  const placeholderPages = useMemo(
-    () => ({
-      payments: <PaymentsFinancePage {...t.home.pages.payments} />,
-      teachers: <TeachersPage {...t.home.pages.teachers} />,
-      schedules: <SchedulesTasksPage {...t.home.pages.schedules} />,
-      grades: <GradesPage {...t.home.pages.grades} />,
-      communications: <CommunicationsPage {...t.home.pages.communications} />,
-    }),
-    [t.home.pages],
-  );
-
   const handleNavClick = useCallback(
     (key) => {
       setActivePage(key);
@@ -208,6 +197,22 @@ const HomePage = ({
       onNavigateToStudentDetail?.(student.id);
     },
     [onNavigateToStudentDetail, t.home.studentsPage.detail.breadcrumbFallback],
+  );
+
+  const placeholderPages = useMemo(
+    () => ({
+      payments: (
+        <PaymentsFinancePage
+          {...t.home.pages.payments}
+          onStudentDetail={handleStudentDetailNavigate}
+        />
+      ),
+      teachers: <TeachersPage {...t.home.pages.teachers} />,
+      schedules: <SchedulesTasksPage {...t.home.pages.schedules} />,
+      grades: <GradesPage {...t.home.pages.grades} />,
+      communications: <CommunicationsPage {...t.home.pages.communications} />,
+    }),
+    [handleStudentDetailNavigate, t.home.pages],
   );
 
   const studentsContent = isStudentDetailActive ? (
