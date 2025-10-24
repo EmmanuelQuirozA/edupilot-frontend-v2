@@ -346,6 +346,28 @@ const PaymentsFinancePage = ({
     return columns;
   }, [rows]);
 
+  const handleSort = useCallback(
+    (orderKey) => {
+      if (!orderKey) {
+        return;
+      }
+
+      const isSameColumn = orderBy === orderKey;
+
+      setOrderDir((previousDir) => {
+        if (isSameColumn) {
+          return previousDir === 'ASC' ? 'DESC' : 'ASC';
+        }
+
+        return 'ASC';
+      });
+
+      setOrderBy((previousOrderKey) => (previousOrderKey === orderKey ? previousOrderKey : orderKey));
+      setOffset(0);
+    },
+    [orderBy],
+  );
+
   const paymentColumns = useMemo(() => {
     const sortableHeader = (label, key) => (
       <button
@@ -580,28 +602,6 @@ const PaymentsFinancePage = ({
     setOrderDir('ASC');
     setOffset(0);
   }, []);
-
-  const handleSort = useCallback(
-    (orderKey) => {
-      if (!orderKey) {
-        return;
-      }
-
-      const isSameColumn = orderBy === orderKey;
-
-      setOrderDir((previousDir) => {
-        if (isSameColumn) {
-          return previousDir === 'ASC' ? 'DESC' : 'ASC';
-        }
-
-        return 'ASC';
-      });
-
-      setOrderBy((previousOrderKey) => (previousOrderKey === orderKey ? previousOrderKey : orderKey));
-      setOffset(0);
-    },
-    [orderBy],
-  );
 
   const handleStudentDetailClick = useCallback(
     (row) => {

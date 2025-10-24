@@ -259,8 +259,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   const [students, setStudents] = useState([]);
   const [totalStudents, setTotalStudents] = useState(0);
   const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [isStudentsLoading, setIsStudentsLoading] = useState(false);
+  const [studentsError, setStudentsError] = useState('');
 
   const { token } = useAuth();
   const [filters, setFilters] = useState(createInitialFilters);
@@ -352,8 +352,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       : 'No fue posible cargar la información del grupo. Intenta nuevamente.');
 
   const fetchStudents = useCallback(async () => {
-    setIsLoading(true);
-    setError('');
+    setIsStudentsLoading(true);
+    setStudentsError('');
 
     const params = new URLSearchParams({
       lang: language ?? 'es',
@@ -398,12 +398,12 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       setTotalStudents(total);
     } catch (requestError) {
       if (requestError.name !== 'AbortError') {
-        setError(requestError.message || 'Unable to load students');
+        setStudentsError(requestError.message || 'Unable to load students');
         setStudents([]);
         setTotalStudents(0);
       }
     } finally {
-      setIsLoading(false);
+      setIsStudentsLoading(false);
     }
 
     return () => {
