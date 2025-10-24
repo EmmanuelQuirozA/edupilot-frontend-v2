@@ -368,6 +368,23 @@ const PaymentsFinancePage = ({
     [orderBy],
   );
 
+  const renderSortIndicator = useCallback(
+    (orderKey) => {
+      const isActive = orderBy === orderKey;
+      const direction = isActive ? orderDir : null;
+      const upColor = isActive && direction !== 'DESC' ? '#4338ca' : '#c7d2fe';
+      const downColor = isActive && direction === 'DESC' ? '#4338ca' : '#c7d2fe';
+
+      return (
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M6 2l3 4H3l3-4Z" fill={upColor} />
+          <path d="M6 10l3-4H3l3 4Z" fill={downColor} />
+        </svg>
+      );
+    },
+    [orderBy, orderDir],
+  );
+
   const paymentColumns = useMemo(() => {
     const sortableHeader = (label, key) => (
       <button
@@ -391,7 +408,7 @@ const PaymentsFinancePage = ({
     }));
 
     return [...baseColumns, ...dynamicMonths];
-  }, [displayedColumns, handleSort, monthColumns, orderBy, orderDir]);
+  }, [displayedColumns, handleSort, monthColumns, renderSortIndicator]);
 
   const paymentSummary = useCallback(
     ({ from, to, total }) => {
@@ -742,20 +759,6 @@ const PaymentsFinancePage = ({
       setShowFilters(false);
     }
   }, [isTuitionTab, showFilters]);
-
-  const renderSortIndicator = (orderKey) => {
-    const isActive = orderBy === orderKey;
-    const direction = isActive ? orderDir : null;
-    const upColor = isActive && direction !== 'DESC' ? '#4338ca' : '#c7d2fe';
-    const downColor = isActive && direction === 'DESC' ? '#4338ca' : '#c7d2fe';
-
-    return (
-      <svg viewBox="0 0 12 12" aria-hidden="true">
-        <path d="M6 2l3 4H3l3-4Z" fill={upColor} />
-        <path d="M6 10l3-4H3l3 4Z" fill={downColor} />
-      </svg>
-    );
-  };
 
   const DebtIcon = (
     <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
