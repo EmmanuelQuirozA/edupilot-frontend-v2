@@ -6,10 +6,6 @@
   gap: 0.5rem;
 }
 
-.global-tabs__nav .nav-item {
-  margin-bottom: -1px;
-}
-
 .global-tabs__link {
   border-radius: 0.75rem 0.75rem 0 0;
   border: 1px solid transparent;

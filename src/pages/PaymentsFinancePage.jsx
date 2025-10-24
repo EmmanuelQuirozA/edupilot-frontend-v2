@@ -170,7 +170,6 @@ const SUPPORTED_LANGUAGES = ['es', 'en'];
 const getLocaleFromLanguage = (language) => (language === 'en' ? 'en-US' : 'es-MX');
 
 const PaymentsFinancePage = ({
-  title = 'Pagos y Finanzas',
   description = '',
   language = 'es',
   strings = {},
@@ -766,7 +765,6 @@ const PaymentsFinancePage = ({
     </svg>
   );
 
-  const pageTitle = title || tabStrings.tuition;
 
   return (
     <div className="payments-page">
@@ -774,7 +772,6 @@ const PaymentsFinancePage = ({
 
       <div className="payments-page__header">
         <div className="payments-page__title-block">
-          <h1 className="payments-page__title">{pageTitle}</h1>
           {description ? <p className="payments-page__description">{description}</p> : null}
         </div>
         <div className="payments-page__navigation">

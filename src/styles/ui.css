@@ -318,3 +318,11 @@
     min-width: 100%;
   }
 }
+
+ul.nav.nav-tabs.global-tabs__nav {
+    padding: 5px;
+}
+
+button.nav-link.global-tabs__link {
+    border-radius: 10px;
+}
