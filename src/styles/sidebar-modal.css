@@ -1,0 +1,64 @@
+.sidebar-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sidebar-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(2px);
+}
+
+.sidebar-modal__panel {
+  position: relative;
+  max-width: 480px;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 1.25rem 0 0 1.25rem;
+  box-shadow: -24px 0 60px -40px rgba(15, 23, 42, 0.45);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-modal__panel--lg {
+  max-width: 560px;
+}
+
+.sidebar-modal__panel--sm {
+  max-width: 360px;
+}
+
+.sidebar-modal__reset {
+  font-weight: 600;
+  color: var(--ui-color-primary);
+}
+
+.sidebar-modal__reset:hover,
+.sidebar-modal__reset:focus-visible {
+  color: var(--ui-color-primary-strong);
+}
+
+.sidebar-modal .offcanvas-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.sidebar-modal .offcanvas-footer {
+  background: rgba(248, 250, 252, 0.85);
+}
+
+@media (max-width: 768px) {
+  .sidebar-modal {
+    justify-content: center;
+  }
+
+  .sidebar-modal__panel {
+    border-radius: 1.25rem 1.25rem 0 0;
+    margin: 0 auto;
+  }
+}

@@ -7,7 +7,10 @@ import AddRecordButton from '../components/ui/buttons/AddRecordButton.jsx';
 import EditRecordButton from '../components/ui/buttons/EditRecordButton.jsx';
 import FilterButton from '../components/ui/buttons/FilterButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
-import { Table, TableContainer } from '../components/ui/DataTable.jsx';
+import Tabs from '../components/ui/Tabs.jsx';
+import SearchInput from '../components/ui/SearchInput.jsx';
+import GlobalTable from '../components/ui/GlobalTable.jsx';
+import SidebarModal from '../components/ui/SidebarModal.jsx';
 import './StudentsGroupsPage.css';
 
 const DEFAULT_PAGINATION = { offset: 0, limit: 10 };
@@ -514,18 +517,11 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     setPagination((previous) => ({ ...previous, offset: 0 }));
   };
 
-  const handlePaginationChange = (direction) => {
-    setPagination((previous) => {
-      const totalPages = Math.ceil((totalStudents || 0) / previous.limit) || 1;
-      const currentPage = Math.floor((previous.offset || 0) / previous.limit) + 1;
-      if (direction === 'next' && currentPage < totalPages) {
-        return { ...previous, offset: previous.offset + previous.limit };
-      }
-      if (direction === 'prev' && currentPage > 1) {
-        return { ...previous, offset: previous.offset - previous.limit };
-      }
-      return previous;
-    });
+  const handleStudentPageChange = (page) => {
+    setPagination((previous) => ({
+      ...previous,
+      offset: Math.max(0, (page - 1) * previous.limit),
+    }));
   };
 
   const handleFilterChange = (event) => {
@@ -568,18 +564,11 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     setIsGroupFiltersOpen(false);
   };
 
-  const handleGroupPaginationChange = (direction) => {
-    setGroupPagination((previous) => {
-      const totalPages = Math.ceil((totalGroups || 0) / previous.limit) || 1;
-      const currentPage = Math.floor((previous.offset || 0) / previous.limit) + 1;
-      if (direction === 'next' && currentPage < totalPages) {
-        return { ...previous, offset: previous.offset + previous.limit };
-      }
-      if (direction === 'prev' && currentPage > 1) {
-        return { ...previous, offset: previous.offset - previous.limit };
-      }
-      return previous;
-    });
+  const handleGroupPageChange = (page) => {
+    setGroupPagination((previous) => ({
+      ...previous,
+      offset: Math.max(0, (page - 1) * previous.limit),
+    }));
   };
 
   const fetchClasses = useCallback(
@@ -1530,15 +1519,71 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
   const isEditMode = modalMode === 'edit';
 
-  const activePage = Math.floor(pagination.offset / pagination.limit) + 1;
-  const totalPages = Math.max(1, Math.ceil((totalStudents || 0) / pagination.limit));
-  const showingFrom = Math.min(totalStudents, pagination.offset + 1);
-  const showingTo = Math.min(totalStudents, pagination.offset + students.length);
+  const studentLimit = Number(pagination.limit) || DEFAULT_PAGINATION.limit;
+  const activePage = Math.floor((pagination.offset ?? 0) / studentLimit) + 1;
 
-  const groupActivePage = Math.floor(groupPagination.offset / groupPagination.limit) + 1;
-  const groupTotalPages = Math.max(1, Math.ceil((totalGroups || 0) / groupPagination.limit));
-  const groupShowingFrom = Math.min(totalGroups, groupPagination.offset + 1);
-  const groupShowingTo = Math.min(totalGroups, groupPagination.offset + groups.length);
+  const groupLimit = Number(groupPagination.limit) || DEFAULT_PAGINATION.limit;
+  const groupActivePage = Math.floor((groupPagination.offset ?? 0) / groupLimit) + 1;
+
+  const studentColumns = useMemo(
+    () => [
+      { key: 'student', header: strings.table.student },
+      { key: 'gradeGroup', header: strings.table.gradeGroup },
+      { key: 'status', header: strings.table.status, headerClassName: 'text-center', align: 'center' },
+      { key: 'actions', header: strings.table.actions, headerClassName: 'text-end', align: 'end' },
+    ],
+    [strings.table],
+  );
+
+  const groupTableStrings = strings.groupsView?.table ?? {};
+  const groupColumns = useMemo(
+    () => [
+      { key: 'generation', header: groupTableStrings.generation },
+      { key: 'gradeGroup', header: groupTableStrings.gradeGroup },
+      { key: 'scholarLevel', header: groupTableStrings.scholarLevel },
+      { key: 'status', header: groupTableStrings.status, headerClassName: 'text-center', align: 'center' },
+      { key: 'actions', header: groupTableStrings.actions, headerClassName: 'text-end', align: 'end' },
+    ],
+    [groupTableStrings],
+  );
+
+  const studentSummary = useCallback(
+    ({ from, to, total }) => {
+      const paginationStrings = strings.pagination ?? {};
+      const showingLabel = paginationStrings.showing ?? 'Mostrando';
+      const ofLabel = paginationStrings.of ?? 'de';
+      const studentsLabel = paginationStrings.students ?? 'registros';
+
+      if (!total) {
+        return `${showingLabel} 0 ${ofLabel} 0 ${studentsLabel}`;
+      }
+
+      return `${showingLabel} ${from}-${to} ${ofLabel} ${total} ${studentsLabel}`;
+    },
+    [strings.pagination],
+  );
+
+  const groupSummary = useCallback(
+    ({ from, to, total }) => {
+      const paginationStrings = strings.groupsView?.pagination ?? {};
+      const globalPagination = strings.pagination ?? {};
+
+      const showingLabel = paginationStrings.showing ?? globalPagination.showing ?? 'Mostrando';
+      const ofLabel = paginationStrings.of ?? globalPagination.of ?? 'de';
+      const groupsLabel =
+        paginationStrings.groups ??
+        strings.groupsView?.table?.groups ??
+        globalPagination.students ??
+        'registros';
+
+      if (!total) {
+        return `${showingLabel} 0 ${ofLabel} 0 ${groupsLabel}`;
+      }
+
+      return `${showingLabel} ${from}-${to} ${ofLabel} ${total} ${groupsLabel}`;
+    },
+    [strings],
+  );
 
   const renderStatusPill = (student, isActive) => {
     const label =
@@ -1598,6 +1643,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   };
 
   const groupFormStrings = strings.groupsView?.form ?? {};
+  const studentFormCloseLabel = strings.form?.close ?? strings.form?.closeLabel ?? 'Cerrar modal de estudiante';
   const isGroupEditMode = groupModalMode === 'edit';
   const groupFormTitle = isGroupEditMode
     ? groupFormStrings.title ?? 'Editar grupo'
@@ -1614,18 +1660,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     ? groupFormStrings.submit ?? 'Guardar cambios'
     : groupFormStrings.submitCreate ?? groupFormStrings.submit ?? 'Crear grupo';
 
-  const handleStudentFiltersBackdropClick = (event) => {
-    if (event.target.dataset.dismiss === 'filters') {
-      setIsFiltersOpen(false);
-    }
-  };
-
-  const handleGroupFiltersBackdropClick = (event) => {
-    if (event.target.dataset.dismiss === 'group-filters') {
-      setIsGroupFiltersOpen(false);
-    }
-  };
-
   return (
     <div className="students-groups">
       <GlobalToast alert={globalAlert} onClose={() => setGlobalAlert(null)} />
@@ -1636,45 +1670,37 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         </div>
       </header>
 
-      <div className="students-groups__tabs-row">
-        <nav className="students-groups__tabs" aria-label="Tabs">
-          <button
-            type="button"
-            className={activeTab === 'students' ? 'is-active' : ''}
-            onClick={() => setActiveTab('students')}
-          >
-            {strings.tabs.students}
-          </button>
-          <button
-            type="button"
-            className={activeTab === 'groups' ? 'is-active' : ''}
-            onClick={() => setActiveTab('groups')}
-          >
-            {strings.tabs.groups}
-          </button>
-        </nav>
-
-        {activeTab === 'students' ? (
-          <div className="students-groups__tab-actions">
-            <ActionButton
-              variant="upload"
-              onClick={onBulkUpload}
-              icon={UploadIcon}
-              className="students-groups__tab-action"
-            >
-              {strings.actions.bulkUpload}
-            </ActionButton>
-            <AddRecordButton
-              type="button"
-              onClick={handleOpenCreateStudent}
-              disabled={isStudentPrefetching}
-              className="students-groups__add"
-            >
-              {strings.actions.addStudent}
-            </AddRecordButton>
-          </div>
-        ) : (
-          <div className="students-groups__tab-actions">
+      <Tabs
+        className="students-groups__tabs-row"
+        navClassName="students-groups__tabs"
+        actionsClassName="students-groups__tab-actions"
+        tabs={[
+          { key: 'students', label: strings.tabs.students },
+          { key: 'groups', label: strings.tabs.groups },
+        ]}
+        activeKey={activeTab}
+        onSelect={setActiveTab}
+        renderActions={({ activeKey }) =>
+          activeKey === 'students' ? (
+            <>
+              <ActionButton
+                variant="upload"
+                onClick={onBulkUpload}
+                icon={UploadIcon}
+                className="students-groups__tab-action"
+              >
+                {strings.actions.bulkUpload}
+              </ActionButton>
+              <AddRecordButton
+                type="button"
+                onClick={handleOpenCreateStudent}
+                disabled={isStudentPrefetching}
+                className="students-groups__add"
+              >
+                {strings.actions.addStudent}
+              </AddRecordButton>
+            </>
+          ) : (
             <AddRecordButton
               type="button"
               onClick={handleOpenCreateGroup}
@@ -1683,31 +1709,21 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
             >
               {strings.actions.addGroup}
             </AddRecordButton>
-          </div>
-        )}
-      </div>
+          )
+        }
+      />
 
       {activeTab === 'students' ? (
         <UiCard className="students-view">
           <div className="students-view__toolbar">
-            <form className="students-view__search" onSubmit={handleSearchSubmit}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <input
-                type="search"
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
-                placeholder={strings.searchPlaceholder}
-              />
-            </form>
+            <SearchInput
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              onSubmit={handleSearchSubmit}
+              placeholder={strings.searchPlaceholder}
+              className="flex-grow-1"
+              wrapperProps={{ role: 'search' }}
+            />
 
             <div className="students-view__actions">
               <FilterButton
@@ -1720,192 +1736,140 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               </FilterButton>
             </div>
           </div>
+          <GlobalTable
+            className="students-table__wrapper"
+            tableClassName="students-table mb-0"
+            columns={studentColumns}
+            data={students}
+            getRowId={(student) =>
+              student.student_id ?? student.id ?? student.register_id ?? student.registration_id ?? ''
+            }
+            renderRow={(student) => {
+              const fullName =
+                student.full_name ??
+                [student.first_name, student.last_name_father, student.last_name_mother].filter(Boolean).join(' ');
+              const initials = fullName
+                .split(' ')
+                .filter(Boolean)
+                .map((part) => part.charAt(0).toUpperCase())
+                .slice(0, 2)
+                .join('');
+              const gradeGroup = student.grade_group ?? student.group ?? strings.table.noGroup;
+              const scholarLevel = student.scholar_level_name ?? strings.table.noGroup;
+              const registerId = student.register_id ?? student.registration_id ?? '—';
+              const studentId = student.student_id ?? student.id ?? registerId;
+              const isStatusPending = pendingStatusStudentId === studentId;
+              const isActive = isStudentActive(student);
+              const switchTitle = isStatusPending
+                ? strings.actions.statusUpdating ?? strings.actions.disabling
+                : isActive
+                ? statusLabels.active
+                : statusLabels.inactive;
+              const switchActionLabel = isActive ? strings.actions.disable : strings.actions.enable;
 
-          <TableContainer className="students-table__wrapper">
-            <Table className="students-table">
-              <thead>
-                <tr>
-                  <th scope="col">{strings.table.student}</th>
-                  <th scope="col">{strings.table.gradeGroup}</th>
-                  <th scope="col">{strings.table.status}</th>
-                  <th scope="col">{strings.table.actions}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={4} className="students-table__empty">
-                      <span className="students-table__loader" aria-hidden="true" />
-                      {strings.table.loading}
-                    </td>
-                  </tr>
-                ) : error ? (
-                  <tr>
-                    <td colSpan={4} className="students-table__empty">
-                      {error}
-                    </td>
-                  </tr>
-                ) : students.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="students-table__empty">
-                      {strings.table.empty}
-                    </td>
-                  </tr>
-                ) : (
-                  students.map((student) => {
-                    const fullName =
-                      student.full_name ??
-                      [student.first_name, student.last_name_father, student.last_name_mother]
-                        .filter(Boolean)
-                        .join(' ');
-                    const initials = fullName
-                      .split(' ')
-                      .filter(Boolean)
-                      .map((part) => part.charAt(0).toUpperCase())
-                      .slice(0, 2)
-                      .join('');
-                    const gradeGroup = student.grade_group ?? student.group ?? strings.table.noGroup;
-                    const scholarLevel = student.scholar_level_name ?? strings.table.noGroup;
-                    const registerId = student.register_id ?? student.registration_id ?? '—';
-                    const studentId = student.student_id ?? student.id ?? registerId;
-                    const isStatusPending = pendingStatusStudentId === studentId;
-                    const isActive = isStudentActive(student);
-                    const switchTitle = isStatusPending
-                      ? strings.actions.statusUpdating ?? strings.actions.disabling
-                      : isActive
-                      ? statusLabels.active
-                      : statusLabels.inactive;
-                    const switchActionLabel = isActive ? strings.actions.disable : strings.actions.enable;
-
-                    return (
-                      <tr key={studentId}>
-                        <td data-title={strings.table.student} className="students-table__student">
-                          <div className="students-table__student-wrapper">
-                            <span className="students-table__avatar" aria-hidden="true">
-                              {initials || '??'}
-                            </span>
-                            <div className="students-table__student-info">
-                              <button
-                                type="button"
-                                onClick={() => handleStudentDetailNavigation(student, fullName)}
-                              >
-                                {fullName || strings.table.unknownStudent}
+              return (
+                <tr key={studentId}>
+                  <td data-title={strings.table.student} className="students-table__student">
+                    <div className="students-table__student-wrapper">
+                      <span className="students-table__avatar" aria-hidden="true">
+                        {initials || '??'}
+                      </span>
+                      <div className="students-table__student-info">
+                        <button type="button" onClick={() => handleStudentDetailNavigation(student, fullName)}>
+                          {fullName || strings.table.unknownStudent}
+                        </button>
+                        <span className="students-table__student-meta">
+                          {strings.table.registrationIdLabel}
+                          <strong>{registerId}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td data-title={strings.table.gradeGroup}>{`${gradeGroup} ${scholarLevel}`}</td>
+                  <td data-title={strings.table.status}>{renderStatusPill(student, isActive)}</td>
+                  <td data-title={strings.table.actions} className="students-table__actions-cell">
+                    <div className="students-table__actions">
+                      <EditRecordButton
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="students-table__icon-button"
+                        onClick={() => handleEditStudent(student)}
+                        aria-label={`${strings.actions.edit} ${fullName || strings.table.unknownStudent}`}
+                      />
+                      <label
+                        className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
+                        title={switchTitle}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isActive}
+                          onChange={() => handleToggleStudentStatus(student, !isActive)}
+                          disabled={isStatusPending}
+                          aria-label={`${switchActionLabel} ${fullName || strings.table.unknownStudent}`}
+                        />
+                        <span className="students-table__switch-track">
+                          <span className="students-table__switch-thumb" />
+                        </span>
+                      </label>
+                      <div className={`students-table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
+                        <ActionButton
+                          variant="ghost"
+                          size="icon"
+                          aria-haspopup="menu"
+                          aria-expanded={openActionsMenuId === studentId}
+                          onClick={() => toggleActionsMenu(studentId)}
+                          className="students-table__icon-button"
+                          icon={
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <circle cx="12" cy="5" r="1.8" />
+                              <circle cx="12" cy="12" r="1.8" />
+                              <circle cx="12" cy="19" r="1.8" />
+                            </svg>
+                          }
+                        >
+                          <span className="visually-hidden">{strings.actions.more}</span>
+                        </ActionButton>
+                        {openActionsMenuId === studentId ? (
+                          <ul role="menu">
+                            <li>
+                              <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
+                                {strings.actions.registerPayment}
                               </button>
-                              <span className="students-table__student-meta">
-                                {strings.table.registrationIdLabel}
-                                <strong>{registerId}</strong>
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                        <td data-title={strings.table.gradeGroup}>
-                          {gradeGroup + " " + scholarLevel}
-                        </td>
-                        <td data-title={strings.table.status}>{renderStatusPill(student, isActive)}</td>
-                        <td data-title={strings.table.actions} className="students-table__actions-cell">
-                          <div className="students-table__actions">
-                            <EditRecordButton
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="students-table__icon-button"
-                              onClick={() => handleEditStudent(student)}
-                              aria-label={`${strings.actions.edit} ${fullName || strings.table.unknownStudent}`}
-                            />
-                            <label
-                              className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
-                              title={switchTitle}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isActive}
-                                onChange={() => handleToggleStudentStatus(student, !isActive)}
-                                disabled={isStatusPending}
-                                aria-label={`${switchActionLabel} ${fullName || strings.table.unknownStudent}`}
-                              />
-                              <span className="students-table__switch-track">
-                                <span className="students-table__switch-thumb" />
-                              </span>
-                            </label>
-                            <div className={`students-table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
-                              <ActionButton
-                                variant="ghost"
-                                size="icon"
-                                aria-haspopup="menu"
-                                aria-expanded={openActionsMenuId === studentId}
-                                onClick={() => toggleActionsMenu(studentId)}
-                                className="students-table__icon-button"
-                                icon={
-                                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <circle cx="12" cy="5" r="1.8" />
-                                    <circle cx="12" cy="12" r="1.8" />
-                                    <circle cx="12" cy="19" r="1.8" />
-                                  </svg>
-                                }
-                              >
-                                <span className="visually-hidden">{strings.actions.more}</span>
-                              </ActionButton>
-                              {openActionsMenuId === studentId ? (
-                                <ul role="menu">
-                                  <li>
-                                    <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
-                                      {strings.actions.registerPayment}
-                                    </button>
-                                  </li>
-                                  <li>
-                                    <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
-                                      {strings.actions.createPaymentRequest}
-                                    </button>
-                                  </li>
-                                  <li>
-                                    <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
-                                      {strings.actions.addBalance}
-                                    </button>
-                                  </li>
-                                </ul>
-                              ) : null}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </Table>
-          </TableContainer>
+                            </li>
+                            <li>
+                              <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
+                                {strings.actions.createPaymentRequest}
+                              </button>
+                            </li>
+                            <li>
+                              <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
+                                {strings.actions.addBalance}
+                              </button>
+                            </li>
+                          </ul>
+                        ) : null}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              );
+            }}
+            loading={isStudentsLoading}
+            loadingMessage={strings.table.loading}
+            error={studentsError ? `${strings.table.error}: ${studentsError}` : null}
+            emptyMessage={strings.table.empty}
+            pagination={{
+              currentPage: activePage,
+              pageSize: studentLimit,
+              totalItems: totalStudents,
+              onPageChange: handleStudentPageChange,
+              previousLabel: '←',
+              nextLabel: '→',
+              summary: studentSummary,
+            }}
+          />
 
-          <footer className="students-table__footer">
-            <div>
-              {totalStudents > 0 ? (
-                <span>
-                  {strings.pagination.showing} {showingFrom}-{showingTo} {strings.pagination.of} {totalStudents}{' '}
-                  {strings.pagination.students}
-                </span>
-              ) : (
-                <span>{strings.pagination.showing} 0 {strings.pagination.of} 0 {strings.pagination.students}</span>
-              )}
-            </div>
-            <div className="students-table__pager">
-              <button
-                type="button"
-                onClick={() => handlePaginationChange('prev')}
-                disabled={activePage <= 1}
-              >
-                ←
-              </button>
-              <span>
-                {activePage} / {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => handlePaginationChange('next')}
-                disabled={activePage >= totalPages}
-              >
-                →
-              </button>
-            </div>
-          </footer>
         </UiCard>
       ) : (
         <UiCard className="students-view groups-view">
@@ -1922,277 +1886,195 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
             </FilterButton>
           </div>
 
-          <TableContainer className="students-table__wrapper">
-            <Table className="students-table groups-table">
-              <thead>
-                <tr>
-                  <th scope="col">{strings.groupsView.table.generation}</th>
-                  <th scope="col">{strings.groupsView.table.gradeGroup}</th>
-                  <th scope="col">{strings.groupsView.table.scholarLevel}</th>
-                  <th scope="col">{strings.groupsView.table.status}</th>
-                  <th scope="col">{strings.groupsView.table.actions}</th>
+          <GlobalTable
+            className="students-table__wrapper"
+            tableClassName="students-table groups-table mb-0"
+            columns={groupColumns}
+            data={groups}
+            getRowId={(group) => group.group_id ?? group.id ?? group.grade_group ?? ''}
+            renderRow={(group) => {
+              const groupId = group.group_id ?? group.id ?? group.grade_group;
+              const generation = group.generation ?? strings.groupsView.table.emptyValue;
+              const gradeGroup =
+                group.grade_group ??
+                ([group.grade, group.group].filter(Boolean).join('-') || strings.groupsView.table.emptyValue);
+              const scholarLevel = group.scholar_level_name ?? strings.groupsView.table.emptyValue;
+              const isActive = isGroupActive(group);
+              const isStatusPending = pendingStatusGroupId === groupId;
+              const switchTitle = isStatusPending
+                ? strings.actions.groupStatusUpdating ?? strings.actions.statusUpdating
+                : isActive
+                ? groupStatusLabels.active
+                : groupStatusLabels.inactive;
+              const switchActionLabel = isActive ? strings.actions.disable : strings.actions.enable;
+
+              return (
+                <tr key={groupId}>
+                  <td data-title={strings.groupsView.table.generation}>{generation}</td>
+                  <td data-title={strings.groupsView.table.gradeGroup}>{gradeGroup}</td>
+                  <td data-title={strings.groupsView.table.scholarLevel}>{scholarLevel}</td>
+                  <td data-title={strings.groupsView.table.status}>{renderGroupStatusPill(group, isActive)}</td>
+                  <td data-title={strings.groupsView.table.actions} className="students-table__actions-cell">
+                    <div className="students-table__actions">
+                      <EditRecordButton
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="students-table__icon-button"
+                        onClick={() => handleOpenEditGroup(group)}
+                        aria-label={`${strings.actions.edit} ${gradeGroup}`}
+                        disabled={isGroupPrefetching}
+                      />
+                      <label
+                        className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
+                        title={switchTitle}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isActive}
+                          onChange={() => handleToggleGroupStatus(group, !isActive)}
+                          disabled={isStatusPending}
+                          aria-label={`${switchActionLabel} ${gradeGroup}`}
+                        />
+                        <span className="students-table__switch-track">
+                          <span className="students-table__switch-thumb" />
+                        </span>
+                      </label>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {isGroupsLoading ? (
-                  <tr>
-                    <td colSpan={5} className="students-table__empty">
-                      <span className="students-table__loader" aria-hidden="true" />
-                      {strings.groupsView.table.loading}
-                    </td>
-                  </tr>
-                ) : groupsError ? (
-                  <tr>
-                    <td colSpan={5} className="students-table__empty">
-                      {strings.groupsView.table.error}: {groupsError}
-                    </td>
-                  </tr>
-                ) : groups.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="students-table__empty">
-                      {strings.groupsView.table.empty}
-                    </td>
-                  </tr>
-                ) : (
-                  groups.map((group) => {
-                    const groupId = group.group_id ?? group.id ?? group.grade_group;
-                    const generation = group.generation ?? strings.groupsView.table.emptyValue;
-                    const gradeGroup =
-                      group.grade_group ??
-                      ([group.grade, group.group].filter(Boolean).join('-') ||
-                        strings.groupsView.table.emptyValue);
-                    const scholarLevel =
-                      group.scholar_level_name ?? strings.groupsView.table.emptyValue;
-                    const isActive = isGroupActive(group);
-                    const isStatusPending = pendingStatusGroupId === groupId;
-                    const switchTitle = isStatusPending
-                      ? (strings.actions.groupStatusUpdating ?? strings.actions.statusUpdating)
-                      : isActive
-                      ? groupStatusLabels.active
-                      : groupStatusLabels.inactive;
-                    const switchActionLabel = isActive ? strings.actions.disable : strings.actions.enable;
+              );
+            }}
+            loading={isGroupsLoading}
+            loadingMessage={strings.groupsView.table.loading}
+            error={groupsError ? `${strings.groupsView.table.error}: ${groupsError}` : null}
+            emptyMessage={strings.groupsView.table.empty}
+            pagination={{
+              currentPage: groupActivePage,
+              pageSize: groupLimit,
+              totalItems: totalGroups,
+              onPageChange: handleGroupPageChange,
+              previousLabel: '←',
+              nextLabel: '→',
+              summary: groupSummary,
+            }}
+          />
 
-                    return (
-                      <tr key={groupId}>
-                        <td data-title={strings.groupsView.table.generation}>{generation}</td>
-                        <td data-title={strings.groupsView.table.gradeGroup}>{gradeGroup}</td>
-                        <td data-title={strings.groupsView.table.scholarLevel}>{scholarLevel}</td>
-                        <td data-title={strings.groupsView.table.status}>
-                          {renderGroupStatusPill(group, isActive)}
-                        </td>
-                        <td data-title={strings.groupsView.table.actions} className="students-table__actions-cell">
-                          <div className="students-table__actions">
-                            <EditRecordButton
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="students-table__icon-button"
-                              onClick={() => handleOpenEditGroup(group)}
-                              aria-label={`${strings.actions.edit} ${gradeGroup}`}
-                              disabled={isGroupPrefetching}
-                            />
-                            <label
-                              className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
-                              title={switchTitle}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isActive}
-                                onChange={() => handleToggleGroupStatus(group, !isActive)}
-                                disabled={isStatusPending}
-                                aria-label={`${switchActionLabel} ${gradeGroup}`}
-                              />
-                              <span className="students-table__switch-track">
-                                <span className="students-table__switch-thumb" />
-                              </span>
-                            </label>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </Table>
-          </TableContainer>
-
-          <footer className="students-table__footer">
-            <div>
-              {totalGroups > 0 ? (
-                <span>
-                  {strings.groupsView.pagination.showing} {groupShowingFrom}-{groupShowingTo}{' '}
-                  {strings.groupsView.pagination.of} {totalGroups} {strings.groupsView.pagination.groups}
-                </span>
-              ) : (
-                <span>
-                  {strings.groupsView.pagination.showing} 0 {strings.groupsView.pagination.of} 0{' '}
-                  {strings.groupsView.pagination.groups}
-                </span>
-              )}
-            </div>
-            <div className="students-table__pager">
-              <button
-                type="button"
-                onClick={() => handleGroupPaginationChange('prev')}
-                disabled={groupActivePage <= 1}
-              >
-                ←
-              </button>
-              <span>
-                {groupActivePage} / {groupTotalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => handleGroupPaginationChange('next')}
-                disabled={groupActivePage >= groupTotalPages}
-              >
-                →
-              </button>
-            </div>
-          </footer>
         </UiCard>
       )}
 
-      {isFiltersOpen && (
-        <div
-          className="students-filters is-open"
-          data-dismiss="filters"
-          onClick={handleStudentFiltersBackdropClick}
-        >
-          <div className="students-filters__backdrop" aria-hidden="true" />
-          <aside className="students-filters__panel" role="dialog" aria-modal="true">
-            <header className="students-filters__header">
-              <div>
-                <h3>{strings.filters.title}</h3>
-                <p>{strings.filters.subtitle}</p>
-              </div>
-              <ActionButton
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsFiltersOpen(false)}
-                aria-label="Cerrar filtros"
-                className="students-filters__close"
-                icon={<span aria-hidden="true">×</span>}
-              />
-            </header>
-            <form className="students-filters__form" onSubmit={handleApplyFilters}>
-              <label>
-                <span>{strings.filters.studentId}</span>
-                <input name="student_id" value={filters.student_id} onChange={handleFilterChange} />
-              </label>
-              <label>
-                <span>{strings.filters.fullName}</span>
-                <input name="full_name" value={filters.full_name} onChange={handleFilterChange} />
-              </label>
-              <label>
-                <span>{strings.filters.paymentReference}</span>
-                <input name="payment_reference" value={filters.payment_reference} onChange={handleFilterChange} />
-              </label>
-              <label>
-                <span>{strings.filters.generation}</span>
-                <input name="generation" value={filters.generation} onChange={handleFilterChange} />
-              </label>
-              <label>
-                <span>{strings.filters.gradeGroup}</span>
-                <input name="grade_group" value={filters.grade_group} onChange={handleFilterChange} />
-              </label>
-              <label>
-                <span>{strings.filters.enabled}</span>
-                <select className='custom_select' name="enabled" value={filters.enabled} onChange={handleFilterChange}>
-                  <option value="">{strings.filters.enabledOptions.all}</option>
-                  <option value="true">{strings.filters.enabledOptions.enabled}</option>
-                  <option value="false">{strings.filters.enabledOptions.disabled}</option>
-                </select>
-              </label>
-              <div className="students-filters__actions">
-                <ActionButton
-                  variant="text"
-                  onClick={handleClearFilters}
-                  className="students-filters__link"
-                >
-                  {strings.filters.clear}
-                </ActionButton>
-                <ActionButton type="submit" className="students-filters__submit">
-                  {strings.filters.apply}
-                </ActionButton>
-              </div>
-            </form>
-          </aside>
-        </div>
-      )}
+      <SidebarModal
+        isOpen={isFiltersOpen}
+        onClose={() => setIsFiltersOpen(false)}
+        title={strings.filters.title}
+        description={strings.filters.subtitle}
+        id="students-filters"
+        footer={
+          <div className="students-filters__actions">
+            <ActionButton
+              variant="text"
+              onClick={handleClearFilters}
+              className="students-filters__link"
+              type="button"
+            >
+              {strings.filters.clear}
+            </ActionButton>
+            <ActionButton type="submit" form="students-filters-form" className="students-filters__submit">
+              {strings.filters.apply}
+            </ActionButton>
+          </div>
+        }
+      >
+        <form id="students-filters-form" className="students-filters__form" onSubmit={handleApplyFilters}>
+          <label>
+            <span>{strings.filters.studentId}</span>
+            <input name="student_id" value={filters.student_id} onChange={handleFilterChange} />
+          </label>
+          <label>
+            <span>{strings.filters.fullName}</span>
+            <input name="full_name" value={filters.full_name} onChange={handleFilterChange} />
+          </label>
+          <label>
+            <span>{strings.filters.paymentReference}</span>
+            <input name="payment_reference" value={filters.payment_reference} onChange={handleFilterChange} />
+          </label>
+          <label>
+            <span>{strings.filters.generation}</span>
+            <input name="generation" value={filters.generation} onChange={handleFilterChange} />
+          </label>
+          <label>
+            <span>{strings.filters.gradeGroup}</span>
+            <input name="grade_group" value={filters.grade_group} onChange={handleFilterChange} />
+          </label>
+          <label>
+            <span>{strings.filters.enabled}</span>
+            <select className="custom_select" name="enabled" value={filters.enabled} onChange={handleFilterChange}>
+              <option value="">{strings.filters.enabledOptions.all}</option>
+              <option value="true">{strings.filters.enabledOptions.enabled}</option>
+              <option value="false">{strings.filters.enabledOptions.disabled}</option>
+            </select>
+          </label>
+        </form>
+      </SidebarModal>
 
-      {isGroupFiltersOpen && (
-        <div
-          className="students-filters is-open"
-          data-dismiss="group-filters"
-          onClick={handleGroupFiltersBackdropClick}
-        >
-          <div className="students-filters__backdrop" aria-hidden="true" />
-          <aside className="students-filters__panel" role="dialog" aria-modal="true">
-            <header className="students-filters__header">
-              <div>
-                <h3>{strings.groupsView.filters.title}</h3>
-                <p>{strings.groupsView.filters.subtitle}</p>
-              </div>
-              <ActionButton
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsGroupFiltersOpen(false)}
-                aria-label={strings.groupsView.filters.close}
-                className="students-filters__close"
-                icon={<span aria-hidden="true">×</span>}
-              />
-            </header>
-            <form className="students-filters__form" onSubmit={handleApplyGroupFilters}>
-              <label>
-                <span>{strings.groupsView.filters.groupId}</span>
-                <input name="group_id" value={groupFilters.group_id} onChange={handleGroupFilterChange} />
-              </label>
-              <label>
-                <span>{strings.groupsView.filters.generation}</span>
-                <input name="generation" value={groupFilters.generation} onChange={handleGroupFilterChange} />
-              </label>
-              <label>
-                <span>{strings.groupsView.filters.gradeGroup}</span>
-                <input name="grade_group" value={groupFilters.grade_group} onChange={handleGroupFilterChange} />
-              </label>
-              <label>
-                <span>{strings.groupsView.filters.scholarLevel}</span>
-                <input
-                  name="scholar_level_name"
-                  value={groupFilters.scholar_level_name}
-                  onChange={handleGroupFilterChange}
-                />
-              </label>
-              <label>
-                <span>{strings.groupsView.filters.enabled}</span>
-                <select
-                  className="custom_select"
-                  name="enabled"
-                  value={groupFilters.enabled}
-                  onChange={handleGroupFilterChange}
-                >
-                  <option value="">{strings.groupsView.filters.enabledOptions.all}</option>
-                  <option value="true">{strings.groupsView.filters.enabledOptions.enabled}</option>
-                  <option value="false">{strings.groupsView.filters.enabledOptions.disabled}</option>
-                </select>
-              </label>
-              <div className="students-filters__actions">
-                <ActionButton
-                  variant="text"
-                  onClick={handleClearGroupFilters}
-                  className="students-filters__link"
-                >
-                  {strings.groupsView.filters.clear}
-                </ActionButton>
-                <ActionButton type="submit" className="students-filters__submit">
-                  {strings.groupsView.filters.apply}
-                </ActionButton>
-              </div>
-            </form>
-          </aside>
-        </div>
-      )}
+      <SidebarModal
+        isOpen={isGroupFiltersOpen}
+        onClose={() => setIsGroupFiltersOpen(false)}
+        title={strings.groupsView.filters.title}
+        description={strings.groupsView.filters.subtitle}
+        id="groups-filters"
+        footer={
+          <div className="students-filters__actions">
+            <ActionButton
+              variant="text"
+              onClick={handleClearGroupFilters}
+              className="students-filters__link"
+              type="button"
+            >
+              {strings.groupsView.filters.clear}
+            </ActionButton>
+            <ActionButton type="submit" form="groups-filters-form" className="students-filters__submit">
+              {strings.groupsView.filters.apply}
+            </ActionButton>
+          </div>
+        }
+      >
+        <form id="groups-filters-form" className="students-filters__form" onSubmit={handleApplyGroupFilters}>
+          <label>
+            <span>{strings.groupsView.filters.groupId}</span>
+            <input name="group_id" value={groupFilters.group_id} onChange={handleGroupFilterChange} />
+          </label>
+          <label>
+            <span>{strings.groupsView.filters.generation}</span>
+            <input name="generation" value={groupFilters.generation} onChange={handleGroupFilterChange} />
+          </label>
+          <label>
+            <span>{strings.groupsView.filters.gradeGroup}</span>
+            <input name="grade_group" value={groupFilters.grade_group} onChange={handleGroupFilterChange} />
+          </label>
+          <label>
+            <span>{strings.groupsView.filters.scholarLevel}</span>
+            <input
+              name="scholar_level_name"
+              value={groupFilters.scholar_level_name}
+              onChange={handleGroupFilterChange}
+            />
+          </label>
+          <label>
+            <span>{strings.groupsView.filters.enabled}</span>
+            <select
+              className="custom_select"
+              name="enabled"
+              value={groupFilters.enabled}
+              onChange={handleGroupFilterChange}
+            >
+              <option value="">{strings.groupsView.filters.enabledOptions.all}</option>
+              <option value="true">{strings.groupsView.filters.enabledOptions.enabled}</option>
+              <option value="false">{strings.groupsView.filters.enabledOptions.disabled}</option>
+            </select>
+          </label>
+        </form>
+      </SidebarModal>
 
       {isStudentModalOpen && (
         <div className="students-modal">
@@ -2206,8 +2088,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               <ActionButton
                 variant="ghost"
                 size="icon"
-                onClick={closeGroupModal}
-                aria-label={groupFormCloseLabel}
+                onClick={closeStudentModal}
+                aria-label={studentFormCloseLabel}
                 className="students-modal__close"
                 icon={<span aria-hidden="true">×</span>}
               />
