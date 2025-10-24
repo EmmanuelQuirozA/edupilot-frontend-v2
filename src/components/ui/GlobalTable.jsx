@@ -1,6 +1,39 @@
-import PropTypes from 'prop-types';
 import { Fragment, useMemo } from 'react';
 
+/**
+ * @param {Object} props
+ * @param {Array<{
+ *  key: string,
+ *  header?: React.ReactNode,
+ *  label?: React.ReactNode,
+ *  accessor?: string,
+ *  render?: (item: any, index: number) => React.ReactNode,
+ *  cellClassName?: string,
+ *  headerClassName?: string,
+ *  align?: 'start' | 'center' | 'end' | 'left' | 'right'
+ * }>} props.columns
+ * @param {Array<any>} props.data
+ * @param {(item: any, index: number) => string | number} [props.getRowId]
+ * @param {(item: any, index: number) => React.ReactNode} [props.renderRow]
+ * @param {boolean} [props.loading]
+ * @param {React.ReactNode} [props.loadingMessage]
+ * @param {string | { message?: string }} [props.error]
+ * @param {React.ReactNode} [props.emptyMessage]
+ * @param {string} [props.className]
+ * @param {string} [props.tableClassName]
+ * @param {boolean} [props.responsive]
+ * @param {{
+ *  currentPage?: number,
+ *  pageSize?: number,
+ *  totalItems?: number,
+ *  onPageChange?: (page: number) => void,
+ *  previousLabel?: React.ReactNode,
+ *  nextLabel?: React.ReactNode,
+ *  summary?: (info: { from: number, to: number, total: number, page: number, totalPages: number }) => React.ReactNode,
+ *  pageLabel?: (info: { page: number, totalPages: number }) => React.ReactNode,
+ * }} [props.pagination]
+ * @param {React.ReactNode} [props.footer]
+ */
 const GlobalTable = ({
   columns,
   data,
@@ -183,42 +216,6 @@ const GlobalTable = ({
       {renderPagination()}
     </div>
   );
-};
-
-GlobalTable.propTypes = {
-  columns: PropTypes.arrayOf(
-    PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      header: PropTypes.node,
-      label: PropTypes.node,
-      accessor: PropTypes.string,
-      render: PropTypes.func,
-      cellClassName: PropTypes.string,
-      headerClassName: PropTypes.string,
-      align: PropTypes.oneOf(['start', 'center', 'end', 'left', 'right']),
-    }),
-  ),
-  data: PropTypes.arrayOf(PropTypes.any),
-  getRowId: PropTypes.func,
-  renderRow: PropTypes.func,
-  loading: PropTypes.bool,
-  loadingMessage: PropTypes.node,
-  error: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-  emptyMessage: PropTypes.node,
-  className: PropTypes.string,
-  tableClassName: PropTypes.string,
-  responsive: PropTypes.bool,
-  pagination: PropTypes.shape({
-    currentPage: PropTypes.number,
-    pageSize: PropTypes.number,
-    totalItems: PropTypes.number,
-    onPageChange: PropTypes.func,
-    previousLabel: PropTypes.node,
-    nextLabel: PropTypes.node,
-    summary: PropTypes.func,
-    pageLabel: PropTypes.func,
-  }),
-  footer: PropTypes.node,
 };
 
 export default GlobalTable;
