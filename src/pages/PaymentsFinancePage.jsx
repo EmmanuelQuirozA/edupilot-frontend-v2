@@ -767,51 +767,50 @@ const PaymentsFinancePage = ({
 
 
   return (
-    <div className="payments-page">
+    <div className="page">
       <GlobalToast alert={toast} onClose={() => setToast(null)} />
 
-      <div className="payments-page__header">
-        <div className="payments-page__title-block">
-          {description ? <p className="payments-page__description">{description}</p> : null}
+      <header className="page__header">
+        <div>
+          <p>{strings.header?.subtitle ?? description}</p>
         </div>
-        <div className="payments-page__navigation">
-          <Tabs
-            tabs={tabs}
-            activeKey={activeTab}
-            onSelect={setActiveTab}
-            className="payments-page__tabs-container"
-            navClassName="payments-page__tabs"
-            actionsClassName="payments-page__actions"
-            renderActions={({ activeKey }) =>
-              activeKey === 'tuition' ? (
-                <>
-                  <FilterButton
-                    onClick={handleToggleFilters}
-                    aria-expanded={showFilters}
-                    aria-controls="payments-page-filters"
-                  >
-                    {actionStrings.filter}
-                  </FilterButton>
-                  <ActionButton
-                    variant="ghost"
-                    onClick={handleToggleDebt}
-                    icon={DebtIcon}
-                    className={`payments-page__debt-button ${showDebtOnly ? 'is-active' : ''}`}
-                  >
-                    {showDebtOnly ? debtToggleStrings.debtActive : debtToggleStrings.debtInactive}
-                  </ActionButton>
-                  <AddRecordButton type="button">
-                    {actionStrings.add}
-                  </AddRecordButton>
-                  <ExportButton type="button" onClick={handleExport} disabled={isExporting}>
-                    {isExporting ? actionStrings.exporting : actionStrings.export}
-                  </ExportButton>
-                </>
-              ) : null
-            }
-          />
-        </div>
-      </div>
+      </header>
+
+      <Tabs
+        className="tabs-row"
+        tabs={tabs}
+        activeKey={activeTab}
+        onSelect={setActiveTab}
+        navClassName="tabs"
+        actionsClassName="payments-page__actions"
+        renderActions={({ activeKey }) =>
+          activeKey === 'tuition' ? (
+            <>
+              <FilterButton
+                onClick={handleToggleFilters}
+                aria-expanded={showFilters}
+                aria-controls="payments-page-filters"
+              >
+                {actionStrings.filter}
+              </FilterButton>
+              <ActionButton
+                variant="ghost"
+                onClick={handleToggleDebt}
+                icon={DebtIcon}
+                className={`payments-page__debt-button ${showDebtOnly ? 'is-active' : ''}`}
+              >
+                {showDebtOnly ? debtToggleStrings.debtActive : debtToggleStrings.debtInactive}
+              </ActionButton>
+              <AddRecordButton type="button">
+                {actionStrings.add}
+              </AddRecordButton>
+              <ExportButton type="button" onClick={handleExport} disabled={isExporting}>
+                {isExporting ? actionStrings.exporting : actionStrings.export}
+              </ExportButton>
+            </>
+          ) : null
+        }
+      />
 
       {isTuitionTab ? (
         <UiCard className="card-view">
@@ -847,13 +846,13 @@ const PaymentsFinancePage = ({
         </UiCard>
       ) : null}
 
-      <div className="payments-page__layout">
-        <section className="payments-page__content">
+      <div className="page__layout">
+        <section className="page__content">
           {isTuitionTab ? (
-            <UiCard className="payments-page__table-card">
+            <UiCard className="page__table-card">
               <GlobalTable
-                className="payments-page__table-wrapper"
-                tableClassName="payments-page__table mb-0"
+                className="page__table-wrapper"
+                tableClassName="page__table mb-0"
                 columns={paymentColumns}
                 data={rows}
                 getRowId={(row, index) => {
@@ -870,18 +869,18 @@ const PaymentsFinancePage = ({
                     <tr key={rowKey}>
                       <td
                         data-title={tableStrings.columns.student}
-                        className="payments-page__student-cell"
+                        className="page__student-cell"
                       >
                         <ActionButton
                           variant="text"
                           onClick={() => handleStudentDetailClick(row)}
                           disabled={!canNavigateToStudent}
-                          className="payments-page__student-button"
+                          className="page__student-button"
                         >
                           {row.student ?? tableStrings.studentFallback}
                         </ActionButton>
                         {row.payment_reference ? (
-                          <span className="payments-page__student-id">
+                          <span className="page__student-id">
                             {`${studentIdLabel}: ${row.payment_reference}`}
                           </span>
                         ) : null}
@@ -896,7 +895,7 @@ const PaymentsFinancePage = ({
                           <td
                             key={`${rowKey}-${month}`}
                             data-title={month}
-                            className={isNullish ? 'payments-page__amount-null' : ''}
+                            className={isNullish ? 'page__amount-null' : ''}
                           >
                             {isNullish ? <span className="ui-table__empty-indicator">--</span> : value}
                           </td>
@@ -922,7 +921,7 @@ const PaymentsFinancePage = ({
               />
             </UiCard>
           ) : (
-            <div className="payments-page__empty-state">
+            <div className="page__empty-state">
               {placeholderMessage}
             </div>
           )}
@@ -934,83 +933,83 @@ const PaymentsFinancePage = ({
         onClose={() => setShowFilters(false)}
         title={filterStrings.title}
         description={filterStrings.subtitle}
-        id="payments-page-filters"
+        id="page-filters"
         resetAction={{ label: filterStrings.reset, onClick: handleResetFilters }}
-        bodyClassName="payments-page__filters-body"
+        bodyClassName="page__filters-body"
       >
-        <form className="payments-page__filters-form">
-          <div className="payments-page__field">
-            <label htmlFor="filter-student" className="payments-page__label">
+        <form className="page__filters-form">
+          <div className="page__field">
+            <label htmlFor="filter-student" className="page__label">
               {filterStrings.fields.student.label}
             </label>
             <input
               id="filter-student"
               type="text"
-              className="payments-page__input"
+              className="page__input"
               value={filters.student_full_name}
               onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
               placeholder={filterStrings.fields.student.placeholder}
             />
           </div>
-          <div className="payments-page__field">
-            <label htmlFor="filter-reference" className="payments-page__label">
+          <div className="page__field">
+            <label htmlFor="filter-reference" className="page__label">
               {filterStrings.fields.reference.label}
             </label>
             <input
               id="filter-reference"
               type="text"
-              className="payments-page__input"
+              className="page__input"
               value={filters.payment_reference}
               onChange={(event) => handleFilterChange('payment_reference', event.target.value)}
               placeholder={filterStrings.fields.reference.placeholder}
             />
           </div>
-          <div className="payments-page__field">
-            <label htmlFor="filter-generation" className="payments-page__label">
+          <div className="page__field">
+            <label htmlFor="filter-generation" className="page__label">
               {filterStrings.fields.generation.label}
             </label>
             <input
               id="filter-generation"
               type="text"
-              className="payments-page__input"
+              className="page__input"
               value={filters.generation}
               onChange={(event) => handleFilterChange('generation', event.target.value)}
               placeholder={filterStrings.fields.generation.placeholder}
             />
           </div>
-          <div className="payments-page__field">
-            <label htmlFor="filter-grade" className="payments-page__label">
+          <div className="page__field">
+            <label htmlFor="filter-grade" className="page__label">
               {filterStrings.fields.gradeGroup.label}
             </label>
             <input
               id="filter-grade"
               type="text"
-              className="payments-page__input"
+              className="page__input"
               value={filters.grade_group}
               onChange={(event) => handleFilterChange('grade_group', event.target.value)}
               placeholder={filterStrings.fields.gradeGroup.placeholder}
             />
           </div>
-          <div className="payments-page__field">
-            <label htmlFor="filter-scholar" className="payments-page__label">
+          <div className="page__field">
+            <label htmlFor="filter-scholar" className="page__label">
               {filterStrings.fields.scholarLevel.label}
             </label>
             <input
               id="filter-scholar"
               type="text"
-              className="payments-page__input"
+              className="page__input"
               value={filters.scholar_level}
               onChange={(event) => handleFilterChange('scholar_level', event.target.value)}
               placeholder={filterStrings.fields.scholarLevel.placeholder}
             />
           </div>
-          <div className="payments-page__field">
-            <label htmlFor="filter-school" className="payments-page__label">
+          <div className="page__field">
+            <label htmlFor="filter-school" className="page__label">
               {filterStrings.fields.school.label}
             </label>
             <select
               id="filter-school"
-              className="payments-page__select"
+              className="page__select"
               value={filters.school_id}
               onChange={(event) => handleFilterChange('school_id', event.target.value)}
               disabled={isLoadingSchools}
@@ -1023,7 +1022,7 @@ const PaymentsFinancePage = ({
               ))}
             </select>
           </div>
-          <label className="payments-page__checkbox">
+          <label className="page__checkbox">
             <input
               type="checkbox"
               checked={filters.group_status === 'true'}
@@ -1031,7 +1030,7 @@ const PaymentsFinancePage = ({
             />
             {filterStrings.toggles.activeGroups}
           </label>
-          <label className="payments-page__checkbox">
+          <label className="page__checkbox">
             <input
               type="checkbox"
               checked={filters.user_status === 'true'}

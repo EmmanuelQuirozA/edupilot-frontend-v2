@@ -1661,19 +1661,19 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     : groupFormStrings.submitCreate ?? groupFormStrings.submit ?? 'Crear grupo';
 
   return (
-    <div className="students-groups">
+    <div className="page">
       <GlobalToast alert={globalAlert} onClose={() => setGlobalAlert(null)} />
 
-      <header className="students-groups__header">
+      <header className="page__header">
         <div>
           <p>{strings.header?.subtitle ?? description}</p>
         </div>
       </header>
 
       <Tabs
-        className="students-groups__tabs-row"
-        navClassName="students-groups__tabs"
-        actionsClassName="students-groups__tab-actions"
+        className="tabs-row"
+        navClassName="tabs"
+        actionsClassName="tab-actions"
         tabs={[
           { key: 'students', label: strings.tabs.students },
           { key: 'groups', label: strings.tabs.groups },
@@ -1687,7 +1687,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 variant="upload"
                 onClick={onBulkUpload}
                 icon={UploadIcon}
-                className="students-groups__tab-action"
+                className="tab-action"
               >
                 {strings.actions.bulkUpload}
               </ActionButton>
@@ -1737,8 +1737,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
             </div>
           </div>
           <GlobalTable
-            className="students-table__wrapper"
-            tableClassName="students-table mb-0"
+            className="table__wrapper"
+            tableClassName="table mb-0"
             columns={studentColumns}
             data={students}
             getRowId={(student) =>
@@ -1769,16 +1769,16 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
               return (
                 <tr key={studentId}>
-                  <td data-title={strings.table.student} className="students-table__student">
-                    <div className="students-table__student-wrapper">
-                      <span className="students-table__avatar" aria-hidden="true">
+                  <td data-title={strings.table.student} className="table__student">
+                    <div className="table__student-wrapper">
+                      <span className="table__avatar" aria-hidden="true">
                         {initials || '??'}
                       </span>
-                      <div className="students-table__student-info">
+                      <div className="table__student-info">
                         <button type="button" onClick={() => handleStudentDetailNavigation(student, fullName)}>
                           {fullName || strings.table.unknownStudent}
                         </button>
-                        <span className="students-table__student-meta">
+                        <span className="table__student-meta">
                           {strings.table.registrationIdLabel}
                           <strong>{registerId}</strong>
                         </span>
@@ -1787,18 +1787,18 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                   </td>
                   <td data-title={strings.table.gradeGroup}>{`${gradeGroup} ${scholarLevel}`}</td>
                   <td data-title={strings.table.status}>{renderStatusPill(student, isActive)}</td>
-                  <td data-title={strings.table.actions} className="students-table__actions-cell">
-                    <div className="students-table__actions">
+                  <td data-title={strings.table.actions} className="table__actions-cell">
+                    <div className="table__actions">
                       <EditRecordButton
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="students-table__icon-button"
+                        className="table__icon-button"
                         onClick={() => handleEditStudent(student)}
                         aria-label={`${strings.actions.edit} ${fullName || strings.table.unknownStudent}`}
                       />
                       <label
-                        className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
+                        className={`table__switch ${isStatusPending ? 'is-disabled' : ''}`}
                         title={switchTitle}
                       >
                         <input
@@ -1808,18 +1808,18 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                           disabled={isStatusPending}
                           aria-label={`${switchActionLabel} ${fullName || strings.table.unknownStudent}`}
                         />
-                        <span className="students-table__switch-track">
-                          <span className="students-table__switch-thumb" />
+                        <span className="table__switch-track">
+                          <span className="table__switch-thumb" />
                         </span>
                       </label>
-                      <div className={`students-table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
+                      <div className={`table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
                         <ActionButton
                           variant="ghost"
                           size="icon"
                           aria-haspopup="menu"
                           aria-expanded={openActionsMenuId === studentId}
                           onClick={() => toggleActionsMenu(studentId)}
-                          className="students-table__icon-button"
+                          className="table__icon-button"
                           icon={
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                               <circle cx="12" cy="5" r="1.8" />
@@ -1887,8 +1887,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
           </div>
 
           <GlobalTable
-            className="students-table__wrapper"
-            tableClassName="students-table groups-table mb-0"
+            className="table__wrapper"
+            tableClassName="table groups-table mb-0"
             columns={groupColumns}
             data={groups}
             getRowId={(group) => group.group_id ?? group.id ?? group.grade_group ?? ''}
@@ -1914,19 +1914,19 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                   <td data-title={strings.groupsView.table.gradeGroup}>{gradeGroup}</td>
                   <td data-title={strings.groupsView.table.scholarLevel}>{scholarLevel}</td>
                   <td data-title={strings.groupsView.table.status}>{renderGroupStatusPill(group, isActive)}</td>
-                  <td data-title={strings.groupsView.table.actions} className="students-table__actions-cell">
-                    <div className="students-table__actions">
+                  <td data-title={strings.groupsView.table.actions} className="table__actions-cell">
+                    <div className="table__actions">
                       <EditRecordButton
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="students-table__icon-button"
+                        className="table__icon-button"
                         onClick={() => handleOpenEditGroup(group)}
                         aria-label={`${strings.actions.edit} ${gradeGroup}`}
                         disabled={isGroupPrefetching}
                       />
                       <label
-                        className={`students-table__switch ${isStatusPending ? 'is-disabled' : ''}`}
+                        className={`table__switch ${isStatusPending ? 'is-disabled' : ''}`}
                         title={switchTitle}
                       >
                         <input
@@ -1936,8 +1936,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                           disabled={isStatusPending}
                           aria-label={`${switchActionLabel} ${gradeGroup}`}
                         />
-                        <span className="students-table__switch-track">
-                          <span className="students-table__switch-thumb" />
+                        <span className="table__switch-track">
+                          <span className="table__switch-thumb" />
                         </span>
                       </label>
                     </div>
