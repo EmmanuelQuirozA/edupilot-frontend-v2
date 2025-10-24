@@ -1,6 +1,30 @@
 import { useEffect } from 'react';
-import PropTypes from 'prop-types';
 
+/**
+ * @typedef {Object} SidebarModalResetAction
+ * @property {import('react').ReactNode} label
+ * @property {(event: MouseEvent) => void} onClick
+*/
+
+/**
+ * @typedef {Object} SidebarModalProps
+ * @property {boolean} isOpen
+ * @property {() => void} [onClose]
+ * @property {import('react').ReactNode} title
+ * @property {import('react').ReactNode} [description]
+ * @property {import('react').ReactNode} [children]
+ * @property {string} [className]
+ * @property {import('react').ReactNode} [headerActions]
+ * @property {import('react').ReactNode} [footer]
+ * @property {SidebarModalResetAction} [resetAction]
+ * @property {'sm' | 'md' | 'lg'} [size]
+ * @property {string} [bodyClassName]
+ * @property {string} [id]
+ */
+
+/**
+ * @param {SidebarModalProps} props
+ */
 const SidebarModal = ({
   isOpen,
   onClose,
@@ -94,24 +118,6 @@ const SidebarModal = ({
       </aside>
     </div>
   );
-};
-
-SidebarModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func,
-  title: PropTypes.node.isRequired,
-  description: PropTypes.node,
-  children: PropTypes.node,
-  className: PropTypes.string,
-  headerActions: PropTypes.node,
-  footer: PropTypes.node,
-  resetAction: PropTypes.shape({
-    label: PropTypes.node.isRequired,
-    onClick: PropTypes.func.isRequired,
-  }),
-  size: PropTypes.oneOf(['sm', 'md', 'lg']),
-  bodyClassName: PropTypes.string,
-  id: PropTypes.string,
 };
 
 export default SidebarModal;

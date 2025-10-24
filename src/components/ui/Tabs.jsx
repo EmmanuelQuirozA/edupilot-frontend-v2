@@ -1,5 +1,26 @@
-import PropTypes from 'prop-types';
+/**
+ * @typedef {Object} TabDefinition
+ * @property {string} key
+ * @property {import('react').ReactNode} label
+ * @property {import('react').ReactNode} [icon]
+ * @property {string} [className]
+ */
 
+/**
+ * @typedef {Object} TabsProps
+ * @property {TabDefinition[]} tabs
+ * @property {string} activeKey
+ * @property {(key: string) => void} [onSelect]
+ * @property {string} [className]
+ * @property {string} [navClassName]
+ * @property {import('react').ReactNode} [actions]
+ * @property {(context: { activeKey: string }) => import('react').ReactNode} [renderActions]
+ * @property {string} [actionsClassName]
+ */
+
+/**
+ * @param {TabsProps} props
+ */
 const Tabs = ({
   tabs,
   activeKey,
@@ -45,31 +66,15 @@ const Tabs = ({
         })}
       </ul>
 
-      {actionContent ? (
-        <div className={["global-tabs__actions ms-md-auto", actionsClassName].filter(Boolean).join(' ')}>
-          {actionContent}
-        </div>
-      ) : null}
+      {actionContent
+        ? (
+          <div className={["global-tabs__actions ms-md-auto", actionsClassName].filter(Boolean).join(' ')}>
+            {actionContent}
+          </div>
+        )
+        : null}
     </div>
   );
-};
-
-Tabs.propTypes = {
-  tabs: PropTypes.arrayOf(
-    PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      label: PropTypes.node.isRequired,
-      icon: PropTypes.node,
-      className: PropTypes.string,
-    }),
-  ).isRequired,
-  activeKey: PropTypes.string.isRequired,
-  onSelect: PropTypes.func,
-  className: PropTypes.string,
-  navClassName: PropTypes.string,
-  actions: PropTypes.node,
-  renderActions: PropTypes.func,
-  actionsClassName: PropTypes.string,
 };
 
 export default Tabs;

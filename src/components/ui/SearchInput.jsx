@@ -1,4 +1,15 @@
-import PropTypes from 'prop-types';
+/**
+ * @typedef {Object} SearchInputProps
+ * @property {string | number} value
+ * @property {(event: import('react').ChangeEvent<HTMLInputElement>) => void} onChange
+ * @property {(event: import('react').FormEvent<HTMLFormElement>) => void} [onSubmit]
+ * @property {string} [placeholder]
+ * @property {string} [className]
+ * @property {string} [inputClassName]
+ * @property {import('react').ReactNode} [icon]
+ * @property {Record<string, unknown>} [inputProps]
+ * @property {Record<string, unknown>} [wrapperProps]
+ */
 
 const DefaultIcon = (
   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="search-input__svg">
@@ -13,6 +24,9 @@ const DefaultIcon = (
   </svg>
 );
 
+/**
+ * @param {SearchInputProps} props
+ */
 const SearchInput = ({
   value,
   onChange,
@@ -59,18 +73,6 @@ const SearchInput = ({
       />
     </Wrapper>
   );
-};
-
-SearchInput.propTypes = {
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  onChange: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func,
-  placeholder: PropTypes.string,
-  className: PropTypes.string,
-  inputClassName: PropTypes.string,
-  icon: PropTypes.node,
-  inputProps: PropTypes.object,
-  wrapperProps: PropTypes.object,
 };
 
 export default SearchInput;
