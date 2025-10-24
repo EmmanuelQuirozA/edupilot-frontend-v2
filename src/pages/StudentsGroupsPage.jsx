@@ -11,7 +11,6 @@ import Tabs from '../components/ui/Tabs.jsx';
 import SearchInput from '../components/ui/SearchInput.jsx';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
 import SidebarModal from '../components/ui/SidebarModal.jsx';
-import './StudentsGroupsPage.css';
 
 const DEFAULT_PAGINATION = { offset: 0, limit: 10 };
 
@@ -1518,6 +1517,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   };
 
   const isEditMode = modalMode === 'edit';
+  const getStudentFilterFieldId = (name) => `student-filter-${name}`;
+  const getGroupFilterFieldId = (name) => `group-filter-${name}`;
+  const getStudentFieldId = (name) => `student-form-${name}`;
+  const getGroupFieldId = (name) => `group-form-${name}`;
+  const studentModalTitleId = 'student-modal-title';
+  const studentModalDescriptionId = 'student-modal-description';
+  const groupModalTitleId = 'group-modal-title';
+  const groupModalDescriptionId = 'group-modal-description';
 
   const studentLimit = Number(pagination.limit) || DEFAULT_PAGINATION.limit;
   const activePage = Math.floor((pagination.offset ?? 0) / studentLimit) + 1;
@@ -1671,9 +1678,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       </header>
 
       <Tabs
-        className="tabs-row"
-        navClassName="tabs"
-        actionsClassName="tab-actions"
+        navClassName="nav-pills flex-wrap gap-2"
+        actionsClassName="d-flex align-items-center gap-2 flex-wrap"
         tabs={[
           { key: 'students', label: strings.tabs.students },
           { key: 'groups', label: strings.tabs.groups },
@@ -1687,7 +1693,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 variant="upload"
                 onClick={onBulkUpload}
                 icon={UploadIcon}
-                className="tab-action"
               >
                 {strings.actions.bulkUpload}
               </ActionButton>
@@ -1695,7 +1700,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                 type="button"
                 onClick={handleOpenCreateStudent}
                 disabled={isStudentPrefetching}
-                className="students-groups__add"
               >
                 {strings.actions.addStudent}
               </AddRecordButton>
@@ -1705,7 +1709,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               type="button"
               onClick={handleOpenCreateGroup}
               disabled={isGroupPrefetching}
-              className="students-groups__add"
             >
               {strings.actions.addGroup}
             </AddRecordButton>
@@ -1714,8 +1717,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       />
 
       {activeTab === 'students' ? (
-        <UiCard className="students-view">
-          <div className="students-view__toolbar">
+        <UiCard className="mb-4">
+          <div className="d-flex flex-column flex-lg-row gap-3 align-items-lg-center justify-content-between">
             <SearchInput
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
@@ -1725,14 +1728,16 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               wrapperProps={{ role: 'search' }}
             />
 
-            <div className="students-view__actions">
+            <div className="d-flex align-items-center gap-2">
               <FilterButton
                 type="button"
                 onClick={() => setIsFiltersOpen(true)}
-                className="students-view__filters"
+                className="rounded-pill d-inline-flex align-items-center gap-2"
               >
-                <span className="students-view__filters-text">{strings.actions.filters}</span>
-                {filtersCount > 0 && <span className="students-view__filters-count">{filtersCount}</span>}
+                <span className="fw-semibold">{strings.actions.filters}</span>
+                {filtersCount > 0 && (
+                  <span className="badge text-bg-primary rounded-pill">{filtersCount}</span>
+                )}
               </FilterButton>
             </div>
           </div>
@@ -1872,16 +1877,16 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
         </UiCard>
       ) : (
-        <UiCard className="students-view groups-view">
-          <div className="groups-view__toolbar">
+        <UiCard className="mb-4">
+          <div className="d-flex justify-content-end">
             <FilterButton
               type="button"
               onClick={() => setIsGroupFiltersOpen(true)}
-              className="students-view__filters"
+              className="rounded-pill d-inline-flex align-items-center gap-2"
             >
-              <span className="students-view__filters-text">{strings.actions.filters}</span>
+              <span className="fw-semibold">{strings.actions.filters}</span>
               {groupFiltersCount > 0 && (
-                <span className="students-view__filters-count">{groupFiltersCount}</span>
+                <span className="badge text-bg-primary rounded-pill">{groupFiltersCount}</span>
               )}
             </FilterButton>
           </div>
@@ -1970,50 +1975,97 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         description={strings.filters.subtitle}
         id="students-filters"
         footer={
-          <div className="students-filters__actions">
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <ActionButton
               variant="text"
               onClick={handleClearFilters}
-              className="students-filters__link"
               type="button"
             >
               {strings.filters.clear}
             </ActionButton>
-            <ActionButton type="submit" form="students-filters-form" className="students-filters__submit">
+            <ActionButton type="submit" form="students-filters-form">
               {strings.filters.apply}
             </ActionButton>
           </div>
         }
       >
-        <form id="students-filters-form" className="students-filters__form" onSubmit={handleApplyFilters}>
-          <label>
-            <span>{strings.filters.studentId}</span>
-            <input name="student_id" value={filters.student_id} onChange={handleFilterChange} />
-          </label>
-          <label>
-            <span>{strings.filters.fullName}</span>
-            <input name="full_name" value={filters.full_name} onChange={handleFilterChange} />
-          </label>
-          <label>
-            <span>{strings.filters.paymentReference}</span>
-            <input name="payment_reference" value={filters.payment_reference} onChange={handleFilterChange} />
-          </label>
-          <label>
-            <span>{strings.filters.generation}</span>
-            <input name="generation" value={filters.generation} onChange={handleFilterChange} />
-          </label>
-          <label>
-            <span>{strings.filters.gradeGroup}</span>
-            <input name="grade_group" value={filters.grade_group} onChange={handleFilterChange} />
-          </label>
-          <label>
-            <span>{strings.filters.enabled}</span>
-            <select className="custom_select" name="enabled" value={filters.enabled} onChange={handleFilterChange}>
+        <form id="students-filters-form" className="row g-3" onSubmit={handleApplyFilters}>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getStudentFilterFieldId('student_id')}>
+              {strings.filters.studentId}
+            </label>
+            <input
+              id={getStudentFilterFieldId('student_id')}
+              name="student_id"
+              value={filters.student_id}
+              onChange={handleFilterChange}
+              className="form-control"
+            />
+          </div>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getStudentFilterFieldId('full_name')}>
+              {strings.filters.fullName}
+            </label>
+            <input
+              id={getStudentFilterFieldId('full_name')}
+              name="full_name"
+              value={filters.full_name}
+              onChange={handleFilterChange}
+              className="form-control"
+            />
+          </div>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getStudentFilterFieldId('payment_reference')}>
+              {strings.filters.paymentReference}
+            </label>
+            <input
+              id={getStudentFilterFieldId('payment_reference')}
+              name="payment_reference"
+              value={filters.payment_reference}
+              onChange={handleFilterChange}
+              className="form-control"
+            />
+          </div>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getStudentFilterFieldId('generation')}>
+              {strings.filters.generation}
+            </label>
+            <input
+              id={getStudentFilterFieldId('generation')}
+              name="generation"
+              value={filters.generation}
+              onChange={handleFilterChange}
+              className="form-control"
+            />
+          </div>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getStudentFilterFieldId('grade_group')}>
+              {strings.filters.gradeGroup}
+            </label>
+            <input
+              id={getStudentFilterFieldId('grade_group')}
+              name="grade_group"
+              value={filters.grade_group}
+              onChange={handleFilterChange}
+              className="form-control"
+            />
+          </div>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getStudentFilterFieldId('enabled')}>
+              {strings.filters.enabled}
+            </label>
+            <select
+              id={getStudentFilterFieldId('enabled')}
+              className="form-select"
+              name="enabled"
+              value={filters.enabled}
+              onChange={handleFilterChange}
+            >
               <option value="">{strings.filters.enabledOptions.all}</option>
               <option value="true">{strings.filters.enabledOptions.enabled}</option>
               <option value="false">{strings.filters.enabledOptions.disabled}</option>
             </select>
-          </label>
+          </div>
         </form>
       </SidebarModal>
 
@@ -2024,46 +2076,76 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         description={strings.groupsView.filters.subtitle}
         id="groups-filters"
         footer={
-          <div className="students-filters__actions">
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <ActionButton
               variant="text"
               onClick={handleClearGroupFilters}
-              className="students-filters__link"
               type="button"
             >
               {strings.groupsView.filters.clear}
             </ActionButton>
-            <ActionButton type="submit" form="groups-filters-form" className="students-filters__submit">
+            <ActionButton type="submit" form="groups-filters-form">
               {strings.groupsView.filters.apply}
             </ActionButton>
           </div>
         }
       >
-        <form id="groups-filters-form" className="students-filters__form" onSubmit={handleApplyGroupFilters}>
-          <label>
-            <span>{strings.groupsView.filters.groupId}</span>
-            <input name="group_id" value={groupFilters.group_id} onChange={handleGroupFilterChange} />
-          </label>
-          <label>
-            <span>{strings.groupsView.filters.generation}</span>
-            <input name="generation" value={groupFilters.generation} onChange={handleGroupFilterChange} />
-          </label>
-          <label>
-            <span>{strings.groupsView.filters.gradeGroup}</span>
-            <input name="grade_group" value={groupFilters.grade_group} onChange={handleGroupFilterChange} />
-          </label>
-          <label>
-            <span>{strings.groupsView.filters.scholarLevel}</span>
+        <form id="groups-filters-form" className="row g-3" onSubmit={handleApplyGroupFilters}>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getGroupFilterFieldId('group_id')}>
+              {strings.groupsView.filters.groupId}
+            </label>
             <input
+              id={getGroupFilterFieldId('group_id')}
+              name="group_id"
+              value={groupFilters.group_id}
+              onChange={handleGroupFilterChange}
+              className="form-control"
+            />
+          </div>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getGroupFilterFieldId('generation')}>
+              {strings.groupsView.filters.generation}
+            </label>
+            <input
+              id={getGroupFilterFieldId('generation')}
+              name="generation"
+              value={groupFilters.generation}
+              onChange={handleGroupFilterChange}
+              className="form-control"
+            />
+          </div>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getGroupFilterFieldId('grade_group')}>
+              {strings.groupsView.filters.gradeGroup}
+            </label>
+            <input
+              id={getGroupFilterFieldId('grade_group')}
+              name="grade_group"
+              value={groupFilters.grade_group}
+              onChange={handleGroupFilterChange}
+              className="form-control"
+            />
+          </div>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getGroupFilterFieldId('scholar_level_name')}>
+              {strings.groupsView.filters.scholarLevel}
+            </label>
+            <input
+              id={getGroupFilterFieldId('scholar_level_name')}
               name="scholar_level_name"
               value={groupFilters.scholar_level_name}
               onChange={handleGroupFilterChange}
+              className="form-control"
             />
-          </label>
-          <label>
-            <span>{strings.groupsView.filters.enabled}</span>
+          </div>
+          <div className="col-sm-6">
+            <label className="form-label" htmlFor={getGroupFilterFieldId('enabled')}>
+              {strings.groupsView.filters.enabled}
+            </label>
             <select
-              className="custom_select"
+              id={getGroupFilterFieldId('enabled')}
+              className="form-select"
               name="enabled"
               value={groupFilters.enabled}
               onChange={handleGroupFilterChange}
@@ -2072,329 +2154,494 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               <option value="true">{strings.groupsView.filters.enabledOptions.enabled}</option>
               <option value="false">{strings.groupsView.filters.enabledOptions.disabled}</option>
             </select>
-          </label>
+          </div>
         </form>
       </SidebarModal>
 
       {isStudentModalOpen && (
-        <div className="students-modal">
-          <div className="students-modal__backdrop" aria-hidden="true" onClick={closeStudentModal} />
-          <div className="students-modal__dialog" role="dialog" aria-modal="true">
-            <header className="students-modal__header">
-              <div>
-                <h3>{isEditMode ? strings.form.editTitle : strings.form.title}</h3>
-                <p>{isEditMode ? strings.form.editDescription : strings.form.description}</p>
-              </div>
-              <ActionButton
-                variant="ghost"
-                size="icon"
-                onClick={closeStudentModal}
-                aria-label={studentFormCloseLabel}
-                className="students-modal__close"
-                icon={<span aria-hidden="true">×</span>}
-              />
-            </header>
-            <form className="students-form" onSubmit={handleStudentSubmit}>
-              <section>
-                <h4>{strings.form.sections.personal}</h4>
-                <div className="students-form__grid">
-                  <label>
-                    <span>{strings.form.fields.firstName}</span>
-                    <input
-                      name="first_name"
-                      value={studentForm.first_name}
-                      onChange={handleStudentFormChange}
-                      required
-                    />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.lastNameFather}</span>
-                    <input
-                      name="last_name_father"
-                      value={studentForm.last_name_father}
-                      onChange={handleStudentFormChange}
-                      required
-                    />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.lastNameMother}</span>
-                    <input
-                      name="last_name_mother"
-                      value={studentForm.last_name_mother}
-                      onChange={handleStudentFormChange}
-                    />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.birthDate}</span>
-                    <input
-                      type="date"
-                      name="birth_date"
-                      value={studentForm.birth_date}
-                      onChange={handleStudentFormChange}
-                    />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.registerId}</span>
-                    <input
-                      name="register_id"
-                      value={studentForm.register_id}
-                      onChange={handleStudentFormChange}
-                    />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.paymentReference}</span>
-                    <input
-                      name="payment_reference"
-                      value={studentForm.payment_reference}
-                      onChange={handleStudentFormChange}
-                    />
-                  </label>
+        <>
+          <div className="modal-backdrop fade show" onClick={closeStudentModal} />
+          <div
+            className="modal fade show d-block"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={studentModalTitleId}
+            aria-describedby={studentModalDescriptionId}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                closeStudentModal();
+              }
+            }}
+          >
+            <div className="modal-dialog modal-dialog-scrollable modal-xl">
+              <form className="modal-content border-0 shadow" onSubmit={handleStudentSubmit}>
+                <div className="modal-header">
+                  <div>
+                    <h3 id={studentModalTitleId} className="modal-title h4 mb-1">
+                      {isEditMode ? strings.form.editTitle : strings.form.title}
+                    </h3>
+                    <p id={studentModalDescriptionId} className="text-muted mb-0">
+                      {isEditMode ? strings.form.editDescription : strings.form.description}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeStudentModal}
+                    aria-label={studentFormCloseLabel}
+                  />
                 </div>
-              </section>
+                <div className="modal-body">
+                  <section className="mb-4">
+                    <h4 className="h6 text-primary fw-semibold mb-3">{strings.form.sections.personal}</h4>
+                    <div className="row g-3">
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('first_name')}>
+                          {strings.form.fields.firstName}
+                        </label>
+                        <input
+                          id={getStudentFieldId('first_name')}
+                          name="first_name"
+                          value={studentForm.first_name}
+                          onChange={handleStudentFormChange}
+                          required
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('last_name_father')}>
+                          {strings.form.fields.lastNameFather}
+                        </label>
+                        <input
+                          id={getStudentFieldId('last_name_father')}
+                          name="last_name_father"
+                          value={studentForm.last_name_father}
+                          onChange={handleStudentFormChange}
+                          required
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('last_name_mother')}>
+                          {strings.form.fields.lastNameMother}
+                        </label>
+                        <input
+                          id={getStudentFieldId('last_name_mother')}
+                          name="last_name_mother"
+                          value={studentForm.last_name_mother}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('birth_date')}>
+                          {strings.form.fields.birthDate}
+                        </label>
+                        <input
+                          id={getStudentFieldId('birth_date')}
+                          type="date"
+                          name="birth_date"
+                          value={studentForm.birth_date}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('register_id')}>
+                          {strings.form.fields.registerId}
+                        </label>
+                        <input
+                          id={getStudentFieldId('register_id')}
+                          name="register_id"
+                          value={studentForm.register_id}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('payment_reference')}>
+                          {strings.form.fields.paymentReference}
+                        </label>
+                        <input
+                          id={getStudentFieldId('payment_reference')}
+                          name="payment_reference"
+                          value={studentForm.payment_reference}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                    </div>
+                  </section>
 
-              <section>
-                <h4>{strings.form.sections.academic}</h4>
-                <div className="students-form__grid">
-                  <label>
-                    <span>{strings.form.fields.schoolId}</span>
-                    <select
-                      className='custom_select'
-                      name="school_id"
-                      value={studentForm.school_id}
-                      onChange={handleStudentFormChange}
-                      disabled={!schoolOptions.length}
-                      required
-                    >
-                      {schoolOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.groupId}</span>
-                    <select
-                      className='custom_select'
-                      name="group_id"
-                      value={studentForm.group_id}
-                      onChange={handleStudentFormChange}
-                      disabled={!classOptions.length}
-                      required={classOptions.length > 0}
-                    >
-                      {classOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <section className="mb-4">
+                    <h4 className="h6 text-primary fw-semibold mb-3">{strings.form.sections.academic}</h4>
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <label className="form-label" htmlFor={getStudentFieldId('school_id')}>
+                          {strings.form.fields.schoolId}
+                        </label>
+                        <select
+                          id={getStudentFieldId('school_id')}
+                          className="form-select"
+                          name="school_id"
+                          value={studentForm.school_id}
+                          onChange={handleStudentFormChange}
+                          disabled={!schoolOptions.length}
+                          required
+                        >
+                          {schoolOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label" htmlFor={getStudentFieldId('group_id')}>
+                          {strings.form.fields.groupId}
+                        </label>
+                        <select
+                          id={getStudentFieldId('group_id')}
+                          className="form-select"
+                          name="group_id"
+                          value={studentForm.group_id}
+                          onChange={handleStudentFormChange}
+                          disabled={!classOptions.length}
+                          required={classOptions.length > 0}
+                        >
+                          {classOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="mb-4">
+                    <h4 className="h6 text-primary fw-semibold mb-3">{strings.form.sections.contact}</h4>
+                    <div className="row g-3">
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('phone_number')}>
+                          {strings.form.fields.phoneNumber}
+                        </label>
+                        <input
+                          id={getStudentFieldId('phone_number')}
+                          name="phone_number"
+                          value={studentForm.phone_number}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('personal_email')}>
+                          {strings.form.fields.personalEmail}
+                        </label>
+                        <input
+                          id={getStudentFieldId('personal_email')}
+                          type="email"
+                          name="personal_email"
+                          value={studentForm.personal_email}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('email')}>
+                          {strings.form.fields.email}
+                        </label>
+                        <input
+                          id={getStudentFieldId('email')}
+                          type="email"
+                          name="email"
+                          value={studentForm.email}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('tax_id')}>
+                          {strings.form.fields.taxId}
+                        </label>
+                        <input
+                          id={getStudentFieldId('tax_id')}
+                          name="tax_id"
+                          value={studentForm.tax_id}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('curp')}>
+                          {strings.form.fields.curp}
+                        </label>
+                        <input
+                          id={getStudentFieldId('curp')}
+                          name="curp"
+                          value={studentForm.curp}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('street')}>
+                          {strings.form.fields.street}
+                        </label>
+                        <input
+                          id={getStudentFieldId('street')}
+                          name="street"
+                          value={studentForm.street}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('ext_number')}>
+                          {strings.form.fields.extNumber}
+                        </label>
+                        <input
+                          id={getStudentFieldId('ext_number')}
+                          name="ext_number"
+                          value={studentForm.ext_number}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('int_number')}>
+                          {strings.form.fields.intNumber}
+                        </label>
+                        <input
+                          id={getStudentFieldId('int_number')}
+                          name="int_number"
+                          value={studentForm.int_number}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('suburb')}>
+                          {strings.form.fields.suburb}
+                        </label>
+                        <input
+                          id={getStudentFieldId('suburb')}
+                          name="suburb"
+                          value={studentForm.suburb}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('locality')}>
+                          {strings.form.fields.locality}
+                        </label>
+                        <input
+                          id={getStudentFieldId('locality')}
+                          name="locality"
+                          value={studentForm.locality}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('municipality')}>
+                          {strings.form.fields.municipality}
+                        </label>
+                        <input
+                          id={getStudentFieldId('municipality')}
+                          name="municipality"
+                          value={studentForm.municipality}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('state')}>
+                          {strings.form.fields.state}
+                        </label>
+                        <input
+                          id={getStudentFieldId('state')}
+                          name="state"
+                          value={studentForm.state}
+                          onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                    </div>
+                  </section>
+
+                  {formFeedback && (
+                    <div className="alert alert-danger mb-0" role="alert">
+                      {formFeedback}
+                    </div>
+                  )}
                 </div>
-              </section>
-
-              <section>
-                <h4>{strings.form.sections.contact}</h4>
-                <div className="students-form__grid">
-                  <label>
-                    <span>{strings.form.fields.phoneNumber}</span>
-                    <input
-                      name="phone_number"
-                      value={studentForm.phone_number}
-                      onChange={handleStudentFormChange}
-                    />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.personalEmail}</span>
-                    <input
-                      type="email"
-                      name="personal_email"
-                      value={studentForm.personal_email}
-                      onChange={handleStudentFormChange}
-                    />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.email}</span>
-                    <input type="email" name="email" value={studentForm.email} onChange={handleStudentFormChange} />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.taxId}</span>
-                    <input name="tax_id" value={studentForm.tax_id} onChange={handleStudentFormChange} />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.curp}</span>
-                    <input name="curp" value={studentForm.curp} onChange={handleStudentFormChange} />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.street}</span>
-                    <input name="street" value={studentForm.street} onChange={handleStudentFormChange} />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.extNumber}</span>
-                    <input name="ext_number" value={studentForm.ext_number} onChange={handleStudentFormChange} />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.intNumber}</span>
-                    <input name="int_number" value={studentForm.int_number} onChange={handleStudentFormChange} />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.suburb}</span>
-                    <input name="suburb" value={studentForm.suburb} onChange={handleStudentFormChange} />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.locality}</span>
-                    <input name="locality" value={studentForm.locality} onChange={handleStudentFormChange} />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.municipality}</span>
-                    <input name="municipality" value={studentForm.municipality} onChange={handleStudentFormChange} />
-                  </label>
-                  <label>
-                    <span>{strings.form.fields.state}</span>
-                    <input name="state" value={studentForm.state} onChange={handleStudentFormChange} />
-                  </label>
+                <div className="modal-footer d-flex justify-content-end gap-2">
+                  <ActionButton type="button" variant="secondary" onClick={closeStudentModal}>
+                    {strings.form.cancel}
+                  </ActionButton>
+                  <ActionButton type="submit" disabled={isSubmittingStudent}>
+                    {isSubmittingStudent
+                      ? '...'
+                      : isEditMode
+                      ? strings.form.editSubmit
+                      : strings.form.submit}
+                  </ActionButton>
                 </div>
-              </section>
-
-              {formFeedback && <p className="students-form__feedback">{formFeedback}</p>}
-
-              <footer className="students-form__actions">
-                <ActionButton
-                  type="button"
-                  variant="secondary"
-                  onClick={closeStudentModal}
-                  className="students-form__cancel"
-                >
-                  {strings.form.cancel}
-                </ActionButton>
-                <ActionButton
-                  type="submit"
-                  disabled={isSubmittingStudent}
-                  className="students-form__submit"
-                >
-                  {isSubmittingStudent
-                    ? '...'
-                    : isEditMode
-                    ? strings.form.editSubmit
-                    : strings.form.submit}
-                </ActionButton>
-              </footer>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {isGroupModalOpen && (
-        <div className="students-modal">
-          <div className="students-modal__backdrop" aria-hidden="true" onClick={closeGroupModal} />
-          <div className="students-modal__dialog" role="dialog" aria-modal="true">
-            <header className="students-modal__header">
-              <div>
-                <h3>{groupFormTitle}</h3>
-                <p>{groupFormSubtitle}</p>
-              </div>
-              <ActionButton
-                variant="ghost"
-                size="icon"
-                onClick={closeGroupModal}
-                aria-label={groupFormCloseLabel}
-                className="students-modal__close"
-                icon={<span aria-hidden="true">×</span>}
-              />
-            </header>
-            <form className="students-form groups-form" onSubmit={handleGroupSubmit}>
-              <div className="students-form__grid groups-form__grid">
-                <label>
-                  <span>{strings.groupsView.form.fields.name}</span>
-                  <input name="name" value={groupForm.name} onChange={handleGroupFormChange} required />
-                </label>
-                <label>
-                  <span>{strings.groupsView.form.fields.generation}</span>
-                  <input
-                    name="generation"
-                    value={groupForm.generation}
-                    onChange={handleGroupFormChange}
-                    required
+        <>
+          <div className="modal-backdrop fade show" onClick={closeGroupModal} />
+          <div
+            className="modal fade show d-block"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={groupModalTitleId}
+            aria-describedby={groupModalDescriptionId}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                closeGroupModal();
+              }
+            }}
+          >
+            <div className="modal-dialog modal-dialog-scrollable modal-lg">
+              <form className="modal-content border-0 shadow" onSubmit={handleGroupSubmit}>
+                <div className="modal-header">
+                  <div>
+                    <h3 id={groupModalTitleId} className="modal-title h4 mb-1">
+                      {groupFormTitle}
+                    </h3>
+                    <p id={groupModalDescriptionId} className="text-muted mb-0">
+                      {groupFormSubtitle}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeGroupModal}
+                    aria-label={groupFormCloseLabel}
                   />
-                </label>
-                <label>
-                  <span>{strings.groupsView.form.fields.grade}</span>
-                  <input name="grade" value={groupForm.grade} onChange={handleGroupFormChange} required />
-                </label>
-                <label>
-                  <span>{strings.groupsView.form.fields.group}</span>
-                  <input name="group" value={groupForm.group} onChange={handleGroupFormChange} required />
-                </label>
-                <label>
-                  <span>{strings.groupsView.form.fields.schoolId}</span>
-                  <select
-                    className="custom_select"
-                    name="school_id"
-                    value={groupForm.school_id}
-                    onChange={handleGroupFormChange}
-                    disabled={!groupSchoolOptions.length}
-                    required
-                  >
-                    {groupSchoolOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {/* <label className="groups-form__search">
-                  <span>{strings.groupsView.form.fields.scholarLevelSearch}</span>
-                  <input
-                    type="search"
-                    value={scholarLevelSearch}
-                    onChange={(event) => setScholarLevelSearch(event.target.value)}
-                    placeholder={
-                      strings.groupsView.form.fields.scholarLevelPlaceholder ||
-                      strings.searchPlaceholder ||
-                      ''
-                    }
-                  />
-                </label> */}
-                <label>
-                  <span>{strings.groupsView.form.fields.scholarLevel}</span>
-                  <select
-                    className="custom_select"
-                    name="scholar_level_id"
-                    value={groupForm.scholar_level_id}
-                    onChange={handleGroupFormChange}
-                    disabled={!filteredScholarLevelOptions.length}
-                    required
-                  >
-                    {filteredScholarLevelOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+                </div>
+                <div className="modal-body">
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor={getGroupFieldId('name')}>
+                        {strings.groupsView.form.fields.name}
+                      </label>
+                      <input
+                        id={getGroupFieldId('name')}
+                        name="name"
+                        value={groupForm.name}
+                        onChange={handleGroupFormChange}
+                        required
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor={getGroupFieldId('generation')}>
+                        {strings.groupsView.form.fields.generation}
+                      </label>
+                      <input
+                        id={getGroupFieldId('generation')}
+                        name="generation"
+                        value={groupForm.generation}
+                        onChange={handleGroupFormChange}
+                        required
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor={getGroupFieldId('grade')}>
+                        {strings.groupsView.form.fields.grade}
+                      </label>
+                      <input
+                        id={getGroupFieldId('grade')}
+                        name="grade"
+                        value={groupForm.grade}
+                        onChange={handleGroupFormChange}
+                        required
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor={getGroupFieldId('group')}>
+                        {strings.groupsView.form.fields.group}
+                      </label>
+                      <input
+                        id={getGroupFieldId('group')}
+                        name="group"
+                        value={groupForm.group}
+                        onChange={handleGroupFormChange}
+                        required
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor={getGroupFieldId('school_id')}>
+                        {strings.groupsView.form.fields.schoolId}
+                      </label>
+                      <select
+                        id={getGroupFieldId('school_id')}
+                        className="form-select"
+                        name="school_id"
+                        value={groupForm.school_id}
+                        onChange={handleGroupFormChange}
+                        disabled={!groupSchoolOptions.length}
+                        required
+                      >
+                        {groupSchoolOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor={getGroupFieldId('scholar_level_id')}>
+                        {strings.groupsView.form.fields.scholarLevel}
+                      </label>
+                      <select
+                        id={getGroupFieldId('scholar_level_id')}
+                        className="form-select"
+                        name="scholar_level_id"
+                        value={groupForm.scholar_level_id}
+                        onChange={handleGroupFormChange}
+                        disabled={!filteredScholarLevelOptions.length}
+                        required
+                      >
+                        {filteredScholarLevelOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
-              {groupFormFeedback && <p className="students-form__feedback">{groupFormFeedback}</p>}
-
-              <footer className="students-form__actions">
-                <ActionButton
-                  type="button"
-                  variant="secondary"
-                  onClick={closeGroupModal}
-                  className="students-form__cancel"
-                >
-                  {groupFormCancelLabel}
-                </ActionButton>
-                <ActionButton
-                  type="submit"
-                  disabled={isSubmittingGroup}
-                  className="students-form__submit"
-                >
-                  {groupFormSubmitLabel}
-                </ActionButton>
-              </footer>
-            </form>
+                  {groupFormFeedback && (
+                    <div className="alert alert-danger mb-0 mt-3" role="alert">
+                      {groupFormFeedback}
+                    </div>
+                  )}
+                </div>
+                <div className="modal-footer d-flex justify-content-end gap-2">
+                  <ActionButton type="button" variant="secondary" onClick={closeGroupModal}>
+                    {groupFormCancelLabel}
+                  </ActionButton>
+                  <ActionButton type="submit" disabled={isSubmittingGroup}>
+                    {groupFormSubmitLabel}
+                  </ActionButton>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
