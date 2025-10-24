@@ -15,43 +15,58 @@
   --ui-radius-sm: 0.65rem;
 }
 
-.ui-card {
+.global-card {
   --ui-card-padding: clamp(1.5rem, 1.4rem + 0.6vw, 2.25rem);
   --ui-card-gap: clamp(1.1rem, 0.85rem + 0.45vw, 1.75rem);
   --ui-card-radius: var(--ui-radius-lg);
   --ui-card-shadow: 0 32px 64px -48px rgba(15, 23, 42, 0.35);
-  background: var(--ui-color-surface);
   border-radius: var(--ui-card-radius);
+  background: var(--ui-color-surface);
+  box-shadow: var(--ui-card-shadow);
+  border: none;
+  overflow: hidden;
+}
+
+.global-card .card-body {
   padding: var(--ui-card-padding);
   display: flex;
   flex-direction: column;
   gap: var(--ui-card-gap);
-  box-shadow: var(--ui-card-shadow);
+}
+
+.ui-card--raised {
+  --ui-card-shadow: 0 32px 64px -48px rgba(15, 23, 42, 0.35);
 }
 
 .ui-card--flat {
   --ui-card-shadow: none;
+  box-shadow: none;
 }
 
 .ui-card--outlined {
   --ui-card-shadow: none;
+  box-shadow: none;
   border: 1px solid rgba(15, 23, 42, 0.06);
 }
 
-.ui-card--padding-none {
-  --ui-card-padding: 0;
+.ui-card--outlined .card-body {
+  padding: var(--ui-card-padding);
 }
 
-.ui-card--padding-sm {
-  --ui-card-padding: clamp(1rem, 0.9rem + 0.4vw, 1.5rem);
+.ui-card--padding-none .card-body {
+  padding: 0;
 }
 
-.ui-card--padding-md {
-  --ui-card-padding: clamp(1.25rem, 1.1rem + 0.45vw, 1.9rem);
+.ui-card--padding-sm .card-body {
+  padding: clamp(1rem, 0.9rem + 0.4vw, 1.5rem);
 }
 
-.ui-card--padding-lg {
-  --ui-card-padding: clamp(1.5rem, 1.4rem + 0.6vw, 2.25rem);
+.ui-card--padding-md .card-body {
+  padding: clamp(1.25rem, 1.1rem + 0.45vw, 1.9rem);
+}
+
+.ui-card--padding-lg .card-body {
+  padding: clamp(1.5rem, 1.4rem + 0.6vw, 2.25rem);
 }
 
 .ui-button {

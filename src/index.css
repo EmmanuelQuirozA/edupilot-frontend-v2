@@ -1,4 +1,8 @@
 @import './styles/ui.css';
+@import './styles/global-tabs.css';
+@import './styles/search-input.css';
+@import './styles/global-table.css';
+@import './styles/sidebar-modal.css';
 
 * {
   box-sizing: border-box;

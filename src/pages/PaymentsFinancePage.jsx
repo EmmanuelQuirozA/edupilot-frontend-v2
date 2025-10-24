@@ -5,7 +5,10 @@ import AddRecordButton from '../components/ui/buttons/AddRecordButton.jsx';
 import ExportButton from '../components/ui/buttons/ExportButton.jsx';
 import FilterButton from '../components/ui/buttons/FilterButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
-import { Table, TableContainer } from '../components/ui/DataTable.jsx';
+import Tabs from '../components/ui/Tabs.jsx';
+import SearchInput from '../components/ui/SearchInput.jsx';
+import GlobalTable from '../components/ui/GlobalTable.jsx';
+import SidebarModal from '../components/ui/SidebarModal.jsx';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import './PaymentsFinancePage.css';
@@ -343,6 +346,67 @@ const PaymentsFinancePage = ({
     return columns;
   }, [rows]);
 
+  const paymentColumns = useMemo(() => {
+    const sortableHeader = (label, key) => (
+      <button
+        type="button"
+        className="payments-page__sortable"
+        onClick={() => handleSort(key)}
+      >
+        <span>{label}</span>
+        {renderSortIndicator(key)}
+      </button>
+    );
+
+    const baseColumns = displayedColumns.map((column) => ({
+      key: column.key,
+      header: column.sortable ? sortableHeader(column.label, column.orderKey) : column.label,
+    }));
+
+    const dynamicMonths = monthColumns.map((month) => ({
+      key: month,
+      header: sortableHeader(month, month),
+    }));
+
+    return [...baseColumns, ...dynamicMonths];
+  }, [displayedColumns, handleSort, monthColumns, orderBy, orderDir]);
+
+  const paymentSummary = useCallback(
+    ({ from, to, total }) => {
+      const template = tableStrings.pagination?.summary;
+      const startLabel = from.toLocaleString(locale);
+      const endLabel = to.toLocaleString(locale);
+      const totalLabel = total.toLocaleString(locale);
+
+      if (typeof template === 'string') {
+        return template
+          .replace('{start}', startLabel)
+          .replace('{end}', endLabel)
+          .replace('{total}', totalLabel);
+      }
+
+      return `Mostrando ${startLabel}-${endLabel} de ${totalLabel}`;
+    },
+    [locale, tableStrings.pagination],
+  );
+
+  const paymentPageLabel = useCallback(
+    ({ page, totalPages }) => {
+      const template = tableStrings.pagination?.page;
+      const currentLabel = page.toLocaleString(locale);
+      const totalLabel = totalPages.toLocaleString(locale);
+
+      if (typeof template === 'string') {
+        return template
+          .replace('{current}', currentLabel)
+          .replace('{total}', totalLabel);
+      }
+
+      return `${currentLabel} / ${totalLabel}`;
+    },
+    [locale, tableStrings.pagination],
+  );
+
   const totalPages = Math.max(1, Math.ceil(totalElements / limit));
   const currentPage = Math.floor(offset / limit) + 1;
 
@@ -515,12 +579,6 @@ const PaymentsFinancePage = ({
     setOrderBy('');
     setOrderDir('ASC');
     setOffset(0);
-  }, []);
-
-  const handleFiltersBackdropClick = useCallback((event) => {
-    if (event.target === event.currentTarget || event.target.classList.contains('payments-filters__backdrop')) {
-      setShowFilters(false);
-    }
   }, []);
 
   const handleSort = useCallback(
@@ -705,155 +763,6 @@ const PaymentsFinancePage = ({
     </svg>
   );
 
-  const renderTable = () => {
-    if (loading) {
-      return <div className="payments-page__empty-state">{tableStrings.loading}</div>;
-    }
-
-    if (error) {
-      return <div className="payments-page__empty-state">{error || tableStrings.error}</div>;
-    }
-
-    if (!rows.length) {
-      return <div className="payments-page__empty-state">{tableStrings.empty}</div>;
-    }
-
-    const studentIdLabel = tableStrings.studentIdLabel;
-    const startRecord = totalElements === 0 ? 0 : offset + 1;
-    const endRecord = totalElements === 0 ? 0 : Math.min(offset + limit, totalElements);
-    const summaryText = tableStrings.pagination.summary
-      .replace('{start}', startRecord.toLocaleString(locale))
-      .replace('{end}', endRecord.toLocaleString(locale))
-      .replace('{total}', totalElements.toLocaleString(locale));
-    const pageText = tableStrings.pagination.page
-      .replace('{current}', currentPage.toLocaleString(locale))
-      .replace('{total}', totalPages.toLocaleString(locale));
-
-    return (
-      <UiCard className="payments-page__table-card">
-        <TableContainer className="payments-page__table-wrapper">
-          <Table className="payments-page__table">
-            <thead>
-              <tr>
-                {displayedColumns.map((column) => (
-                  <th key={column.key}>
-                    {column.sortable ? (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        className="payments-page__sortable"
-                        onClick={() => handleSort(column.orderKey)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            handleSort(column.orderKey);
-                          }
-                        }}
-                      >
-                        {column.label}
-                        {renderSortIndicator(column.orderKey)}
-                      </span>
-                    ) : (
-                      column.label
-                    )}
-                  </th>
-                ))}
-                {monthColumns.map((month) => (
-                  <th key={month}>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className="payments-page__sortable"
-                      onClick={() => handleSort(month)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          handleSort(month);
-                        }
-                      }}
-                    >
-                      {month}
-                      {renderSortIndicator(month)}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, index) => {
-                const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
-                const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
-                const canNavigateToStudent = Boolean(studentId);
-
-                return (
-                  <tr key={rowKey}>
-                    <td>
-                      <ActionButton
-                        variant="text"
-                        onClick={() => handleStudentDetailClick(row)}
-                        disabled={!canNavigateToStudent}
-                        className="payments-page__student-button"
-                      >
-                        {row.student ?? tableStrings.studentFallback}
-                      </ActionButton>
-                      {row.payment_reference ? (
-                        <span className="payments-page__student-id">
-                          {`${studentIdLabel}: ${row.payment_reference}`}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td>{row.class ?? '--'}</td>
-                    <td>{row.generation ?? '--'}</td>
-                    <td>{row.scholar_level_name ?? '--'}</td>
-                    {monthColumns.map((month) => {
-                      const value = row?.[month];
-                      const isNullish = value === null || value === undefined;
-                      return (
-                        <td key={`${rowKey}-${month}`} className={isNullish ? 'payments-page__amount-null' : ''}>
-                          {isNullish || value === '' ? (
-                            <span className="ui-table__empty-indicator">--</span>
-                          ) : (
-                            value
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </Table>
-        </TableContainer>
-        <div className="payments-page__pagination">
-          <div>{summaryText}</div>
-          <div className="payments-page__pagination-controls">
-            <ActionButton
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-            >
-              {tableStrings.pagination.previous}
-            </ActionButton>
-            <span>
-              {pageText}
-            </span>
-            <ActionButton
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-            >
-              {tableStrings.pagination.next}
-            </ActionButton>
-          </div>
-        </div>
-      </UiCard>
-    );
-  };
-
   const pageTitle = title || tabStrings.tuition;
 
   return (
@@ -866,64 +775,54 @@ const PaymentsFinancePage = ({
           {description ? <p className="payments-page__description">{description}</p> : null}
         </div>
         <div className="payments-page__navigation">
-          <div className="payments-page__tabs">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                className={`payments-page__tab ${activeTab === tab.key ? 'payments-page__tab--active' : ''}`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          {isTuitionTab ? (
-            <div className="payments-page__actions">
-              <FilterButton
-                onClick={handleToggleFilters}
-                aria-expanded={showFilters}
-                aria-controls="payments-page-filters"
-              >
-                {actionStrings.filter}
-              </FilterButton>
-              <ActionButton
-                variant="ghost"
-                onClick={handleToggleDebt}
-                icon={DebtIcon}
-                className={`payments-page__debt-button ${showDebtOnly ? 'is-active' : ''}`}
-              >
-                {showDebtOnly ? debtToggleStrings.debtActive : debtToggleStrings.debtInactive}
-              </ActionButton>
-              <AddRecordButton type="button">
-                {actionStrings.add}
-              </AddRecordButton>
-              <ExportButton type="button" onClick={handleExport} disabled={isExporting}>
-                {isExporting ? actionStrings.exporting : actionStrings.export}
-              </ExportButton>
-            </div>
-          ) : null}
+          <Tabs
+            tabs={tabs}
+            activeKey={activeTab}
+            onSelect={setActiveTab}
+            className="payments-page__tabs-container"
+            navClassName="payments-page__tabs"
+            actionsClassName="payments-page__actions"
+            renderActions={({ activeKey }) =>
+              activeKey === 'tuition' ? (
+                <>
+                  <FilterButton
+                    onClick={handleToggleFilters}
+                    aria-expanded={showFilters}
+                    aria-controls="payments-page-filters"
+                  >
+                    {actionStrings.filter}
+                  </FilterButton>
+                  <ActionButton
+                    variant="ghost"
+                    onClick={handleToggleDebt}
+                    icon={DebtIcon}
+                    className={`payments-page__debt-button ${showDebtOnly ? 'is-active' : ''}`}
+                  >
+                    {showDebtOnly ? debtToggleStrings.debtActive : debtToggleStrings.debtInactive}
+                  </ActionButton>
+                  <AddRecordButton type="button">
+                    {actionStrings.add}
+                  </AddRecordButton>
+                  <ExportButton type="button" onClick={handleExport} disabled={isExporting}>
+                    {isExporting ? actionStrings.exporting : actionStrings.export}
+                  </ExportButton>
+                </>
+              ) : null
+            }
+          />
         </div>
       </div>
 
       {isTuitionTab ? (
         <UiCard className="card-view">
           <div className="payments-page__toolbar">
-            <div className="payments-page__search-wrapper">
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path
-                  d="m14.5 13.1 3.4 3.4-1.4 1.4-3.4-3.4a7 7 0 1 1 1.4-1.4ZM8.5 13a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z"
-                  fill="currentColor"
-                />
-              </svg>
-              <input
-                type="search"
-                className="payments-page__search"
-                placeholder={searchPlaceholder}
-                value={filters.student_full_name}
-                onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
-              />
-            </div>
+            <SearchInput
+              value={filters.student_full_name}
+              onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
+              placeholder={searchPlaceholder}
+              className="payments-page__search-wrapper"
+              wrapperProps={{ role: 'search' }}
+            />
             <div className="payments-page__toolbar-controls">
               <label className="payments-page__month-input">
                 {dateRangeStrings.start}
@@ -951,7 +850,77 @@ const PaymentsFinancePage = ({
       <div className="payments-page__layout">
         <section className="payments-page__content">
           {isTuitionTab ? (
-            renderTable()
+            <UiCard className="payments-page__table-card">
+              <GlobalTable
+                className="payments-page__table-wrapper"
+                tableClassName="payments-page__table mb-0"
+                columns={paymentColumns}
+                data={rows}
+                getRowId={(row, index) => {
+                  const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
+                  return studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+                }}
+                renderRow={(row, index) => {
+                  const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
+                  const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+                  const canNavigateToStudent = Boolean(studentId);
+                  const studentIdLabel = tableStrings.studentIdLabel;
+
+                  return (
+                    <tr key={rowKey}>
+                      <td
+                        data-title={tableStrings.columns.student}
+                        className="payments-page__student-cell"
+                      >
+                        <ActionButton
+                          variant="text"
+                          onClick={() => handleStudentDetailClick(row)}
+                          disabled={!canNavigateToStudent}
+                          className="payments-page__student-button"
+                        >
+                          {row.student ?? tableStrings.studentFallback}
+                        </ActionButton>
+                        {row.payment_reference ? (
+                          <span className="payments-page__student-id">
+                            {`${studentIdLabel}: ${row.payment_reference}`}
+                          </span>
+                        ) : null}
+                      </td>
+                      <td data-title={tableStrings.columns.class}>{row.class ?? '--'}</td>
+                      <td data-title={tableStrings.columns.generation}>{row.generation ?? '--'}</td>
+                      <td data-title={tableStrings.columns.scholarLevel}>{row.scholar_level_name ?? '--'}</td>
+                      {monthColumns.map((month) => {
+                        const value = row?.[month];
+                        const isNullish = value === null || value === undefined || value === '';
+                        return (
+                          <td
+                            key={`${rowKey}-${month}`}
+                            data-title={month}
+                            className={isNullish ? 'payments-page__amount-null' : ''}
+                          >
+                            {isNullish ? <span className="ui-table__empty-indicator">--</span> : value}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                }}
+                loading={loading}
+                loadingMessage={tableStrings.loading}
+                error={error || null}
+                emptyMessage={tableStrings.empty}
+                pagination={{
+                  currentPage,
+                  pageSize: limit,
+                  totalItems: totalElements,
+                  onPageChange: handlePageChange,
+                  previousLabel: tableStrings.pagination.previous ?? '←',
+                  nextLabel: tableStrings.pagination.next ?? '→',
+                  summary: paymentSummary,
+                  pageLabel: paymentPageLabel,
+                }}
+              />
+            </UiCard>
           ) : (
             <div className="payments-page__empty-state">
               {placeholderMessage}
@@ -960,150 +929,118 @@ const PaymentsFinancePage = ({
         </section>
       </div>
 
-      {showFilters && (
-        <div
-          className="payments-filters is-open"
-          data-dismiss="payments-filters"
-          onClick={handleFiltersBackdropClick}
-        >
-          <div className="payments-filters__backdrop" aria-hidden="true" />
-          <aside
-            id="payments-page-filters"
-            className="payments-page__filters"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="payments-page-filters-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header className="payments-page__filters-header">
-              <div className="payments-page__filters-heading">
-                <h2 id="payments-page-filters-title" className="payments-page__filters-title">
-                  {filterStrings.title}
-                </h2>
-                <ActionButton
-                  type="button"
-                  variant="text"
-                  onClick={handleResetFilters}
-                  className="payments-page__filters-reset"
-                >
-                  {filterStrings.reset}
-                </ActionButton>
-              </div>
-              <ActionButton
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="payments-page__filters-close"
-                onClick={() => setShowFilters(false)}
-                aria-label={filterStrings.closeAria}
-                icon={<span aria-hidden="true">×</span>}
-              />
-            </header>
-            <div className="payments-page__filters-form">
-              <div className="payments-page__field">
-                <label htmlFor="filter-student" className="payments-page__label">
-                  {filterStrings.fields.student.label}
-                </label>
-                <input
-                  id="filter-student"
-                  type="text"
-                  className="payments-page__input"
-                  value={filters.student_full_name}
-                  onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
-                  placeholder={filterStrings.fields.student.placeholder}
-                />
-              </div>
-              <div className="payments-page__field">
-                <label htmlFor="filter-reference" className="payments-page__label">
-                  {filterStrings.fields.reference.label}
-                </label>
-                <input
-                  id="filter-reference"
-                  type="text"
-                  className="payments-page__input"
-                  value={filters.payment_reference}
-                  onChange={(event) => handleFilterChange('payment_reference', event.target.value)}
-                  placeholder={filterStrings.fields.reference.placeholder}
-                />
-              </div>
-              <div className="payments-page__field">
-                <label htmlFor="filter-generation" className="payments-page__label">
-                  {filterStrings.fields.generation.label}
-                </label>
-                <input
-                  id="filter-generation"
-                  type="text"
-                  className="payments-page__input"
-                  value={filters.generation}
-                  onChange={(event) => handleFilterChange('generation', event.target.value)}
-                  placeholder={filterStrings.fields.generation.placeholder}
-                />
-              </div>
-              <div className="payments-page__field">
-                <label htmlFor="filter-grade" className="payments-page__label">
-                  {filterStrings.fields.gradeGroup.label}
-                </label>
-                <input
-                  id="filter-grade"
-                  type="text"
-                  className="payments-page__input"
-                  value={filters.grade_group}
-                  onChange={(event) => handleFilterChange('grade_group', event.target.value)}
-                  placeholder={filterStrings.fields.gradeGroup.placeholder}
-                />
-              </div>
-              <div className="payments-page__field">
-                <label htmlFor="filter-scholar" className="payments-page__label">
-                  {filterStrings.fields.scholarLevel.label}
-                </label>
-                <input
-                  id="filter-scholar"
-                  type="text"
-                  className="payments-page__input"
-                  value={filters.scholar_level}
-                  onChange={(event) => handleFilterChange('scholar_level', event.target.value)}
-                  placeholder={filterStrings.fields.scholarLevel.placeholder}
-                />
-              </div>
-              <div className="payments-page__field">
-                <label htmlFor="filter-school" className="payments-page__label">
-                  {filterStrings.fields.school.label}
-                </label>
-                <select
-                  id="filter-school"
-                  className="payments-page__select"
-                  value={filters.school_id}
-                  onChange={(event) => handleFilterChange('school_id', event.target.value)}
-                  disabled={isLoadingSchools}
-                >
-                  <option value="">{filterStrings.schoolOptions.all}</option>
-                  {schoolOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <label className="payments-page__checkbox">
-                <input
-                  type="checkbox"
-                  checked={filters.group_status === 'true'}
-                  onChange={(event) => handleFilterChange('group_status', event.target.checked ? 'true' : '')}
-                />
-                {filterStrings.toggles.activeGroups}
-              </label>
-              <label className="payments-page__checkbox">
-                <input
-                  type="checkbox"
-                  checked={filters.user_status === 'true'}
-                  onChange={(event) => handleFilterChange('user_status', event.target.checked ? 'true' : '')}
-                />
-                {filterStrings.toggles.activeStudents}
-              </label>
-            </div>
-          </aside>
-        </div>
-      )}
+      <SidebarModal
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        title={filterStrings.title}
+        description={filterStrings.subtitle}
+        id="payments-page-filters"
+        resetAction={{ label: filterStrings.reset, onClick: handleResetFilters }}
+        bodyClassName="payments-page__filters-body"
+      >
+        <form className="payments-page__filters-form">
+          <div className="payments-page__field">
+            <label htmlFor="filter-student" className="payments-page__label">
+              {filterStrings.fields.student.label}
+            </label>
+            <input
+              id="filter-student"
+              type="text"
+              className="payments-page__input"
+              value={filters.student_full_name}
+              onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
+              placeholder={filterStrings.fields.student.placeholder}
+            />
+          </div>
+          <div className="payments-page__field">
+            <label htmlFor="filter-reference" className="payments-page__label">
+              {filterStrings.fields.reference.label}
+            </label>
+            <input
+              id="filter-reference"
+              type="text"
+              className="payments-page__input"
+              value={filters.payment_reference}
+              onChange={(event) => handleFilterChange('payment_reference', event.target.value)}
+              placeholder={filterStrings.fields.reference.placeholder}
+            />
+          </div>
+          <div className="payments-page__field">
+            <label htmlFor="filter-generation" className="payments-page__label">
+              {filterStrings.fields.generation.label}
+            </label>
+            <input
+              id="filter-generation"
+              type="text"
+              className="payments-page__input"
+              value={filters.generation}
+              onChange={(event) => handleFilterChange('generation', event.target.value)}
+              placeholder={filterStrings.fields.generation.placeholder}
+            />
+          </div>
+          <div className="payments-page__field">
+            <label htmlFor="filter-grade" className="payments-page__label">
+              {filterStrings.fields.gradeGroup.label}
+            </label>
+            <input
+              id="filter-grade"
+              type="text"
+              className="payments-page__input"
+              value={filters.grade_group}
+              onChange={(event) => handleFilterChange('grade_group', event.target.value)}
+              placeholder={filterStrings.fields.gradeGroup.placeholder}
+            />
+          </div>
+          <div className="payments-page__field">
+            <label htmlFor="filter-scholar" className="payments-page__label">
+              {filterStrings.fields.scholarLevel.label}
+            </label>
+            <input
+              id="filter-scholar"
+              type="text"
+              className="payments-page__input"
+              value={filters.scholar_level}
+              onChange={(event) => handleFilterChange('scholar_level', event.target.value)}
+              placeholder={filterStrings.fields.scholarLevel.placeholder}
+            />
+          </div>
+          <div className="payments-page__field">
+            <label htmlFor="filter-school" className="payments-page__label">
+              {filterStrings.fields.school.label}
+            </label>
+            <select
+              id="filter-school"
+              className="payments-page__select"
+              value={filters.school_id}
+              onChange={(event) => handleFilterChange('school_id', event.target.value)}
+              disabled={isLoadingSchools}
+            >
+              <option value="">{filterStrings.schoolOptions.all}</option>
+              {schoolOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <label className="payments-page__checkbox">
+            <input
+              type="checkbox"
+              checked={filters.group_status === 'true'}
+              onChange={(event) => handleFilterChange('group_status', event.target.checked ? 'true' : '')}
+            />
+            {filterStrings.toggles.activeGroups}
+          </label>
+          <label className="payments-page__checkbox">
+            <input
+              type="checkbox"
+              checked={filters.user_status === 'true'}
+              onChange={(event) => handleFilterChange('user_status', event.target.checked ? 'true' : '')}
+            />
+            {filterStrings.toggles.activeStudents}
+          </label>
+        </form>
+      </SidebarModal>
     </div>
   );
 };

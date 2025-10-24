@@ -1,0 +1,81 @@
+.global-table__table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.global-table__head th {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+  letter-spacing: 0.03em;
+}
+
+.global-table__body tr {
+  transition: background-color 0.2s ease;
+}
+
+.global-table__body tr:hover {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.global-table__cell {
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+}
+
+.global-table__state {
+  color: #475569;
+}
+
+.global-table__summary {
+  font-size: 0.9rem;
+}
+
+.global-table__pagination .page-link {
+  border-radius: 999px;
+  min-width: 2.4rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .global-table__table thead {
+    display: none;
+  }
+
+  .global-table__table tbody,
+  .global-table__table tr,
+  .global-table__table td {
+    display: block;
+    width: 100%;
+  }
+
+  .global-table__table tr {
+    margin-bottom: 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    background: #ffffff;
+    padding: 1rem;
+  }
+
+  .global-table__cell {
+    border: none;
+    padding: 0.35rem 0;
+    position: relative;
+    padding-left: 50%;
+    text-align: right;
+  }
+
+  .global-table__cell::before {
+    content: attr(data-title);
+    position: absolute;
+    left: 0;
+    width: 48%;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+}
