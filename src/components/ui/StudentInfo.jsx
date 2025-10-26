@@ -1,5 +1,3 @@
-import PropTypes from 'prop-types';
-
 const getInitials = (value) => {
   if (typeof value !== 'string') {
     return '';
@@ -88,19 +86,6 @@ const StudentInfo = ({
       </div>
     </div>
   );
-};
-
-StudentInfo.propTypes = {
-  name: PropTypes.string,
-  fallbackName: PropTypes.string,
-  metaLabel: PropTypes.string,
-  metaValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  onClick: PropTypes.func,
-  disabled: PropTypes.bool,
-  avatarText: PropTypes.string,
-  avatarFallback: PropTypes.string,
-  className: PropTypes.string,
-  nameButtonProps: PropTypes.object,
 };
 
 export default StudentInfo;
