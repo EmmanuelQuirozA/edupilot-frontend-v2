@@ -1533,14 +1533,17 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   const groupLimit = Number(groupPagination.limit) || DEFAULT_PAGINATION.limit;
   const groupActivePage = Math.floor((groupPagination.offset ?? 0) / groupLimit) + 1;
 
+  const tableStrings = strings.table ?? {};
+  const tablePaginationStrings = tableStrings.pagination ?? {};
+
   const studentColumns = useMemo(
     () => [
-      { key: 'student', header: strings.table.student },
-      { key: 'gradeGroup', header: strings.table.gradeGroup },
-      { key: 'status', header: strings.table.status, headerClassName: 'text-center', align: 'center' },
-      { key: 'actions', header: strings.table.actions, headerClassName: 'text-end', align: 'end' },
+      { key: 'student', header: tableStrings.student },
+      { key: 'gradeGroup', header: tableStrings.gradeGroup },
+      { key: 'status', header: tableStrings.status, headerClassName: 'text-center', align: 'center' },
+      { key: 'actions', header: tableStrings.actions, headerClassName: 'text-end', align: 'end' },
     ],
-    [strings.table],
+    [tableStrings.actions, tableStrings.gradeGroup, tableStrings.status, tableStrings.student],
   );
 
   const groupTableStrings = strings.groupsView?.table ?? {};
@@ -1754,8 +1757,8 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               const fullName =
                 student.full_name ??
                 [student.first_name, student.last_name_father, student.last_name_mother].filter(Boolean).join(' ');
-              const gradeGroup = student.grade_group ?? student.group ?? strings.table.noGroup;
-              const scholarLevel = student.scholar_level_name ?? strings.table.noGroup;
+              const gradeGroup = student.grade_group ?? student.group ?? tableStrings.noGroup;
+              const scholarLevel = student.scholar_level_name ?? tableStrings.noGroup;
               const registerId = student.register_id ?? student.registration_id ?? '—';
               const studentId = student.student_id ?? student.id ?? registerId;
               const isStatusPending = pendingStatusStudentId === studentId;
@@ -1769,18 +1772,18 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
               return (
                 <tr key={studentId}>
-                  <td data-title={strings.table.student} className="table__student">
+                  <td data-title={tableStrings.student} className="table__student">
                     <StudentInfo
                       name={fullName}
-                      fallbackName={strings.table.unknownStudent}
-                      metaLabel={strings.table.registrationIdLabel}
+                      fallbackName={tableStrings.unknownStudent}
+                      metaLabel={tableStrings.registrationIdLabel}
                       metaValue={registerId}
                       onClick={() => handleStudentDetailNavigation(student, fullName)}
                     />
                   </td>
-                  <td data-title={strings.table.gradeGroup}>{`${gradeGroup} ${scholarLevel}`}</td>
-                  <td data-title={strings.table.status}>{renderStatusPill(student, isActive)}</td>
-                  <td data-title={strings.table.actions} className="table__actions-cell">
+                  <td data-title={tableStrings.gradeGroup}>{`${gradeGroup} ${scholarLevel}`}</td>
+                  <td data-title={tableStrings.status}>{renderStatusPill(student, isActive)}</td>
+                  <td data-title={tableStrings.actions} className="table__actions-cell">
                     <div className="table__actions">
                       <EditRecordButton
                         type="button"
@@ -1788,7 +1791,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                         size="icon"
                         className="table__icon-button"
                         onClick={() => handleEditStudent(student)}
-                        aria-label={`${strings.actions.edit} ${fullName || strings.table.unknownStudent}`}
+                        aria-label={`${strings.actions.edit} ${fullName || tableStrings.unknownStudent}`}
                       />
                       <label
                         className={`table__switch ${isStatusPending ? 'is-disabled' : ''}`}
@@ -1799,7 +1802,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
                           checked={isActive}
                           onChange={() => handleToggleStudentStatus(student, !isActive)}
                           disabled={isStatusPending}
-                          aria-label={`${switchActionLabel} ${fullName || strings.table.unknownStudent}`}
+                          aria-label={`${switchActionLabel} ${fullName || tableStrings.unknownStudent}`}
                         />
                         <span className="table__switch-track">
                           <span className="table__switch-thumb" />
@@ -1849,16 +1852,16 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               );
             }}
             loading={isStudentsLoading}
-            loadingMessage={strings.table.loading}
-            error={studentsError ? `${strings.table.error}: ${studentsError}` : null}
-            emptyMessage={strings.table.empty}
+            loadingMessage={tableStrings.loading}
+            error={studentsError ? `${tableStrings.error}: ${studentsError}` : null}
+            emptyMessage={tableStrings.empty}
             pagination={{
               currentPage: activePage,
               pageSize: studentLimit,
               totalItems: totalStudents,
               onPageChange: handleStudentPageChange,
-              previousLabel: '←',
-              nextLabel: '→',
+              previousLabel: tablePaginationStrings.previous ?? '←',
+              nextLabel: tablePaginationStrings.next ?? '→',
               summary: studentSummary,
             }}
           />
