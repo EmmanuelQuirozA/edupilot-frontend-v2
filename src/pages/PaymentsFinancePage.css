@@ -155,10 +155,17 @@
 }
 
 .payments-page__sortable {
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  background: none;
+	color: inherit;
+	border: none;
+	padding: 0;
+	font: inherit;
+	cursor: pointer;
+	outline: inherit;
+
 }
 
 .payments-page__sortable svg {

@@ -411,3 +411,6 @@ button.nav-link.global-tabs__link {
   font-size: 0.95rem;
 }
 
+.modal.fade.show.d-block{
+  backdrop-filter: blur(3px);
+}

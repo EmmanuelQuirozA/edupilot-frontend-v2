@@ -781,7 +781,7 @@ const PaymentsFinancePage = ({
         tabs={tabs}
         activeKey={activeTab}
         onSelect={setActiveTab}
-        navClassName="tabs"
+        navClassName="tabs nav-pills flex-wrap gap-2"
         actionsClassName="payments-page__actions"
         renderActions={({ activeKey }) =>
           activeKey === 'tuition' ? (

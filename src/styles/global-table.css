@@ -34,12 +34,6 @@
   font-size: 0.9rem;
 }
 
-.global-table__pagination .page-link {
-  border-radius: 999px;
-  min-width: 2.4rem;
-  text-align: center;
-}
-
 @media (max-width: 768px) {
   .global-table__table thead {
     display: none;

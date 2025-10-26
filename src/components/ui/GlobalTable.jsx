@@ -174,9 +174,9 @@ const GlobalTable = ({
     };
 
     return (
-      <div className="global-table__footer d-flex flex-column flex-lg-row gap-3 align-lg-center justify-content-between mt-4">
+      <div className="py-2 px-4 d-flex flex-column flex-lg-row align-lg-center justify-content-between">
         <div className="global-table__summary text-muted">{summaryContent}</div>
-        <nav aria-label="Paginación de tabla" className="global-table__pagination">
+        <nav aria-label="Table pagination">
           <ul className="pagination justify-content-lg-end mb-0">
             <li className={`page-item ${safePage <= 1 ? 'disabled' : ''}`}>
               <button

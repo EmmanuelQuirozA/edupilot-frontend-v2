@@ -1678,7 +1678,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       </header>
 
       <Tabs
-        navClassName="nav-pills flex-wrap gap-2"
+        navClassName="tabs nav-pills flex-wrap gap-2"
         actionsClassName="d-flex align-items-center gap-2 flex-wrap"
         tabs={[
           { key: 'students', label: strings.tabs.students },
@@ -1990,7 +1990,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         }
       >
         <form id="students-filters-form" className="row g-3" onSubmit={handleApplyFilters}>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getStudentFilterFieldId('student_id')}>
               {strings.filters.studentId}
             </label>
@@ -2002,7 +2002,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               className="form-control"
             />
           </div>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getStudentFilterFieldId('full_name')}>
               {strings.filters.fullName}
             </label>
@@ -2014,7 +2014,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               className="form-control"
             />
           </div>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getStudentFilterFieldId('payment_reference')}>
               {strings.filters.paymentReference}
             </label>
@@ -2026,7 +2026,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               className="form-control"
             />
           </div>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getStudentFilterFieldId('generation')}>
               {strings.filters.generation}
             </label>
@@ -2038,7 +2038,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               className="form-control"
             />
           </div>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getStudentFilterFieldId('grade_group')}>
               {strings.filters.gradeGroup}
             </label>
@@ -2050,7 +2050,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               className="form-control"
             />
           </div>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getStudentFilterFieldId('enabled')}>
               {strings.filters.enabled}
             </label>
