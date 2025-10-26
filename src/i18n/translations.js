@@ -290,6 +290,11 @@ export const translations = {
           unknownStudent: 'Alumno sin nombre',
           loading: 'Cargando alumnos...',
           empty: 'No se encontraron estudiantes con los filtros seleccionados.',
+          error: 'No fue posible cargar los alumnos',
+          pagination: {
+            previous: 'Anterior',
+            next: 'Siguiente',
+          },
         },
         status: {
           active: 'Activo',
@@ -851,6 +856,11 @@ export const translations = {
           unknownStudent: 'Unnamed student',
           loading: 'Loading students...',
           empty: 'No students were found for the selected filters.',
+          error: 'We could not load the students',
+          pagination: {
+            previous: 'Previous',
+            next: 'Next',
+          },
         },
         status: {
           active: 'Active',
