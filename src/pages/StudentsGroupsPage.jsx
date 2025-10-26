@@ -11,6 +11,7 @@ import Tabs from '../components/ui/Tabs.jsx';
 import SearchInput from '../components/ui/SearchInput.jsx';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
 import SidebarModal from '../components/ui/SidebarModal.jsx';
+import StudentInfo from '../components/ui/StudentInfo.jsx';
 
 const DEFAULT_PAGINATION = { offset: 0, limit: 10 };
 
@@ -1753,12 +1754,6 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               const fullName =
                 student.full_name ??
                 [student.first_name, student.last_name_father, student.last_name_mother].filter(Boolean).join(' ');
-              const initials = fullName
-                .split(' ')
-                .filter(Boolean)
-                .map((part) => part.charAt(0).toUpperCase())
-                .slice(0, 2)
-                .join('');
               const gradeGroup = student.grade_group ?? student.group ?? strings.table.noGroup;
               const scholarLevel = student.scholar_level_name ?? strings.table.noGroup;
               const registerId = student.register_id ?? student.registration_id ?? '—';
@@ -1775,20 +1770,13 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               return (
                 <tr key={studentId}>
                   <td data-title={strings.table.student} className="table__student">
-                    <div className="table__student-wrapper">
-                      <span className="table__avatar" aria-hidden="true">
-                        {initials || '??'}
-                      </span>
-                      <div className="table__student-info">
-                        <button type="button" onClick={() => handleStudentDetailNavigation(student, fullName)}>
-                          {fullName || strings.table.unknownStudent}
-                        </button>
-                        <span className="table__student-meta">
-                          {strings.table.registrationIdLabel}
-                          <strong>{registerId}</strong>
-                        </span>
-                      </div>
-                    </div>
+                    <StudentInfo
+                      name={fullName}
+                      fallbackName={strings.table.unknownStudent}
+                      metaLabel={strings.table.registrationIdLabel}
+                      metaValue={registerId}
+                      onClick={() => handleStudentDetailNavigation(student, fullName)}
+                    />
                   </td>
                   <td data-title={strings.table.gradeGroup}>{`${gradeGroup} ${scholarLevel}`}</td>
                   <td data-title={strings.table.status}>{renderStatusPill(student, isActive)}</td>

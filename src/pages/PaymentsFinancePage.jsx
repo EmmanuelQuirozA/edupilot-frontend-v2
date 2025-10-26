@@ -9,6 +9,7 @@ import Tabs from '../components/ui/Tabs.jsx';
 import SearchInput from '../components/ui/SearchInput.jsx';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
 import SidebarModal from '../components/ui/SidebarModal.jsx';
+import StudentInfo from '../components/ui/StudentInfo.jsx';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import './PaymentsFinancePage.css';
@@ -864,26 +865,23 @@ const PaymentsFinancePage = ({
                   const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
                   const canNavigateToStudent = Boolean(studentId);
                   const studentIdLabel = tableStrings.studentIdLabel;
+                  const studentName = row.student ?? tableStrings.studentFallback;
+                  const studentMetaValue = row.payment_reference ?? '';
 
                   return (
                     <tr key={rowKey}>
                       <td
                         data-title={tableStrings.columns.student}
-                        className="page__student-cell"
                       >
-                        <ActionButton
-                          variant="text"
+                        <StudentInfo
+                          name={row.student}
+                          fallbackName={tableStrings.studentFallback}
+                          metaLabel={studentMetaValue ? studentIdLabel : undefined}
+                          metaValue={studentMetaValue}
                           onClick={() => handleStudentDetailClick(row)}
                           disabled={!canNavigateToStudent}
-                          className="page__student-button"
-                        >
-                          {row.student ?? tableStrings.studentFallback}
-                        </ActionButton>
-                        {row.payment_reference ? (
-                          <span className="page__student-id">
-                            {`${studentIdLabel}: ${row.payment_reference}`}
-                          </span>
-                        ) : null}
+                          nameButtonProps={{ 'aria-label': studentName }}
+                        />
                       </td>
                       <td data-title={tableStrings.columns.class}>{row.class ?? '--'}</td>
                       <td data-title={tableStrings.columns.generation}>{row.generation ?? '--'}</td>
@@ -933,83 +931,83 @@ const PaymentsFinancePage = ({
         onClose={() => setShowFilters(false)}
         title={filterStrings.title}
         description={filterStrings.subtitle}
-        id="page-filters"
+        id="payments-page-filters"
         resetAction={{ label: filterStrings.reset, onClick: handleResetFilters }}
-        bodyClassName="page__filters-body"
+        bodyClassName="filters-sidebar__body"
       >
-        <form className="page__filters-form">
-          <div className="page__field">
-            <label htmlFor="filter-student" className="page__label">
+        <form className="filters-sidebar__form">
+          <div className="filters-sidebar__field">
+            <label htmlFor="filter-student" className="filters-sidebar__label">
               {filterStrings.fields.student.label}
             </label>
             <input
               id="filter-student"
               type="text"
-              className="page__input"
+              className="filters-sidebar__input"
               value={filters.student_full_name}
               onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
               placeholder={filterStrings.fields.student.placeholder}
             />
           </div>
-          <div className="page__field">
-            <label htmlFor="filter-reference" className="page__label">
+          <div className="filters-sidebar__field">
+            <label htmlFor="filter-reference" className="filters-sidebar__label">
               {filterStrings.fields.reference.label}
             </label>
             <input
               id="filter-reference"
               type="text"
-              className="page__input"
+              className="filters-sidebar__input"
               value={filters.payment_reference}
               onChange={(event) => handleFilterChange('payment_reference', event.target.value)}
               placeholder={filterStrings.fields.reference.placeholder}
             />
           </div>
-          <div className="page__field">
-            <label htmlFor="filter-generation" className="page__label">
+          <div className="filters-sidebar__field">
+            <label htmlFor="filter-generation" className="filters-sidebar__label">
               {filterStrings.fields.generation.label}
             </label>
             <input
               id="filter-generation"
               type="text"
-              className="page__input"
+              className="filters-sidebar__input"
               value={filters.generation}
               onChange={(event) => handleFilterChange('generation', event.target.value)}
               placeholder={filterStrings.fields.generation.placeholder}
             />
           </div>
-          <div className="page__field">
-            <label htmlFor="filter-grade" className="page__label">
+          <div className="filters-sidebar__field">
+            <label htmlFor="filter-grade" className="filters-sidebar__label">
               {filterStrings.fields.gradeGroup.label}
             </label>
             <input
               id="filter-grade"
               type="text"
-              className="page__input"
+              className="filters-sidebar__input"
               value={filters.grade_group}
               onChange={(event) => handleFilterChange('grade_group', event.target.value)}
               placeholder={filterStrings.fields.gradeGroup.placeholder}
             />
           </div>
-          <div className="page__field">
-            <label htmlFor="filter-scholar" className="page__label">
+          <div className="filters-sidebar__field">
+            <label htmlFor="filter-scholar" className="filters-sidebar__label">
               {filterStrings.fields.scholarLevel.label}
             </label>
             <input
               id="filter-scholar"
               type="text"
-              className="page__input"
+              className="filters-sidebar__input"
               value={filters.scholar_level}
               onChange={(event) => handleFilterChange('scholar_level', event.target.value)}
               placeholder={filterStrings.fields.scholarLevel.placeholder}
             />
           </div>
-          <div className="page__field">
-            <label htmlFor="filter-school" className="page__label">
+          <div className="filters-sidebar__field">
+            <label htmlFor="filter-school" className="filters-sidebar__label">
               {filterStrings.fields.school.label}
             </label>
             <select
               id="filter-school"
-              className="page__select"
+              className="filters-sidebar__select"
               value={filters.school_id}
               onChange={(event) => handleFilterChange('school_id', event.target.value)}
               disabled={isLoadingSchools}
@@ -1022,7 +1020,7 @@ const PaymentsFinancePage = ({
               ))}
             </select>
           </div>
-          <label className="page__checkbox">
+          <label className="filters-sidebar__checkbox">
             <input
               type="checkbox"
               checked={filters.group_status === 'true'}
@@ -1030,7 +1028,7 @@ const PaymentsFinancePage = ({
             />
             {filterStrings.toggles.activeGroups}
           </label>
-          <label className="page__checkbox">
+          <label className="filters-sidebar__checkbox">
             <input
               type="checkbox"
               checked={filters.user_status === 'true'}
