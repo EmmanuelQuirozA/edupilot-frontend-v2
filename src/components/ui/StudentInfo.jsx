@@ -28,7 +28,7 @@ const StudentInfo = ({
   const hasName = typeof name === 'string' && name.trim() !== '';
   const displayName = hasName ? name.trim() : fallbackName;
   const computedInitials = getInitials(hasName ? name : '');
-  const avatarContent = avatarText ?? computedInitials || avatarFallback;
+  const avatarContent = (avatarText ?? computedInitials) || avatarFallback;
   const wrapperClassName = ['table__student-wrapper', className].filter(Boolean).join(' ');
   const { className: ignoredClassName, type, disabled: customDisabled, ...restButtonProps } =
     nameButtonProps;
