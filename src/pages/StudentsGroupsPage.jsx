@@ -2091,7 +2091,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         }
       >
         <form id="groups-filters-form" className="row g-3" onSubmit={handleApplyGroupFilters}>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getGroupFilterFieldId('group_id')}>
               {strings.groupsView.filters.groupId}
             </label>
@@ -2103,7 +2103,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               className="form-control"
             />
           </div>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getGroupFilterFieldId('generation')}>
               {strings.groupsView.filters.generation}
             </label>
@@ -2115,7 +2115,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               className="form-control"
             />
           </div>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getGroupFilterFieldId('grade_group')}>
               {strings.groupsView.filters.gradeGroup}
             </label>
@@ -2127,7 +2127,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               className="form-control"
             />
           </div>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getGroupFilterFieldId('scholar_level_name')}>
               {strings.groupsView.filters.scholarLevel}
             </label>
@@ -2139,7 +2139,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
               className="form-control"
             />
           </div>
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <label className="form-label" htmlFor={getGroupFilterFieldId('enabled')}>
               {strings.groupsView.filters.enabled}
             </label>
