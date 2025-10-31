@@ -261,6 +261,12 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.dashboard__actions > * {
+  flex-shrink: 0;
 }
 
 .dashboard__search {
