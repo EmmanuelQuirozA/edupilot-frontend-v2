@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import { handleExpiredToken } from '../utils/auth';
 import './StudentDetailPage.css';
 
 const extractStudentDetail = (payload) => {
@@ -23,7 +24,7 @@ const StudentDetailPage = ({
   onBreadcrumbChange,
   onNavigateToStudents,
 }) => {
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
   const [status, setStatus] = useState('idle');
   const [student, setStudent] = useState(null);
   const [error, setError] = useState('');
@@ -69,6 +70,7 @@ const StudentDetailPage = ({
         );
 
         if (!response.ok) {
+          handleExpiredToken(response, logout);
           throw new Error('Failed to load student detail');
         }
 
@@ -114,7 +116,7 @@ const StudentDetailPage = ({
       isCancelled = true;
       controller.abort();
     };
-  }, [breadcrumbFallback, errorLabel, language, onBreadcrumbChange, studentId, token]);
+  }, [breadcrumbFallback, errorLabel, language, logout, onBreadcrumbChange, studentId, token]);
 
   const initials = useMemo(() => {
     if (!student) {

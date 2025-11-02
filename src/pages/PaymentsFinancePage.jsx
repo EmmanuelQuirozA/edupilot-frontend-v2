@@ -12,6 +12,7 @@ import SidebarModal from '../components/ui/SidebarModal.jsx';
 import StudentInfo from '../components/ui/StudentInfo.jsx';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import { handleExpiredToken } from '../utils/auth';
 import './PaymentsFinancePage.css';
 
 const DEFAULT_LIMIT = 10;
@@ -176,7 +177,7 @@ const PaymentsFinancePage = ({
   strings = {},
   onStudentDetail,
 }) => {
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
 
   const normalizedLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : 'es';
   const locale = getLocaleFromLanguage(normalizedLanguage);
@@ -519,6 +520,7 @@ const PaymentsFinancePage = ({
       });
 
       if (!response.ok) {
+        handleExpiredToken(response, logout);
         throw new Error(tableStrings.error);
       }
 
@@ -536,7 +538,7 @@ const PaymentsFinancePage = ({
     } finally {
       setLoading(false);
     }
-  }, [activeTab, appliedFilters, tableStrings.error, tableStrings.unknownError, token]);
+  }, [activeTab, appliedFilters, logout, tableStrings.error, tableStrings.unknownError, token]);
 
   useEffect(() => {
     fetchPayments();
@@ -557,6 +559,7 @@ const PaymentsFinancePage = ({
       );
 
       if (!response.ok) {
+        handleExpiredToken(response, logout);
         throw new Error(errorStrings.loadSchools);
       }
 
@@ -571,7 +574,13 @@ const PaymentsFinancePage = ({
     } finally {
       setIsLoadingSchools(false);
     }
-  }, [errorStrings.loadSchools, normalizedLanguage, toastStrings.loadSchoolsError, token]);
+  }, [
+    errorStrings.loadSchools,
+    logout,
+    normalizedLanguage,
+    toastStrings.loadSchoolsError,
+    token,
+  ]);
 
   useEffect(() => {
     fetchSchools();
@@ -683,6 +692,7 @@ const PaymentsFinancePage = ({
       });
 
       if (!response.ok) {
+        handleExpiredToken(response, logout);
         throw new Error(errorStrings.export);
       }
 
@@ -748,6 +758,7 @@ const PaymentsFinancePage = ({
     buildCsvRow,
     csvStrings,
     errorStrings.export,
+    logout,
     toastStrings.exportEmpty,
     toastStrings.exportError,
     toastStrings.exportSuccess,

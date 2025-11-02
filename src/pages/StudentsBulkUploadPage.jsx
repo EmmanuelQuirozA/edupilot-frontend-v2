@@ -4,6 +4,7 @@ import ActionButton from '../components/ui/ActionButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
+import { handleExpiredToken } from '../utils/auth';
 import './StudentsBulkUploadPage.css';
 
 const CSV_COLUMN_KEYS = [
@@ -295,7 +296,7 @@ const ConfirmationDialog = ({ open, title, message, confirmLabel, cancelLabel, o
 };
 
 const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack }) => {
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
   const [schoolOptions, setSchoolOptions] = useState([]);
   const [groupOptions, setGroupOptions] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState('');
@@ -494,6 +495,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
           });
 
           if (!response.ok) {
+            handleExpiredToken(response, logout);
             throw new Error('Validation request failed');
           }
 
@@ -515,7 +517,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
 
       duplicateTimersRef.current.set(rowId, timerId);
     },
-    [token, updateRowWithDuplicateResult],
+    [logout, token, updateRowWithDuplicateResult],
   );
 
   const handleSchoolChange = useCallback(
@@ -547,6 +549,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
       });
 
       if (!response.ok) {
+        handleExpiredToken(response, logout);
         throw new Error('Failed to load schools');
       }
 
@@ -566,7 +569,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
     } finally {
       setIsLoadingSchools(false);
     }
-  }, [language, selectedSchool, strings.notifications?.parseError, token]);
+  }, [language, logout, selectedSchool, strings.notifications?.parseError, token]);
 
   const fetchGroups = useCallback(
     async (schoolId) => {
@@ -589,6 +592,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
         );
 
         if (!response.ok) {
+          handleExpiredToken(response, logout);
           throw new Error('Failed to load groups');
         }
 
@@ -630,7 +634,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
         setIsLoadingGroups(false);
       }
     },
-    [language, strings.notifications?.parseError, token],
+    [language, logout, strings.notifications?.parseError, token],
   );
 
   useEffect(() => {
@@ -745,6 +749,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
             });
 
             if (!response.ok) {
+              handleExpiredToken(response, logout);
               throw new Error('Validation request failed');
             }
 
@@ -784,7 +789,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
       setRows(finalRows);
       setIsValidating(false);
     },
-    [getDuplicateMessage, getFieldLabel, groupOptions, strings.validation, token],
+    [getDuplicateMessage, getFieldLabel, groupOptions, logout, strings.validation, token],
   );
 
   const scheduleValidation = useCallback(() => {
@@ -1007,6 +1012,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
       });
 
       if (!response.ok) {
+        handleExpiredToken(response, logout);
         throw new Error('Failed to download template');
       }
 
@@ -1016,7 +1022,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
       console.error('Download template error', error);
       setAlert({ type: 'error', message: strings.notifications?.downloadError ?? 'No fue posible descargar el formato.' });
     }
-  }, [strings.notifications?.downloadError, token]);
+  }, [logout, strings.notifications?.downloadError, token]);
 
   const handleDownloadReport = useCallback(() => {
     if (!rows.length) {
@@ -1048,6 +1054,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
         });
 
         if (!response.ok) {
+          handleExpiredToken(response, logout);
           throw new Error('Failed to create students');
         }
 
@@ -1065,6 +1072,7 @@ const StudentsBulkUploadPage = ({ language = 'es', strings = {}, onNavigateBack 
     },
     [
       handleClearFile,
+      logout,
       selectedSchool,
       strings.notifications?.createError,
       strings.notifications?.createSuccess,
