@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import { handleExpiredToken } from '../utils/auth';
 import GlobalToast from '../components/GlobalToast.jsx';
 import ActionButton from '../components/ui/ActionButton.jsx';
 import AddRecordButton from '../components/ui/buttons/AddRecordButton.jsx';
@@ -262,7 +263,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   const [isStudentsLoading, setIsStudentsLoading] = useState(false);
   const [studentsError, setStudentsError] = useState('');
 
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
   const [filters, setFilters] = useState(createInitialFilters);
   const [appliedFilters, setAppliedFilters] = useState(createInitialFilters);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -388,6 +389,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       });
 
       if (!response.ok) {
+        handleExpiredToken(response, logout);
         throw new Error('Failed to load students');
       }
 
@@ -409,7 +411,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     return () => {
       controller.abort();
     };
-  }, [appliedFilters, language, pagination.limit, pagination.offset, token]);
+  }, [appliedFilters, language, logout, pagination.limit, pagination.offset, token]);
 
   const fetchGroups = useCallback(async () => {
     setIsGroupsLoading(true);
@@ -448,6 +450,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       });
 
       if (!response.ok) {
+        handleExpiredToken(response, logout);
         throw new Error('Failed to load groups');
       }
 
@@ -469,7 +472,14 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
     return () => {
       controller.abort();
     };
-  }, [appliedGroupFilters, groupPagination.limit, groupPagination.offset, language, token]);
+  }, [
+    appliedGroupFilters,
+    groupPagination.limit,
+    groupPagination.offset,
+    language,
+    logout,
+    token,
+  ]);
 
   useEffect(() => {
     const abort = fetchStudents();
@@ -597,6 +607,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         );
 
         if (!response.ok) {
+          handleExpiredToken(response, logout);
           throw new Error('Failed to load classes');
         }
 
@@ -623,7 +634,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         setStudentForm((previous) => ({ ...previous, group_id: '' }));
       }
     },
-    [language, token],
+    [language, logout, token],
   );
 
   const fetchSchools = useCallback(
@@ -638,6 +649,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         });
 
         if (!response.ok) {
+          handleExpiredToken(response, logout);
           throw new Error('Failed to load schools');
         }
 
@@ -680,7 +692,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         throw error;
       }
     },
-    [fetchClasses, language, token],
+    [fetchClasses, language, logout, token],
   );
 
   const fetchGroupSchoolOptions = useCallback(
@@ -695,6 +707,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         });
 
         if (!response.ok) {
+          handleExpiredToken(response, logout);
           throw new Error('Failed to load group schools');
         }
 
@@ -730,7 +743,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         throw error;
       }
     },
-    [language, token],
+    [language, logout, token],
   );
 
   const fetchScholarLevels = useCallback(
@@ -748,6 +761,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         );
 
         if (!response.ok) {
+          handleExpiredToken(response, logout);
           throw new Error('Failed to load scholar levels');
         }
 
@@ -783,7 +797,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         throw error;
       }
     },
-    [language, token],
+    [language, logout, token],
   );
 
   const fetchStudentDetail = useCallback(
@@ -804,6 +818,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       );
 
       if (!response.ok) {
+        handleExpiredToken(response, logout);
         throw new Error('Failed to load student details');
       }
 
@@ -836,7 +851,7 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
 
       return detailCandidate;
     },
-    [language, token],
+    [language, logout, token],
   );
 
   const mapDetailToForm = useCallback((detail) => {
@@ -984,8 +999,12 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
           },
         );
 
+        if (!response.ok) {
+          handleExpiredToken(response, logout);
+        }
+
         const payload = await response.json();
-        if (!payload?.success) {
+        if (!response.ok || !payload?.success) {
           const feedbackMessage = payload?.message || strings.form.editError;
           setFormFeedback(feedbackMessage);
           showGlobalAlert('error', feedbackMessage);
@@ -1007,8 +1026,12 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
           body: JSON.stringify(createPayload),
         });
 
+        if (!response.ok) {
+          handleExpiredToken(response, logout);
+        }
+
         const payload = await response.json();
-        if (!payload?.success) {
+        if (!response.ok || !payload?.success) {
           const feedbackMessage = payload?.message || strings.form.error;
           setFormFeedback(feedbackMessage);
           showGlobalAlert('error', feedbackMessage);
@@ -1141,8 +1164,12 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         },
       );
 
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+      }
+
       const payload = await response.json();
-      if (!payload?.success) {
+      if (!response.ok || !payload?.success) {
         const errorMessage =
           payload?.message || strings.actions.statusError || strings.actions.disableError;
         showGlobalAlert('error', errorMessage);
@@ -1313,6 +1340,10 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
         });
       }
 
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+      }
+
       const payload = await response.json();
 
       if (!response.ok || payload?.success === false) {
@@ -1418,6 +1449,10 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
           body: JSON.stringify({ enabled: shouldEnable }),
         },
       );
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+      }
 
       const payload = await response.json();
 
