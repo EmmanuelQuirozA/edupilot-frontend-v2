@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import SidebarModal from '../ui/SidebarModal.jsx';
 import ActionButton from '../ui/ActionButton.jsx';
 import { API_BASE_URL } from '../../config.js';
 import { handleExpiredToken } from '../../utils/auth.js';
@@ -175,6 +174,28 @@ const AddPaymentModal = ({
     setStudentsError('');
     setIsStudentDropdownOpen(false);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (!isOpen || !isStudentDropdownOpen) {
@@ -584,198 +605,222 @@ const AddPaymentModal = ({
     return metaParts.join(' • ');
   };
 
+  const modalTitleId = 'add-payment-modal-title';
+  const modalDescriptionId = 'add-payment-modal-description';
+
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <SidebarModal
-      isOpen={isOpen}
-      onClose={resetAndClose}
-      title={mergedStrings.title}
-      description={mergedStrings.description}
-      size="lg"
-      bodyClassName="add-payment-modal__body"
-      id="add-payment-modal"
-      footer={
-        <div className="add-payment-modal__footer">
-          <ActionButton type="button" variant="text" onClick={resetAndClose} disabled={isSubmitting}>
-            {mergedStrings.cancel}
-          </ActionButton>
-          <ActionButton
-            type="submit"
-            form="add-payment-form"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? mergedStrings.submitting : mergedStrings.submit}
-          </ActionButton>
-        </div>
-      }
-    >
-      <form id="add-payment-form" className="add-payment-form" onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label className="form-label" htmlFor="add-payment-student">
-            {mergedStrings.studentLabel}
-          </label>
-          <div className="student-search" ref={dropdownRef}>
-            <button
-              type="button"
-              id="add-payment-student"
-              className={`student-search__toggle ${selectedStudent ? '' : 'is-placeholder'}`}
-              onClick={handleStudentToggle}
-              aria-expanded={isStudentDropdownOpen}
-            >
-              {studentSummary}
-            </button>
-            {isStudentDropdownOpen ? (
-              <div className="student-search__dropdown">
-                <div className="student-search__search">
-                  <input
-                    type="text"
-                    value={studentSearchTerm}
-                    onChange={handleStudentSearchChange}
-                    placeholder={mergedStrings.studentPlaceholder}
-                    autoFocus
-                  />
-                </div>
-                <div className="student-search__options">
-                  {isLoadingStudents ? (
-                    <div className="student-search__status">{mergedStrings.studentLoading}</div>
-                  ) : studentsError ? (
-                    <div className="student-search__status student-search__status--error">
-                      {studentsError}
-                    </div>
-                  ) : studentOptions.length === 0 ? (
-                    <div className="student-search__status">{mergedStrings.studentNoResults}</div>
-                  ) : (
-                    studentOptions.map((option) => {
-                      const meta = renderStudentMeta(option);
-                      return (
-                        <button
-                          type="button"
-                          key={option.id}
-                          className="student-search__option"
-                          onClick={() => handleSelectStudent(option)}
-                        >
-                          <span className="student-search__option-name">{option.fullName}</span>
-                          {meta ? <span className="student-search__option-meta">{meta}</span> : null}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
+    <>
+      <div className="modal-backdrop fade show" onClick={resetAndClose} />
+      <div
+        className="modal fade show d-block"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={modalTitleId}
+        aria-describedby={modalDescriptionId}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            resetAndClose();
+          }
+        }}
+      >
+        <div className="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered">
+          <form id="add-payment-form" className="modal-content border-0 shadow" onSubmit={handleSubmit}>
+            <div className="modal-header">
+              <div>
+                <h2 id={modalTitleId} className="modal-title h4 mb-1">
+                  {mergedStrings.title}
+                </h2>
+                <p id={modalDescriptionId} className="text-muted mb-0">
+                  {mergedStrings.description}
+                </p>
               </div>
-            ) : null}
-            {selectedStudent
-              ? (() => {
-                  const meta = renderStudentMeta(selectedStudent);
-                  return meta ? (
-                    <p className="student-search__selected-meta">{meta}</p>
-                  ) : null;
-                })()
-              : null}
-          </div>
-        </div>
+              <button type="button" className="btn-close" onClick={resetAndClose} aria-label={mergedStrings.cancel} />
+            </div>
+            <div className="modal-body add-payment-modal__body">
+              <div className="add-payment-form">
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="add-payment-student">
+                    {mergedStrings.studentLabel}
+                  </label>
+                  <div className="student-search" ref={dropdownRef}>
+                    <button
+                      type="button"
+                      id="add-payment-student"
+                      className={`student-search__toggle ${selectedStudent ? '' : 'is-placeholder'}`}
+                      onClick={handleStudentToggle}
+                      aria-expanded={isStudentDropdownOpen}
+                    >
+                      {studentSummary}
+                    </button>
+                    {isStudentDropdownOpen ? (
+                      <div className="student-search__dropdown">
+                        <div className="student-search__search">
+                          <input
+                            type="text"
+                            value={studentSearchTerm}
+                            onChange={handleStudentSearchChange}
+                            placeholder={mergedStrings.studentPlaceholder}
+                            autoFocus
+                          />
+                        </div>
+                        <div className="student-search__options">
+                          {isLoadingStudents ? (
+                            <div className="student-search__status">{mergedStrings.studentLoading}</div>
+                          ) : studentsError ? (
+                            <div className="student-search__status student-search__status--error">
+                              {studentsError}
+                            </div>
+                          ) : studentOptions.length === 0 ? (
+                            <div className="student-search__status">{mergedStrings.studentNoResults}</div>
+                          ) : (
+                            studentOptions.map((option) => {
+                              const meta = renderStudentMeta(option);
+                              return (
+                                <button
+                                  type="button"
+                                  key={option.id}
+                                  className="student-search__option"
+                                  onClick={() => handleSelectStudent(option)}
+                                >
+                                  <span className="student-search__option-name">{option.fullName}</span>
+                                  {meta ? <span className="student-search__option-meta">{meta}</span> : null}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+                    {selectedStudent
+                      ? (() => {
+                          const meta = renderStudentMeta(selectedStudent);
+                          return meta ? (
+                            <p className="student-search__selected-meta">{meta}</p>
+                          ) : null;
+                        })()
+                      : null}
+                  </div>
+                </div>
 
-        <div className="row g-3">
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="add-payment-concept">
-              {mergedStrings.conceptLabel}
-            </label>
-            <select
-              id="add-payment-concept"
-              name="paymentConceptId"
-              className="form-select"
-              value={formValues.paymentConceptId}
-              onChange={handleFieldChange}
-            >
-              <option value="">
-                {isLoadingConcepts ? mergedStrings.conceptLoading : mergedStrings.conceptPlaceholder}
-              </option>
-              {conceptOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="add-payment-through">
-              {mergedStrings.throughLabel}
-            </label>
-            <select
-              id="add-payment-through"
-              name="paymentThroughId"
-              className="form-select"
-              value={formValues.paymentThroughId}
-              onChange={handleFieldChange}
-            >
-              <option value="">
-                {isLoadingThrough ? mergedStrings.throughLoading : mergedStrings.throughPlaceholder}
-              </option>
-              {throughOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="add-payment-month">
-              {mergedStrings.monthLabel}
-            </label>
-            <input
-              type="month"
-              id="add-payment-month"
-              name="paymentMonth"
-              className="form-control"
-              value={formValues.paymentMonth}
-              onChange={handleFieldChange}
-            />
-          </div>
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="add-payment-amount">
-              {mergedStrings.amountLabel}
-            </label>
-            <input
-              type="text"
-              inputMode="decimal"
-              id="add-payment-amount"
-              name="amount"
-              className="form-control"
-              value={formValues.amount}
-              onChange={handleAmountChange}
-              placeholder="0.00"
-            />
-          </div>
-          <div className="col-12">
-            <label className="form-label" htmlFor="add-payment-comments">
-              {mergedStrings.commentsLabel}
-            </label>
-            <textarea
-              id="add-payment-comments"
-              name="comments"
-              className="form-control"
-              rows={3}
-              value={formValues.comments}
-              onChange={handleFieldChange}
-            />
-          </div>
-          <div className="col-12">
-            <label className="form-label" htmlFor="add-payment-receipt">
-              {mergedStrings.receiptLabel}
-              <span className="text-muted ms-2">{mergedStrings.receiptOptional}</span>
-            </label>
-            <input
-              type="file"
-              id="add-payment-receipt"
-              className="form-control"
-              accept="application/pdf"
-              onChange={handleReceiptChange}
-            />
-            {fileError ? <p className="add-payment-form__error">{fileError}</p> : null}
-          </div>
-        </div>
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label" htmlFor="add-payment-concept">
+                      {mergedStrings.conceptLabel}
+                    </label>
+                    <select
+                      id="add-payment-concept"
+                      name="paymentConceptId"
+                      className="form-select"
+                      value={formValues.paymentConceptId}
+                      onChange={handleFieldChange}
+                    >
+                      <option value="">
+                        {isLoadingConcepts ? mergedStrings.conceptLoading : mergedStrings.conceptPlaceholder}
+                      </option>
+                      {conceptOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label" htmlFor="add-payment-through">
+                      {mergedStrings.throughLabel}
+                    </label>
+                    <select
+                      id="add-payment-through"
+                      name="paymentThroughId"
+                      className="form-select"
+                      value={formValues.paymentThroughId}
+                      onChange={handleFieldChange}
+                    >
+                      <option value="">
+                        {isLoadingThrough ? mergedStrings.throughLoading : mergedStrings.throughPlaceholder}
+                      </option>
+                      {throughOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label" htmlFor="add-payment-month">
+                      {mergedStrings.monthLabel}
+                    </label>
+                    <input
+                      type="month"
+                      id="add-payment-month"
+                      name="paymentMonth"
+                      className="form-control"
+                      value={formValues.paymentMonth}
+                      onChange={handleFieldChange}
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label" htmlFor="add-payment-amount">
+                      {mergedStrings.amountLabel}
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      id="add-payment-amount"
+                      name="amount"
+                      className="form-control"
+                      value={formValues.amount}
+                      onChange={handleAmountChange}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label" htmlFor="add-payment-comments">
+                      {mergedStrings.commentsLabel}
+                    </label>
+                    <textarea
+                      id="add-payment-comments"
+                      name="comments"
+                      className="form-control"
+                      rows={3}
+                      value={formValues.comments}
+                      onChange={handleFieldChange}
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label" htmlFor="add-payment-receipt">
+                      {mergedStrings.receiptLabel}
+                      <span className="text-muted ms-2">{mergedStrings.receiptOptional}</span>
+                    </label>
+                    <input
+                      type="file"
+                      id="add-payment-receipt"
+                      className="form-control"
+                      accept="application/pdf"
+                      onChange={handleReceiptChange}
+                    />
+                    {fileError ? <p className="add-payment-form__error">{fileError}</p> : null}
+                  </div>
+                </div>
 
-        {formError ? <p className="add-payment-form__error">{formError}</p> : null}
-      </form>
-    </SidebarModal>
+                {formError ? <p className="add-payment-form__error">{formError}</p> : null}
+              </div>
+            </div>
+            <div className="modal-footer add-payment-modal__footer">
+              <ActionButton type="button" variant="text" onClick={resetAndClose} disabled={isSubmitting}>
+                {mergedStrings.cancel}
+              </ActionButton>
+              <ActionButton type="submit" disabled={isSubmitting}>
+                {isSubmitting ? mergedStrings.submitting : mergedStrings.submit}
+              </ActionButton>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>
   );
 };
 
