@@ -9,6 +9,7 @@ import SearchInput from '../components/ui/SearchInput.jsx';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
 import SidebarModal from '../components/ui/SidebarModal.jsx';
 import StudentInfo from '../components/ui/StudentInfo.jsx';
+import AddPaymentModal from '../components/payments/AddPaymentModal.jsx';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { handleExpiredToken } from '../utils/auth';
@@ -180,6 +181,34 @@ const DEFAULT_PAYMENTS_STRINGS = {
     },
     studentIdLabel: 'Matrícula',
   },
+  addPayment: {
+    title: 'Agregar pago',
+    description: 'Registra un nuevo pago para un alumno.',
+    studentLabel: 'Estudiante',
+    studentPlaceholder: 'Buscar por nombre',
+    studentNoResults: 'No se encontraron alumnos.',
+    studentLoading: 'Buscando alumnos...',
+    studentLoadError: 'No fue posible cargar los alumnos.',
+    conceptLabel: 'Concepto de pago',
+    conceptPlaceholder: 'Selecciona un concepto',
+    conceptLoading: 'Cargando conceptos...',
+    throughLabel: 'Método de pago',
+    throughPlaceholder: 'Selecciona un método',
+    throughLoading: 'Cargando métodos de pago...',
+    monthLabel: 'Mes de pago',
+    amountLabel: 'Monto',
+    commentsLabel: 'Comentarios',
+    receiptLabel: 'Comprobante (PDF, máx. 5 MB)',
+    receiptOptional: 'Opcional',
+    receiptTypeError: 'El comprobante debe ser un archivo PDF.',
+    receiptSizeError: 'El archivo debe ser menor a 5 MB.',
+    cancel: 'Cancelar',
+    submit: 'Guardar pago',
+    submitting: 'Guardando...',
+    success: 'Pago creado correctamente.',
+    error: 'No fue posible crear el pago.',
+    requiredField: 'Completa los campos obligatorios.',
+  },
 };
 
 const SUPPORTED_LANGUAGES = ['es', 'en'];
@@ -297,6 +326,10 @@ const PaymentsFinancePage = ({
         csvOverrides.studentIdLabel ?? DEFAULT_PAYMENTS_STRINGS.csv.studentIdLabel,
     };
   }, [strings.csv]);
+  const addPaymentStrings = useMemo(
+    () => ({ ...DEFAULT_PAYMENTS_STRINGS.addPayment, ...(strings.addPayment ?? {}) }),
+    [strings.addPayment],
+  );
   const placeholderMessage = strings.placeholder ?? DEFAULT_PAYMENTS_STRINGS.placeholder;
   const searchPlaceholder =
     strings.search?.placeholder ?? DEFAULT_PAYMENTS_STRINGS.search.placeholder;
@@ -341,6 +374,7 @@ const PaymentsFinancePage = ({
   const [toast, setToast] = useState(null);
   const [isTuitionExporting, setIsTuitionExporting] = useState(false);
   const [isPaymentsExporting, setIsPaymentsExporting] = useState(false);
+  const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
 
   const tabs = useMemo(
     () => [
@@ -729,6 +763,28 @@ const PaymentsFinancePage = ({
     setShowFilters((previous) => !previous);
   }, []);
 
+  const handleOpenAddPayment = useCallback(() => {
+    setIsAddPaymentOpen(true);
+  }, []);
+
+  const handleCloseAddPayment = useCallback(() => {
+    setIsAddPaymentOpen(false);
+  }, []);
+
+  const handlePaymentCreated = useCallback(
+    (message) => {
+      const feedbackMessage = message || addPaymentStrings.success;
+      setToast({ type: 'success', message: feedbackMessage });
+
+      if (paymentsOffset !== 0) {
+        setPaymentsOffset(0);
+      } else {
+        fetchPaymentsList();
+      }
+    },
+    [addPaymentStrings.success, fetchPaymentsList, paymentsOffset],
+  );
+
   const handleResetFilters = useCallback(() => {
     setFilters({
       group_status: '',
@@ -991,6 +1047,12 @@ const PaymentsFinancePage = ({
     }
   }, [isTuitionTab, showFilters]);
 
+  useEffect(() => {
+    if (activeTab !== 'payments' && isAddPaymentOpen) {
+      setIsAddPaymentOpen(false);
+    }
+  }, [activeTab, isAddPaymentOpen]);
+
   const DebtIcon = (
     <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
       <path d="M4 5h12v2H4zm0 4h8v2H4zm0 4h5v2H4z" fill="currentColor" />
@@ -1041,6 +1103,9 @@ const PaymentsFinancePage = ({
             </>
           ) : activeKey === 'payments' ? (
             <>
+              <ActionButton type="button" onClick={handleOpenAddPayment}>
+                {actionStrings.add}
+              </ActionButton>
               <FilterButton type="button" disabled title={paymentsComingSoonLabel}>
                 {actionStrings.filter}
               </FilterButton>
@@ -1256,6 +1321,16 @@ const PaymentsFinancePage = ({
           )}
         </section>
       </div>
+
+      <AddPaymentModal
+        isOpen={isAddPaymentOpen}
+        onClose={handleCloseAddPayment}
+        token={token}
+        logout={logout}
+        language={normalizedLanguage}
+        onSuccess={handlePaymentCreated}
+        strings={addPaymentStrings}
+      />
 
       <SidebarModal
         isOpen={showFilters}
