@@ -15,6 +15,7 @@ import SidebarModal from '../components/ui/SidebarModal.jsx';
 import StudentInfo from '../components/ui/StudentInfo.jsx';
 
 const DEFAULT_PAGINATION = { offset: 0, limit: 10 };
+const DEFAULT_STUDENTS_TAB_KEY = 'students';
 
 const createInitialFilters = () => ({
   student_id: '',
@@ -254,8 +255,16 @@ const extractUserIdFromStudentDetail = (detail) => {
   return typeof validCandidate === 'number' ? String(validCandidate) : validCandidate;
 };
 
-const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, onBulkUpload }) => {
-  const [activeTab, setActiveTab] = useState('students');
+const StudentsGroupsPage = ({
+  language = 'es',
+  placeholder = {},
+  strings = {},
+  onStudentDetail,
+  onBulkUpload,
+  activeSectionKey = DEFAULT_STUDENTS_TAB_KEY,
+  onSectionChange,
+}) => {
+  const [activeTab, setActiveTab] = useState(activeSectionKey);
   const [searchValue, setSearchValue] = useState('');
   const [students, setStudents] = useState([]);
   const [totalStudents, setTotalStudents] = useState(0);
@@ -300,6 +309,37 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
   const [scholarLevelOptions, setScholarLevelOptions] = useState([]);
   const [scholarLevelSearch, setScholarLevelSearch] = useState('');
   const [pendingStatusGroupId, setPendingStatusGroupId] = useState(null);
+
+  const tabsStrings = useMemo(() => strings.tabs ?? {}, [strings.tabs]);
+  const studentTabs = useMemo(
+    () => [
+      { key: 'students', label: tabsStrings.students ?? 'Alumnos' },
+      { key: 'groups', label: tabsStrings.groups ?? 'Grupos' },
+    ],
+    [tabsStrings.groups, tabsStrings.students],
+  );
+
+  const studentTabKeys = useMemo(() => studentTabs.map((tab) => tab.key), [studentTabs]);
+
+  useEffect(() => {
+    if (!studentTabKeys.includes(activeSectionKey)) {
+      if (activeSectionKey !== DEFAULT_STUDENTS_TAB_KEY) {
+        onSectionChange?.(DEFAULT_STUDENTS_TAB_KEY, { replace: true });
+      }
+      setActiveTab(DEFAULT_STUDENTS_TAB_KEY);
+      return;
+    }
+
+    setActiveTab(activeSectionKey);
+  }, [activeSectionKey, onSectionChange, studentTabKeys]);
+
+  const handleTabChange = useCallback(
+    (key) => {
+      setActiveTab(key);
+      onSectionChange?.(key);
+    },
+    [onSectionChange],
+  );
 
   const filtersCount = useMemo(
     () =>
@@ -1719,12 +1759,9 @@ const StudentsGroupsPage = ({ language, placeholder, strings, onStudentDetail, o
       <Tabs
         navClassName="tabs nav-pills flex-wrap gap-2"
         actionsClassName="d-flex align-items-center gap-2 flex-wrap"
-        tabs={[
-          { key: 'students', label: strings.tabs.students },
-          { key: 'groups', label: strings.tabs.groups },
-        ]}
+        tabs={studentTabs}
         activeKey={activeTab}
-        onSelect={setActiveTab}
+        onSelect={handleTabChange}
         renderActions={({ activeKey }) =>
           activeKey === 'students' ? (
             <>

@@ -17,6 +17,7 @@ import './PaymentsFinancePage.css';
 
 const DEFAULT_LIMIT = 10;
 const MONTH_KEY_REGEX = /^[A-Za-z]{3}-\d{2}$/;
+const DEFAULT_PAYMENTS_TAB_KEY = 'tuition';
 
 const extractListFromPayload = (payload) => {
   if (!payload) {
@@ -220,6 +221,8 @@ const PaymentsFinancePage = ({
   language = 'es',
   strings = {},
   onStudentDetail,
+  activeSectionKey = DEFAULT_PAYMENTS_TAB_KEY,
+  onSectionChange,
 }) => {
   const { token, logout } = useAuth();
 
@@ -334,7 +337,7 @@ const PaymentsFinancePage = ({
   const searchPlaceholder =
     strings.search?.placeholder ?? DEFAULT_PAYMENTS_STRINGS.search.placeholder;
 
-  const [activeTab, setActiveTab] = useState('tuition');
+  const [activeTab, setActiveTab] = useState(activeSectionKey);
   const [filters, setFilters] = useState({
     group_status: '',
     user_status: '',
@@ -383,6 +386,28 @@ const PaymentsFinancePage = ({
       { key: 'payments', label: tabStrings.payments },
     ],
     [tabStrings.payments, tabStrings.requests, tabStrings.tuition],
+  );
+
+  const tabKeys = useMemo(() => tabs.map((tab) => tab.key), [tabs]);
+
+  useEffect(() => {
+    if (!tabKeys.includes(activeSectionKey)) {
+      if (activeSectionKey !== DEFAULT_PAYMENTS_TAB_KEY) {
+        onSectionChange?.(DEFAULT_PAYMENTS_TAB_KEY, { replace: true });
+      }
+      setActiveTab(DEFAULT_PAYMENTS_TAB_KEY);
+      return;
+    }
+
+    setActiveTab(activeSectionKey);
+  }, [activeSectionKey, onSectionChange, tabKeys]);
+
+  const handleTabSelect = useCallback(
+    (key) => {
+      setActiveTab(key);
+      onSectionChange?.(key);
+    },
+    [onSectionChange],
   );
 
   const isTuitionTab = activeTab === 'tuition';
@@ -1076,7 +1101,7 @@ const PaymentsFinancePage = ({
         className="tabs-row"
         tabs={tabs}
         activeKey={activeTab}
-        onSelect={setActiveTab}
+        onSelect={handleTabSelect}
         navClassName="tabs nav-pills flex-wrap gap-2"
         actionsClassName="payments-page__actions"
         renderActions={({ activeKey }) =>

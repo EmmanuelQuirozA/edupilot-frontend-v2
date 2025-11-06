@@ -136,8 +136,8 @@ const App = () => {
       }
 
       const nextPath =
-        resolvedSection === 'students' && detailSegments.length > 0
-          ? `/${nextLanguage}/students/${detailSegments.join('/')}`
+        detailSegments.length > 0
+          ? `/${nextLanguage}/${resolvedSection}/${detailSegments.join('/')}`
           : buildPath(nextLanguage, resolvedSection);
 
       navigate(nextPath);
@@ -169,6 +169,32 @@ const App = () => {
     navigate(`/${language}/students/bulk-upload`);
   }, [language, navigate]);
 
+  const handlePaymentsSectionNavigation = useCallback(
+    (sectionKey, { replace = false } = {}) => {
+      const basePath = buildPath(language, 'payments');
+      const normalizedSection = typeof sectionKey === 'string' ? sectionKey.trim() : '';
+      const suffix = normalizedSection && normalizedSection !== 'tuition' ? `/${encodeURIComponent(normalizedSection)}` : '';
+
+      navigate(`${basePath}${suffix}`, { replace });
+    },
+    [language, navigate],
+  );
+
+  const handleStudentsSectionNavigation = useCallback(
+    (sectionKey, { replace = false } = {}) => {
+      const basePath = buildPath(language, 'students');
+      const normalizedSection = typeof sectionKey === 'string' ? sectionKey.trim() : '';
+
+      if (!normalizedSection || normalizedSection === 'students') {
+        navigate(basePath, { replace });
+        return;
+      }
+
+      navigate(`${basePath}/tab/${encodeURIComponent(normalizedSection)}`, { replace });
+    },
+    [language, navigate],
+  );
+
   if (!user && resolvedSection === 'login') {
     return <LoginPage language={language} onLanguageChange={handleLanguageChange} />;
   }
@@ -183,6 +209,8 @@ const App = () => {
         routeSegments={detailSegments}
         onNavigateToStudentDetail={handleStudentDetailNavigation}
         onNavigateToBulkUpload={handleStudentBulkUploadNavigation}
+        onPaymentsSectionChange={handlePaymentsSectionNavigation}
+        onStudentsSectionChange={handleStudentsSectionNavigation}
       />
     );
   }
