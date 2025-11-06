@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import GlobalToast from '../components/GlobalToast.jsx';
 import ActionButton from '../components/ui/ActionButton.jsx';
-import AddRecordButton from '../components/ui/buttons/AddRecordButton.jsx';
 import ExportButton from '../components/ui/buttons/ExportButton.jsx';
 import FilterButton from '../components/ui/buttons/FilterButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
@@ -93,6 +92,7 @@ const DEFAULT_PAYMENTS_STRINGS = {
     debtActive: 'Mostrando morosos',
     debtInactive: 'Alumnos con deuda',
     add: 'Agregar pago',
+    bulkUpload: 'Carga masiva',
     export: 'Exportar CSV',
     exporting: 'Exportando…',
   },
@@ -122,6 +122,21 @@ const DEFAULT_PAYMENTS_STRINGS = {
       previous: 'Anterior',
       next: 'Siguiente',
     },
+  },
+  paymentsTable: {
+    columns: {
+      id: 'ID',
+      student: 'Alumno',
+      gradeGroup: 'Grado y grupo',
+      scholarLevel: 'Nivel académico',
+      concept: 'Concepto',
+      amount: 'Monto',
+      actions: 'Acciones',
+    },
+    loading: 'Cargando pagos...',
+    empty: 'No se encontraron pagos registrados.',
+    error: 'No fue posible cargar los pagos.',
+    actionsPlaceholder: 'Próximamente',
   },
   filters: {
     title: 'Filtros',
@@ -212,6 +227,22 @@ const PaymentsFinancePage = ({
       pagination,
     };
   }, [strings.table]);
+  const paymentsTableStrings = useMemo(() => {
+    const paymentsOverrides = strings.paymentsTable ?? {};
+    const columns = {
+      ...DEFAULT_PAYMENTS_STRINGS.paymentsTable.columns,
+      ...(paymentsOverrides.columns ?? {}),
+    };
+
+    return {
+      ...DEFAULT_PAYMENTS_STRINGS.paymentsTable,
+      ...paymentsOverrides,
+      columns,
+      actionsPlaceholder:
+        paymentsOverrides.actionsPlaceholder ??
+        DEFAULT_PAYMENTS_STRINGS.paymentsTable.actionsPlaceholder,
+    };
+  }, [strings.paymentsTable]);
   const filterStrings = useMemo(() => {
     const filterOverrides = strings.filters ?? {};
     const fieldDefaults = DEFAULT_PAYMENTS_STRINGS.filters.fields;
@@ -292,16 +323,24 @@ const PaymentsFinancePage = ({
   const [orderBy, setOrderBy] = useState('');
   const [orderDir, setOrderDir] = useState('ASC');
 
-  const [offset, setOffset] = useState(0);
-  const [limit] = useState(DEFAULT_LIMIT);
+  const [tuitionOffset, setTuitionOffset] = useState(0);
+  const [tuitionLimit] = useState(DEFAULT_LIMIT);
 
-  const [rows, setRows] = useState([]);
-  const [totalElements, setTotalElements] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [tuitionRows, setTuitionRows] = useState([]);
+  const [tuitionTotalElements, setTuitionTotalElements] = useState(0);
+  const [tuitionLoading, setTuitionLoading] = useState(false);
+  const [tuitionError, setTuitionError] = useState(null);
+
+  const [paymentsOffset, setPaymentsOffset] = useState(0);
+  const [paymentsLimit] = useState(DEFAULT_LIMIT);
+  const [paymentsRows, setPaymentsRows] = useState([]);
+  const [paymentsTotalElements, setPaymentsTotalElements] = useState(0);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentsError, setPaymentsError] = useState(null);
 
   const [toast, setToast] = useState(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isTuitionExporting, setIsTuitionExporting] = useState(false);
+  const [isPaymentsExporting, setIsPaymentsExporting] = useState(false);
 
   const tabs = useMemo(
     () => [
@@ -313,8 +352,13 @@ const PaymentsFinancePage = ({
   );
 
   const isTuitionTab = activeTab === 'tuition';
+  const isPaymentsTab = activeTab === 'payments';
 
   const columnLabels = tableStrings.columns;
+  const currencyFormatter = useMemo(
+    () => new Intl.NumberFormat(locale, { style: 'currency', currency: 'MXN' }),
+    [locale],
+  );
   const displayedColumns = useMemo(
     () => [
       { key: 'student', label: columnLabels.student, sortable: true, orderKey: 'student' },
@@ -328,7 +372,7 @@ const PaymentsFinancePage = ({
   const monthColumns = useMemo(() => {
     const columns = [];
 
-    for (const row of rows) {
+    for (const row of tuitionRows) {
       if (!row || typeof row !== 'object') {
         continue;
       }
@@ -345,7 +389,7 @@ const PaymentsFinancePage = ({
     }
 
     return columns;
-  }, [rows]);
+  }, [tuitionRows]);
 
   const handleSort = useCallback(
     (orderKey) => {
@@ -364,7 +408,7 @@ const PaymentsFinancePage = ({
       });
 
       setOrderBy((previousOrderKey) => (previousOrderKey === orderKey ? previousOrderKey : orderKey));
-      setOffset(0);
+      setTuitionOffset(0);
     },
     [orderBy],
   );
@@ -411,6 +455,19 @@ const PaymentsFinancePage = ({
     return [...baseColumns, ...dynamicMonths];
   }, [displayedColumns, handleSort, monthColumns, renderSortIndicator]);
 
+  const paymentsColumns = useMemo(
+    () => [
+      { key: 'payment_id', header: paymentsTableStrings.columns.id },
+      { key: 'student', header: paymentsTableStrings.columns.student },
+      { key: 'grade_group', header: paymentsTableStrings.columns.gradeGroup },
+      { key: 'scholar_level_name', header: paymentsTableStrings.columns.scholarLevel },
+      { key: 'pt_name', header: paymentsTableStrings.columns.concept },
+      { key: 'amount', header: paymentsTableStrings.columns.amount, align: 'end' },
+      { key: 'actions', header: paymentsTableStrings.columns.actions, align: 'end' },
+    ],
+    [paymentsTableStrings.columns],
+  );
+
   const paymentSummary = useCallback(
     ({ from, to, total }) => {
       const template = tableStrings.pagination?.summary;
@@ -447,15 +504,17 @@ const PaymentsFinancePage = ({
     [locale, tableStrings.pagination],
   );
 
-  const totalPages = Math.max(1, Math.ceil(totalElements / limit));
-  const currentPage = Math.floor(offset / limit) + 1;
+  const tuitionTotalPages = Math.max(1, Math.ceil(tuitionTotalElements / tuitionLimit));
+  const tuitionCurrentPage = Math.floor(tuitionOffset / tuitionLimit) + 1;
+  const paymentsTotalPages = Math.max(1, Math.ceil(paymentsTotalElements / paymentsLimit));
+  const paymentsCurrentPage = Math.floor(paymentsOffset / paymentsLimit) + 1;
 
   const appliedFilters = useMemo(() => {
     const params = new URLSearchParams();
 
     params.set('lang', normalizedLanguage);
-    params.set('offset', String(offset));
-    params.set('limit', String(limit));
+    params.set('offset', String(tuitionOffset));
+    params.set('limit', String(tuitionLimit));
     params.set('export_all', 'false');
 
     if (startMonth) {
@@ -492,8 +551,8 @@ const PaymentsFinancePage = ({
     return params;
   }, [
     filters,
-    offset,
-    limit,
+    tuitionOffset,
+    tuitionLimit,
     orderBy,
     orderDir,
     startMonth,
@@ -502,13 +561,24 @@ const PaymentsFinancePage = ({
     normalizedLanguage,
   ]);
 
-  const fetchPayments = useCallback(async () => {
+  const paymentsQueryParams = useMemo(() => {
+    const params = new URLSearchParams();
+
+    params.set('lang', normalizedLanguage);
+    params.set('offset', String(paymentsOffset));
+    params.set('limit', String(paymentsLimit));
+    params.set('export_all', 'false');
+
+    return params;
+  }, [normalizedLanguage, paymentsLimit, paymentsOffset]);
+
+  const fetchTuitionPayments = useCallback(async () => {
     if (activeTab !== 'tuition') {
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    setTuitionLoading(true);
+    setTuitionError(null);
 
     try {
       const url = `${API_BASE_URL}/reports/payments/report?${appliedFilters.toString()}`;
@@ -526,23 +596,72 @@ const PaymentsFinancePage = ({
 
       const payload = await response.json();
       const content = Array.isArray(payload?.content) ? payload.content : [];
-      setRows(content);
-      setTotalElements(Number(payload?.totalElements) || content.length || 0);
+      setTuitionRows(content);
+      setTuitionTotalElements(Number(payload?.totalElements) || content.length || 0);
     } catch (requestError) {
       console.error('Payments fetch error', requestError);
       const fallbackMessage =
         requestError instanceof Error && requestError.message
           ? requestError.message
           : tableStrings.unknownError;
-      setError(fallbackMessage);
+      setTuitionError(fallbackMessage);
     } finally {
-      setLoading(false);
+      setTuitionLoading(false);
     }
   }, [activeTab, appliedFilters, logout, tableStrings.error, tableStrings.unknownError, token]);
 
   useEffect(() => {
-    fetchPayments();
-  }, [fetchPayments]);
+    fetchTuitionPayments();
+  }, [fetchTuitionPayments]);
+
+  const fetchPaymentsList = useCallback(async () => {
+    if (activeTab !== 'payments') {
+      return;
+    }
+
+    setPaymentsLoading(true);
+    setPaymentsError(null);
+
+    try {
+      const url = `${API_BASE_URL}/reports/payments?${paymentsQueryParams.toString()}`;
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+        throw new Error(paymentsTableStrings.error);
+      }
+
+      const payload = await response.json();
+      const content = Array.isArray(payload?.content) ? payload.content : [];
+      setPaymentsRows(content);
+      setPaymentsTotalElements(Number(payload?.totalElements) || content.length || 0);
+    } catch (requestError) {
+      console.error('Payments list fetch error', requestError);
+      const fallbackMessage =
+        requestError instanceof Error && requestError.message
+          ? requestError.message
+          : paymentsTableStrings.error ?? tableStrings.unknownError;
+      setPaymentsError(fallbackMessage);
+    } finally {
+      setPaymentsLoading(false);
+    }
+  }, [
+    activeTab,
+    logout,
+    paymentsQueryParams,
+    paymentsTableStrings.error,
+    tableStrings.unknownError,
+    token,
+  ]);
+
+  useEffect(() => {
+    fetchPaymentsList();
+  }, [fetchPaymentsList]);
 
   const fetchSchools = useCallback(async () => {
     setIsLoadingSchools(true);
@@ -588,22 +707,22 @@ const PaymentsFinancePage = ({
 
   const handleFilterChange = useCallback((key, value) => {
     setFilters((previous) => ({ ...previous, [key]: value }));
-    setOffset(0);
+    setTuitionOffset(0);
   }, []);
 
   const handleStartMonthChange = useCallback((value) => {
     setStartMonth(value);
-    setOffset(0);
+    setTuitionOffset(0);
   }, []);
 
   const handleEndMonthChange = useCallback((value) => {
     setEndMonth(value);
-    setOffset(0);
+    setTuitionOffset(0);
   }, []);
 
   const handleToggleDebt = useCallback(() => {
     setShowDebtOnly((previous) => !previous);
-    setOffset(0);
+    setTuitionOffset(0);
   }, []);
 
   const handleToggleFilters = useCallback(() => {
@@ -626,7 +745,7 @@ const PaymentsFinancePage = ({
     setEndMonth('');
     setOrderBy('');
     setOrderDir('ASC');
-    setOffset(0);
+    setTuitionOffset(0);
   }, []);
 
   const handleStudentDetailClick = useCallback(
@@ -647,10 +766,18 @@ const PaymentsFinancePage = ({
 
   const handlePageChange = useCallback(
     (nextPage) => {
-      const safePage = Math.min(Math.max(nextPage, 1), totalPages);
-      setOffset((safePage - 1) * limit);
+      const safePage = Math.min(Math.max(nextPage, 1), tuitionTotalPages);
+      setTuitionOffset((safePage - 1) * tuitionLimit);
     },
-    [limit, totalPages],
+    [tuitionLimit, tuitionTotalPages],
+  );
+
+  const handlePaymentsPageChange = useCallback(
+    (nextPage) => {
+      const safePage = Math.min(Math.max(nextPage, 1), paymentsTotalPages);
+      setPaymentsOffset((safePage - 1) * paymentsLimit);
+    },
+    [paymentsLimit, paymentsTotalPages],
   );
 
   const buildCsvRow = useCallback(
@@ -675,8 +802,8 @@ const PaymentsFinancePage = ({
     [csvStrings.studentIdLabel],
   );
 
-  const handleExport = useCallback(async () => {
-    setIsExporting(true);
+  const handleTuitionExport = useCallback(async () => {
+    setIsTuitionExporting(true);
 
     try {
       const params = new URLSearchParams(appliedFilters.toString());
@@ -751,7 +878,7 @@ const PaymentsFinancePage = ({
           : toastStrings.exportError;
       setToast({ type: 'error', message: errorMessage });
     } finally {
-      setIsExporting(false);
+      setIsTuitionExporting(false);
     }
   }, [
     appliedFilters,
@@ -759,6 +886,99 @@ const PaymentsFinancePage = ({
     csvStrings,
     errorStrings.export,
     logout,
+    toastStrings.exportEmpty,
+    toastStrings.exportError,
+    toastStrings.exportSuccess,
+    token,
+  ]);
+
+  const handlePaymentsExport = useCallback(async () => {
+    setIsPaymentsExporting(true);
+
+    try {
+      const params = new URLSearchParams(paymentsQueryParams.toString());
+      params.set('offset', '0');
+      params.set('export_all', 'true');
+
+      const url = `${API_BASE_URL}/reports/payments?${params.toString()}`;
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+        throw new Error(errorStrings.export);
+      }
+
+      const payload = await response.json();
+      const content = Array.isArray(payload?.content) ? payload.content : [];
+
+      if (content.length === 0) {
+        setToast({ type: 'warning', message: toastStrings.exportEmpty });
+        return;
+      }
+
+      const escapeValue = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+      const headerLabels = [
+        paymentsTableStrings.columns.id,
+        paymentsTableStrings.columns.student,
+        tableStrings.studentIdLabel,
+        paymentsTableStrings.columns.gradeGroup,
+        paymentsTableStrings.columns.scholarLevel,
+        paymentsTableStrings.columns.concept,
+        paymentsTableStrings.columns.amount,
+      ];
+      const headerRow = headerLabels.map(escapeValue).join(',');
+      const csvRows = content.map((row) => {
+        const amountValue =
+          typeof row?.amount === 'number'
+            ? currencyFormatter.format(row.amount)
+            : row?.amount ?? '';
+
+        return [
+          escapeValue(row?.payment_id),
+          escapeValue(row?.student_full_name ?? row?.student),
+          escapeValue(row?.payment_reference),
+          escapeValue(row?.grade_group),
+          escapeValue(row?.scholar_level_name),
+          escapeValue(row?.pt_name),
+          escapeValue(amountValue),
+        ].join(',');
+      });
+
+      const csvContent = [headerRow, ...csvRows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${csvStrings.fileNamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      setToast({ type: 'success', message: toastStrings.exportSuccess });
+    } catch (exportError) {
+      console.error('Payments export error', exportError);
+      const errorMessage =
+        exportError instanceof Error && exportError.message
+          ? exportError.message
+          : toastStrings.exportError;
+      setToast({ type: 'error', message: errorMessage });
+    } finally {
+      setIsPaymentsExporting(false);
+    }
+  }, [
+    currencyFormatter,
+    csvStrings.fileNamePrefix,
+    errorStrings.export,
+    logout,
+    paymentsQueryParams,
+    paymentsTableStrings.columns,
+    tableStrings.studentIdLabel,
     toastStrings.exportEmpty,
     toastStrings.exportError,
     toastStrings.exportSuccess,
@@ -776,6 +996,8 @@ const PaymentsFinancePage = ({
       <path d="M4 5h12v2H4zm0 4h8v2H4zm0 4h5v2H4z" fill="currentColor" />
     </svg>
   );
+
+  const paymentsComingSoonLabel = paymentsTableStrings.actionsPlaceholder;
 
 
   return (
@@ -813,11 +1035,29 @@ const PaymentsFinancePage = ({
               >
                 {showDebtOnly ? debtToggleStrings.debtActive : debtToggleStrings.debtInactive}
               </ActionButton>
-              <AddRecordButton type="button">
-                {actionStrings.add}
-              </AddRecordButton>
-              <ExportButton type="button" onClick={handleExport} disabled={isExporting}>
-                {isExporting ? actionStrings.exporting : actionStrings.export}
+              <ExportButton type="button" onClick={handleTuitionExport} disabled={isTuitionExporting}>
+                {isTuitionExporting ? actionStrings.exporting : actionStrings.export}
+              </ExportButton>
+            </>
+          ) : activeKey === 'payments' ? (
+            <>
+              <FilterButton type="button" disabled title={paymentsComingSoonLabel}>
+                {actionStrings.filter}
+              </FilterButton>
+              <ActionButton
+                type="button"
+                variant="upload"
+                disabled
+                title={paymentsComingSoonLabel}
+              >
+                {actionStrings.bulkUpload}
+              </ActionButton>
+              <ExportButton
+                type="button"
+                onClick={handlePaymentsExport}
+                disabled={isPaymentsExporting}
+              >
+                {isPaymentsExporting ? actionStrings.exporting : actionStrings.export}
               </ExportButton>
             </>
           ) : null
@@ -866,7 +1106,7 @@ const PaymentsFinancePage = ({
                 className="page__table-wrapper"
                 tableClassName="page__table mb-0"
                 columns={paymentColumns}
-                data={rows}
+                data={tuitionRows}
                 getRowId={(row, index) => {
                   const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
                   return studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
@@ -913,15 +1153,95 @@ const PaymentsFinancePage = ({
                     </tr>
                   );
                 }}
-                loading={loading}
+                loading={tuitionLoading}
                 loadingMessage={tableStrings.loading}
-                error={error || null}
+                error={tuitionError || null}
                 emptyMessage={tableStrings.empty}
                 pagination={{
-                  currentPage,
-                  pageSize: limit,
-                  totalItems: totalElements,
+                  currentPage: tuitionCurrentPage,
+                  pageSize: tuitionLimit,
+                  totalItems: tuitionTotalElements,
                   onPageChange: handlePageChange,
+                  previousLabel: tableStrings.pagination.previous ?? '←',
+                  nextLabel: tableStrings.pagination.next ?? '→',
+                  summary: paymentSummary,
+                  pageLabel: paymentPageLabel,
+                }}
+              />
+            </UiCard>
+          ) : isPaymentsTab ? (
+            <UiCard className="page__table-card">
+              <GlobalTable
+                className="page__table-wrapper"
+                tableClassName="page__table mb-0"
+                columns={paymentsColumns}
+                data={paymentsRows}
+                getRowId={(row, index) =>
+                  row?.payment_id ?? row?.paymentId ?? row?.payment_reference ?? `payment-${index}`
+                }
+                renderRow={(row, index) => {
+                  const rowKey =
+                    row?.payment_id ?? row?.paymentId ?? row?.payment_reference ?? `payment-${index}`;
+                  const studentName = row?.student_full_name ?? row?.student ?? '';
+                  const studentMeta = row?.payment_reference ?? '';
+                  const amountRaw = row?.amount;
+                  const formattedAmount =
+                    typeof amountRaw === 'number'
+                      ? currencyFormatter.format(amountRaw)
+                      : amountRaw != null && amountRaw !== ''
+                      ? String(amountRaw)
+                      : '';
+
+                  return (
+                    <tr key={rowKey}>
+                      <td data-title={paymentsTableStrings.columns.id} className="text-center">
+                        {row?.payment_id ?? '--'}
+                      </td>
+                      <td data-title={paymentsTableStrings.columns.student}>
+                        <StudentInfo
+                          name={studentName}
+                          fallbackName={tableStrings.studentFallback}
+                          metaLabel={studentMeta ? tableStrings.studentIdLabel : undefined}
+                          metaValue={studentMeta}
+                        />
+                      </td>
+                      <td data-title={paymentsTableStrings.columns.gradeGroup}>
+                        {row?.grade_group ?? '--'}
+                      </td>
+                      <td data-title={paymentsTableStrings.columns.scholarLevel}>
+                        {row?.scholar_level_name ?? '--'}
+                      </td>
+                      <td data-title={paymentsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
+                      <td data-title={paymentsTableStrings.columns.amount} className="text-end">
+                        {formattedAmount ? (
+                          formattedAmount
+                        ) : (
+                          <span className="ui-table__empty-indicator">--</span>
+                        )}
+                      </td>
+                      <td data-title={paymentsTableStrings.columns.actions} className="text-end">
+                        <ActionButton
+                          type="button"
+                          variant="text"
+                          size="sm"
+                          disabled
+                          title={paymentsComingSoonLabel}
+                        >
+                          {paymentsComingSoonLabel}
+                        </ActionButton>
+                      </td>
+                    </tr>
+                  );
+                }}
+                loading={paymentsLoading}
+                loadingMessage={paymentsTableStrings.loading}
+                error={paymentsError || null}
+                emptyMessage={paymentsTableStrings.empty}
+                pagination={{
+                  currentPage: paymentsCurrentPage,
+                  pageSize: paymentsLimit,
+                  totalItems: paymentsTotalElements,
+                  onPageChange: handlePaymentsPageChange,
                   previousLabel: tableStrings.pagination.previous ?? '←',
                   nextLabel: tableStrings.pagination.next ?? '→',
                   summary: paymentSummary,
