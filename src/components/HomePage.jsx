@@ -26,6 +26,8 @@ const HomePage = ({
   routeSegments = [],
   onNavigateToStudentDetail,
   onNavigateToBulkUpload,
+  onPaymentsSectionChange,
+  onStudentsSectionChange,
 }) => {
   const { user, logout } = useAuth();
   const t = getTranslation(language);
@@ -37,10 +39,22 @@ const HomePage = ({
     t.home.studentsPage.detail.breadcrumbFallback,
   );
 
-  const isBulkUploadActive = activePage === 'students' && routeSegments[0] === 'bulk-upload';
+  const paymentsRouteSegments = activePage === 'payments' ? routeSegments : [];
+  const paymentsSectionKey = paymentsRouteSegments[0] ?? 'tuition';
+
+  const studentsRouteSegments = activePage === 'students' ? routeSegments : [];
+  const studentsPrimarySegment = studentsRouteSegments[0] ?? '';
+  const isBulkUploadActive = activePage === 'students' && studentsPrimarySegment === 'bulk-upload';
+  const isStudentsTabRoute = activePage === 'students' && studentsPrimarySegment === 'tab';
+  const studentsTabKey =
+    activePage === 'students'
+      ? isStudentsTabRoute
+        ? studentsRouteSegments[1] ?? 'students'
+        : 'students'
+      : 'students';
   const isStudentDetailActive =
-    activePage === 'students' && routeSegments.length > 0 && !isBulkUploadActive;
-  const studentDetailId = isStudentDetailActive ? routeSegments[0] : null;
+    activePage === 'students' && !isBulkUploadActive && !isStudentsTabRoute && studentsRouteSegments.length > 0;
+  const studentDetailId = isStudentDetailActive ? studentsPrimarySegment : null;
 
   useEffect(() => {
     setActivePage(activePageProp);
@@ -162,6 +176,20 @@ const HomePage = ({
   const studentsBulkStrings = studentsPageStrings.bulkUploadPage ?? {};
   const studentsDetailStrings = studentsPageStrings.detail ?? {};
 
+  const handlePaymentsSectionChange = useCallback(
+    (sectionKey, options) => {
+      onPaymentsSectionChange?.(sectionKey, options);
+    },
+    [onPaymentsSectionChange],
+  );
+
+  const handleStudentsSectionChange = useCallback(
+    (sectionKey, options) => {
+      onStudentsSectionChange?.(sectionKey, options);
+    },
+    [onStudentsSectionChange],
+  );
+
   const handleNavClick = useCallback(
     (key) => {
       setActivePage(key);
@@ -199,23 +227,26 @@ const HomePage = ({
     [onNavigateToStudentDetail, t.home.studentsPage.detail.breadcrumbFallback],
   );
 
-  const placeholderPages = useMemo(
+  const paymentsContent = (
+    <PaymentsFinancePage
+      title={t.home.pages.payments.title}
+      description={t.home.pages.payments.description}
+      language={language}
+      strings={t.home.paymentsPage}
+      onStudentDetail={handleStudentDetailNavigate}
+      activeSectionKey={paymentsSectionKey}
+      onSectionChange={handlePaymentsSectionChange}
+    />
+  );
+
+  const genericPages = useMemo(
     () => ({
-      payments: (
-        <PaymentsFinancePage
-          title={t.home.pages.payments.title}
-          description={t.home.pages.payments.description}
-          language={language}
-          strings={t.home.paymentsPage}
-          onStudentDetail={handleStudentDetailNavigate}
-        />
-      ),
       teachers: <TeachersPage {...t.home.pages.teachers} />,
       schedules: <SchedulesTasksPage {...t.home.pages.schedules} />,
       grades: <GradesPage {...t.home.pages.grades} />,
       communications: <CommunicationsPage {...t.home.pages.communications} />,
     }),
-    [handleStudentDetailNavigate, t.home.pages],
+    [t.home.pages],
   );
 
   const studentsContent = isStudentDetailActive ? (
@@ -239,6 +270,8 @@ const HomePage = ({
       strings={studentsPageStrings}
       onStudentDetail={handleStudentDetailNavigate}
       onBulkUpload={onNavigateToBulkUpload}
+      activeSectionKey={studentsTabKey}
+      onSectionChange={handleStudentsSectionChange}
     />
   );
 
@@ -591,7 +624,9 @@ const HomePage = ({
           ? renderDashboard()
           : activePage === 'students'
           ? studentsContent
-          : placeholderPages[activePage] ?? null}
+          : activePage === 'payments'
+          ? paymentsContent
+          : genericPages[activePage] ?? null}
       </div>
     </div>
   );
