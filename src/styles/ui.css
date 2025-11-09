@@ -404,6 +404,24 @@ button.nav-link.global-tabs__link {
   text-align: center;
 }
 
+.page__amount-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.page__amount-button:hover,
+.page__amount-button:focus {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
 .empty-state {
   padding: 2rem;
   text-align: center;

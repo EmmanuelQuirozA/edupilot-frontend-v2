@@ -10,6 +10,7 @@ import GlobalTable from '../components/ui/GlobalTable.jsx';
 import SidebarModal from '../components/ui/SidebarModal.jsx';
 import StudentInfo from '../components/ui/StudentInfo.jsx';
 import AddPaymentModal from '../components/payments/AddPaymentModal.jsx';
+import { useModal } from '../components/modal/useModal';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { handleExpiredToken } from '../utils/auth';
@@ -18,6 +19,103 @@ import './PaymentsFinancePage.css';
 const DEFAULT_LIMIT = 10;
 const MONTH_KEY_REGEX = /^[A-Za-z]{3}-\d{2}$/;
 const DEFAULT_PAYMENTS_TAB_KEY = 'tuition';
+
+const parseTuitionCellValue = (value) => {
+  if (value == null || value === '') {
+    return null;
+  }
+
+  if (typeof value === 'object') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (parseError) {
+      console.warn('Unable to parse tuition cell value', parseError);
+      return null;
+    }
+  }
+
+  return null;
+};
+
+const normalizeAmount = (candidate) => {
+  if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+    return candidate;
+  }
+
+  if (typeof candidate === 'string') {
+    const parsed = Number(candidate);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+};
+
+const normalizePaymentList = (payments) => {
+  if (!Array.isArray(payments)) {
+    return [];
+  }
+
+  return payments.map((payment) => {
+    const rawId =
+      payment?.payment_id ?? payment?.paymentId ?? payment?.id ?? null;
+
+    const rawAmount = payment?.amount ?? payment?.total ?? null;
+    const createdAt =
+      typeof payment?.created_at === 'string'
+        ? payment.created_at
+        : typeof payment?.date === 'string'
+        ? payment.date
+        : null;
+    const statusName =
+      typeof payment?.payment_status_name === 'string'
+        ? payment.payment_status_name
+        : typeof payment?.status_name === 'string'
+        ? payment.status_name
+        : typeof payment?.payment_status === 'string'
+        ? payment.payment_status
+        : typeof payment?.status === 'string'
+        ? payment.status
+        : null;
+
+    return {
+      paymentId: rawId != null ? rawId : null,
+      amount: normalizeAmount(rawAmount),
+      createdAt,
+      statusName,
+    };
+  });
+};
+
+const extractTuitionCellDetails = (value) => {
+  const parsed = parseTuitionCellValue(value);
+  if (!parsed) {
+    return null;
+  }
+
+  const totalAmount = normalizeAmount(parsed.total_amount ?? parsed.totalAmount);
+  const paymentMonth =
+    typeof parsed.payment_month === 'string'
+      ? parsed.payment_month
+      : typeof parsed.paymentMonth === 'string'
+      ? parsed.paymentMonth
+      : null;
+  const paymentRequestId =
+    parsed.payment_request_id ?? parsed.paymentRequestId ?? null;
+  const payments = normalizePaymentList(parsed.payments);
+
+  return {
+    totalAmount,
+    paymentMonth,
+    paymentRequestId,
+    payments,
+  };
+};
 
 const extractListFromPayload = (payload) => {
   if (!payload) {
@@ -210,6 +308,31 @@ const DEFAULT_PAYMENTS_STRINGS = {
     error: 'No fue posible crear el pago.',
     requiredField: 'Completa los campos obligatorios.',
   },
+  tuitionModal: {
+    title: 'Detalle de pagos de colegiatura',
+    summary: {
+      student: 'Alumno',
+      class: 'Grupo',
+      generation: 'Generación',
+      level: 'Nivel académico',
+      month: 'Mes de pago',
+      total: 'Monto total',
+      request: 'Solicitud de pago',
+    },
+    paymentsTitle: 'Pagos registrados',
+    paymentsTable: {
+      columns: {
+        id: 'ID de pago',
+        date: 'Fecha',
+        amount: 'Monto',
+        status: 'Estatus',
+      },
+      empty: 'No hay pagos registrados para este mes.',
+      paymentLinkLabel: 'Abrir detalle del pago',
+    },
+    requestButton: 'Ver solicitud de pago',
+    close: 'Cerrar',
+  },
 };
 
 const SUPPORTED_LANGUAGES = ['es', 'en'];
@@ -225,9 +348,18 @@ const PaymentsFinancePage = ({
   onSectionChange,
 }) => {
   const { token, logout } = useAuth();
+  const { openModal } = useModal();
 
   const normalizedLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : 'es';
   const locale = getLocaleFromLanguage(normalizedLanguage);
+  const paymentDetailBasePath = useMemo(
+    () => `/${normalizedLanguage}/payments/detail`,
+    [normalizedLanguage],
+  );
+  const paymentRequestDetailBasePath = useMemo(
+    () => `/${normalizedLanguage}/payments/requests/detail`,
+    [normalizedLanguage],
+  );
 
   const tabStrings = useMemo(
     () => ({ ...DEFAULT_PAYMENTS_STRINGS.tabs, ...(strings.tabs ?? {}) }),
@@ -275,6 +407,28 @@ const PaymentsFinancePage = ({
         DEFAULT_PAYMENTS_STRINGS.paymentsTable.actionsPlaceholder,
     };
   }, [strings.paymentsTable]);
+  const tuitionModalStrings = useMemo(() => {
+    const modalOverrides = strings.tuitionModal ?? {};
+    const summary = {
+      ...DEFAULT_PAYMENTS_STRINGS.tuitionModal.summary,
+      ...(modalOverrides.summary ?? {}),
+    };
+    const paymentsTable = {
+      ...DEFAULT_PAYMENTS_STRINGS.tuitionModal.paymentsTable,
+      ...(modalOverrides.paymentsTable ?? {}),
+      columns: {
+        ...DEFAULT_PAYMENTS_STRINGS.tuitionModal.paymentsTable.columns,
+        ...((modalOverrides.paymentsTable?.columns ?? {})),
+      },
+    };
+
+    return {
+      ...DEFAULT_PAYMENTS_STRINGS.tuitionModal,
+      ...modalOverrides,
+      summary,
+      paymentsTable,
+    };
+  }, [strings.tuitionModal]);
   const filterStrings = useMemo(() => {
     const filterOverrides = strings.filters ?? {};
     const fieldDefaults = DEFAULT_PAYMENTS_STRINGS.filters.fields;
@@ -845,6 +999,52 @@ const PaymentsFinancePage = ({
     [onStudentDetail],
   );
 
+  const handleTuitionMonthClick = useCallback(
+    (row, monthKey, details) => {
+      if (!details) {
+        return;
+      }
+
+      const { totalAmount, payments, paymentMonth, paymentRequestId } = details;
+      const hasDetails =
+        totalAmount != null || (payments && payments.length > 0) || paymentRequestId != null;
+
+      if (!hasDetails) {
+        return;
+      }
+
+      const studentName = row?.student ?? tableStrings.studentFallback;
+
+      openModal({
+        key: 'TuitionPaymentDetails',
+        props: {
+          studentName,
+          className: row?.class ?? null,
+          generation: row?.generation ?? null,
+          scholarLevel: row?.scholar_level_name ?? null,
+          monthKey,
+          paymentMonth,
+          totalAmount,
+          paymentRequestId,
+          payments,
+          locale,
+          currency: 'MXN',
+          strings: tuitionModalStrings,
+          paymentDetailBasePath,
+          paymentRequestDetailBasePath,
+        },
+      });
+    },
+    [
+      locale,
+      openModal,
+      paymentDetailBasePath,
+      paymentRequestDetailBasePath,
+      tableStrings.studentFallback,
+      tuitionModalStrings,
+    ],
+  );
+
   const handlePageChange = useCallback(
     (nextPage) => {
       const safePage = Math.min(Math.max(nextPage, 1), tuitionTotalPages);
@@ -1229,14 +1429,44 @@ const PaymentsFinancePage = ({
                       <td data-title={tableStrings.columns.scholarLevel}>{row.scholar_level_name ?? '--'}</td>
                       {monthColumns.map((month) => {
                         const value = row?.[month];
-                        const isNullish = value === null || value === undefined || value === '';
+                        const details = extractTuitionCellDetails(value);
+                        const hasDetails =
+                          details &&
+                          (details.totalAmount != null ||
+                            (details.payments && details.payments.length > 0) ||
+                            details.paymentRequestId != null);
+                        const displayAmount =
+                          details?.totalAmount != null
+                            ? currencyFormatter.format(details.totalAmount)
+                            : null;
+                        const fallbackAmount = normalizeAmount(value);
+                        const fallbackContent =
+                          fallbackAmount != null
+                            ? currencyFormatter.format(fallbackAmount)
+                            : (
+                                <span className="ui-table__empty-indicator">--</span>
+                              );
+                        const cellClassName = !hasDetails && fallbackAmount == null ? 'page__amount-null' : '';
+
                         return (
                           <td
                             key={`${rowKey}-${month}`}
                             data-title={month}
-                            className={isNullish ? 'page__amount-null' : ''}
+                            className={cellClassName}
                           >
-                            {isNullish ? <span className="ui-table__empty-indicator">--</span> : value}
+                            {hasDetails ? (
+                              <button
+                                type="button"
+                                className="page__amount-button"
+                                onClick={() => handleTuitionMonthClick(row, month, details)}
+                              >
+                                {displayAmount ?? (
+                                  <span className="ui-table__empty-indicator">--</span>
+                                )}
+                              </button>
+                            ) : (
+                              fallbackContent
+                            )}
                           </td>
                         );
                       })}
