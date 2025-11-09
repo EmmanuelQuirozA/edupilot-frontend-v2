@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import CreateStudentForm from './forms/CreateStudentForm';
 import EditStudentForm from './forms/EditStudentForm';
+import TuitionPaymentDetailsModal from './forms/TuitionPaymentDetailsModal';
 
 export interface StudentProfile {
   id: string;
@@ -35,6 +36,58 @@ export interface EditStudentModalResult {
   data: StudentFormValues & { id: string };
 }
 
+export interface TuitionPaymentModalPayment {
+  paymentId: string | number | null;
+  amount: number | null;
+  createdAt: string | null;
+  statusName?: string | null;
+}
+
+export interface TuitionPaymentDetailsStrings {
+  title: string;
+  summary: {
+    student: string;
+    class: string;
+    generation: string;
+    level: string;
+    month: string;
+    total: string;
+    request: string;
+  };
+  paymentsTitle: string;
+  paymentsTable: {
+    columns: {
+      id: string;
+      date: string;
+      amount: string;
+      status: string;
+    };
+    empty: string;
+    paymentLinkLabel: string;
+  };
+  requestButton: string;
+  close: string;
+}
+
+export interface TuitionPaymentDetailsModalProps {
+  studentName?: string | null;
+  className?: string | null;
+  generation?: string | null;
+  scholarLevel?: string | null;
+  monthKey: string;
+  paymentMonth?: string | null;
+  totalAmount: number | null;
+  paymentRequestId?: number | string | null;
+  payments: TuitionPaymentModalPayment[];
+  locale: string;
+  currency?: string;
+  strings: TuitionPaymentDetailsStrings;
+  paymentDetailBasePath: string;
+  paymentRequestDetailBasePath?: string | null;
+}
+
+export type TuitionPaymentDetailsModalResult = void;
+
 type ModalDefinition<Props, Result> = {
   props: Props;
   resolved: Result;
@@ -43,6 +96,7 @@ type ModalDefinition<Props, Result> = {
 export type ModalDefinitions = {
   CreateStudent: ModalDefinition<CreateStudentModalProps | undefined, CreateStudentModalResult>;
   EditStudent: ModalDefinition<EditStudentModalProps, EditStudentModalResult>;
+  TuitionPaymentDetails: ModalDefinition<TuitionPaymentDetailsModalProps, TuitionPaymentDetailsModalResult>;
 };
 
 export type ModalKey = keyof ModalDefinitions;
@@ -97,5 +151,8 @@ export const modalRegistry: ModalRegistry = {
   },
   EditStudent: {
     Component: EditStudentForm,
+  },
+  TuitionPaymentDetails: {
+    Component: TuitionPaymentDetailsModal,
   },
 };

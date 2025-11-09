@@ -241,6 +241,31 @@ export const translations = {
           },
           studentIdLabel: 'Matrícula',
         },
+        tuitionModal: {
+          title: 'Detalle de pagos de colegiatura',
+          summary: {
+            student: 'Alumno',
+            class: 'Grupo',
+            generation: 'Generación',
+            level: 'Nivel académico',
+            month: 'Mes de pago',
+            total: 'Monto total',
+            request: 'Solicitud de pago',
+          },
+          paymentsTitle: 'Pagos registrados',
+          paymentsTable: {
+            columns: {
+              id: 'ID de pago',
+              date: 'Fecha',
+              amount: 'Monto',
+              status: 'Estatus',
+            },
+            empty: 'No hay pagos registrados para este mes.',
+            paymentLinkLabel: 'Abrir detalle del pago',
+          },
+          requestButton: 'Ver solicitud de pago',
+          close: 'Cerrar',
+        },
       },
       studentsPage: {
         header: {
@@ -806,6 +831,31 @@ export const translations = {
             scholarLevel: 'Academic level',
           },
           studentIdLabel: 'Registration',
+        },
+        tuitionModal: {
+          title: 'Tuition payment details',
+          summary: {
+            student: 'Student',
+            class: 'Group',
+            generation: 'Generation',
+            level: 'Academic level',
+            month: 'Payment month',
+            total: 'Total amount',
+            request: 'Payment request',
+          },
+          paymentsTitle: 'Recorded payments',
+          paymentsTable: {
+            columns: {
+              id: 'Payment ID',
+              date: 'Date',
+              amount: 'Amount',
+              status: 'Status',
+            },
+            empty: 'No payments recorded for this month.',
+            paymentLinkLabel: 'Open payment detail',
+          },
+          requestButton: 'View payment request',
+          close: 'Close',
         },
       },
       studentsPage: {
