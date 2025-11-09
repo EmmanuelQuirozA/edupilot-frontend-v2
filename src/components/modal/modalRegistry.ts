@@ -124,6 +124,7 @@ export type ModalComponentProps<K extends ModalKey> = ComponentPropsForKey<K>;
 export type ModalRegistry = {
   [K in ModalKey]: {
     Component: ComponentType<ModalComponentProps<K>>;
+    containerClassName?: string;
   };
 };
 
@@ -154,5 +155,6 @@ export const modalRegistry: ModalRegistry = {
   },
   TuitionPaymentDetails: {
     Component: TuitionPaymentDetailsModal,
+    containerClassName: 'modal-container--wide',
   },
 };

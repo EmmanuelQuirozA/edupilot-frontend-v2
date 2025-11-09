@@ -17,6 +17,9 @@ const renderInstance = <K extends ModalKey>(
     return null;
   }
   const Component = definition.Component;
+  const containerClassName = definition.containerClassName
+    ? `modal-container ${definition.containerClassName}`
+    : 'modal-container';
   const componentProps = (instance.props ?? {}) as Omit<ModalComponentProps<K>, 'close' | 'submit' | 'instanceId'>;
 
   const handleClose = () => closeModal(instance.instanceId);
@@ -27,7 +30,7 @@ const renderInstance = <K extends ModalKey>(
   return (
     <div className="modal-overlay" key={instance.instanceId}>
       <div
-        className="modal-container"
+        className={containerClassName}
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${instance.instanceId}-title`}
