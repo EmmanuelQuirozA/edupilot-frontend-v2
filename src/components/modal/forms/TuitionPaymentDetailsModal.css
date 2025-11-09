@@ -1,4 +1,25 @@
+.tuition-payment-modal__content {
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.tuition-payment-modal__content .modal-header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.tuition-payment-modal__content .modal-body {
+  padding: 1.5rem;
+}
+
+.tuition-payment-modal__content .modal-footer {
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+}
+
 .tuition-payment-modal__body {
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
 }
 

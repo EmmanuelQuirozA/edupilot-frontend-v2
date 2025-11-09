@@ -193,32 +193,25 @@ const TuitionPaymentDetailsModal = ({
 
   return (
     <div
-      className="modal"
+      className="modal-content border-0 shadow tuition-payment-modal__content"
       role="document"
       aria-labelledby={modalTitleId}
       aria-describedby={modalDescriptionId}
     >
-      <header className="modal__header">
-        <div className="modal__header-content">
-          <h2 className="modal__title" id={modalTitleId}>
+      <div className="modal-header align-items-start">
+        <div>
+          <h2 className="modal-title h4 mb-1" id={modalTitleId}>
             {strings.title}
           </h2>
           {hasMonthDescription ? (
-            <p id={modalDescriptionId} className="modal__subtitle">
+            <p id={modalDescriptionId} className="text-muted mb-0">
               {monthLabel}
             </p>
           ) : null}
         </div>
-        <button
-          type="button"
-          className="modal__close-button"
-          aria-label={strings.close}
-          onClick={close}
-        >
-          <span aria-hidden="true">×</span>
-        </button>
-      </header>
-      <section className="modal__body tuition-payment-modal__body" aria-live="polite">
+        <button type="button" className="btn-close" aria-label={strings.close} onClick={close} />
+      </div>
+      <div className="modal-body tuition-payment-modal__body" aria-live="polite">
         <dl className="tuition-payment-modal__summary">
           {summaryItems.map((item) => (
             <div key={item.label} className="tuition-payment-modal__summary-item">
@@ -234,12 +227,12 @@ const TuitionPaymentDetailsModal = ({
           <h3 className="tuition-payment-modal__subtitle">{strings.paymentsTitle}</h3>
           {paymentsContent}
         </div>
-      </section>
-      <footer className="modal__footer">
-        <ActionButton type="button" onClick={close}>
+      </div>
+      <div className="modal-footer">
+        <ActionButton type="button" variant="text" onClick={close}>
           {strings.close}
         </ActionButton>
-      </footer>
+      </div>
     </div>
   );
 };
