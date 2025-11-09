@@ -19,6 +19,11 @@
   animation: modal-enter 150ms ease-out;
 }
 
+.modal-container--wide {
+  max-width: 720px;
+  width: min(100%, 720px);
+}
+
 .modal {
   display: flex;
   flex-direction: column;
