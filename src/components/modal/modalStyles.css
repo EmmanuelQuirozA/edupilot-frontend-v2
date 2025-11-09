@@ -31,8 +31,18 @@
 }
 
 .modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 1.5rem 1.5rem 1rem;
   border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.modal__header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .modal__title {
@@ -42,9 +52,28 @@
 }
 
 .modal__subtitle {
-  margin: 0.25rem 0 0;
+  margin: 0;
   font-size: 0.95rem;
   color: #475569;
+}
+
+.modal__close-button {
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.modal__close-button:hover,
+.modal__close-button:focus-visible {
+  background-color: rgba(226, 232, 240, 0.8);
+  color: #1e293b;
+  outline: none;
 }
 
 .modal__body {

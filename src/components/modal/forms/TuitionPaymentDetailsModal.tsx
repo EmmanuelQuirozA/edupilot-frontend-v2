@@ -187,14 +187,38 @@ const TuitionPaymentDetailsModal = ({
     locale,
   ]);
 
+  const modalTitleId = `${instanceId}-title`;
+  const hasMonthDescription = monthLabel != null && monthLabel.trim() !== '';
+  const modalDescriptionId = hasMonthDescription ? `${instanceId}-description` : undefined;
+
   return (
-    <div className="modal">
+    <div
+      className="modal"
+      role="document"
+      aria-labelledby={modalTitleId}
+      aria-describedby={modalDescriptionId}
+    >
       <header className="modal__header">
-        <h2 className="modal__title" id={`${instanceId}-title`}>
-          {strings.title}
-        </h2>
+        <div className="modal__header-content">
+          <h2 className="modal__title" id={modalTitleId}>
+            {strings.title}
+          </h2>
+          {hasMonthDescription ? (
+            <p id={modalDescriptionId} className="modal__subtitle">
+              {monthLabel}
+            </p>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          className="modal__close-button"
+          aria-label={strings.close}
+          onClick={close}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
       </header>
-      <section className="modal__body tuition-payment-modal__body">
+      <section className="modal__body tuition-payment-modal__body" aria-live="polite">
         <dl className="tuition-payment-modal__summary">
           {summaryItems.map((item) => (
             <div key={item.label} className="tuition-payment-modal__summary-item">
@@ -212,9 +236,9 @@ const TuitionPaymentDetailsModal = ({
         </div>
       </section>
       <footer className="modal__footer">
-        <button type="button" className="modal__button modal__button--primary" onClick={close}>
+        <ActionButton type="button" onClick={close}>
           {strings.close}
-        </button>
+        </ActionButton>
       </footer>
     </div>
   );
