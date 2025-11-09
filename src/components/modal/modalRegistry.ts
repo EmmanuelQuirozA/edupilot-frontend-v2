@@ -121,11 +121,18 @@ type ComponentPropsForKey<K extends ModalKey> = ModalPropsByKey<K> & {
 
 export type ModalComponentProps<K extends ModalKey> = ComponentPropsForKey<K>;
 
+type ModalPresentation = 'custom' | 'bootstrap';
+
+type ModalRegistryEntry<K extends ModalKey> = {
+  Component: ComponentType<ModalComponentProps<K>>;
+  containerClassName?: string;
+  presentation?: ModalPresentation;
+  modalClassName?: string;
+  dialogClassName?: string;
+};
+
 export type ModalRegistry = {
-  [K in ModalKey]: {
-    Component: ComponentType<ModalComponentProps<K>>;
-    containerClassName?: string;
-  };
+  [K in ModalKey]: ModalRegistryEntry<K>;
 };
 
 type OptionalPropsConfig<K extends OptionalPropsKeys> = {
@@ -155,6 +162,7 @@ export const modalRegistry: ModalRegistry = {
   },
   TuitionPaymentDetails: {
     Component: TuitionPaymentDetailsModal,
-    containerClassName: 'modal-container--wide',
+    presentation: 'bootstrap',
+    dialogClassName: 'modal-lg modal-dialog-centered modal-dialog-scrollable',
   },
 };
