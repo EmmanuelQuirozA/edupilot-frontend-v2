@@ -205,7 +205,7 @@ const DEFAULT_PAYMENTS_FILTERS = {
 };
 
 const DEFAULT_PAYMENTS_STRINGS = {
-  placeholder: 'Esta sección estará disponible próximamente.',
+  placeholder: 'Muy pronto podrás gestionar tus pagos desde aquí.',
   tabs: {
     tuition: 'Colegiaturas',
     requests: 'Solicitudes de pago',
@@ -217,6 +217,7 @@ const DEFAULT_PAYMENTS_STRINGS = {
     debtInactive: 'Alumnos con deuda',
     add: 'Agregar pago',
     bulkUpload: 'Carga masiva',
+    bulkUploadTooltip: 'Muy pronto podrás gestionar tus pagos desde aquí.',
     export: 'Exportar CSV',
     exporting: 'Exportando…',
   },
@@ -385,6 +386,7 @@ const PaymentsFinancePage = ({
   strings = {},
   onStudentDetail,
   onPaymentDetail,
+  onPaymentBreadcrumbChange,
   activeSectionKey = DEFAULT_PAYMENTS_TAB_KEY,
   onSectionChange,
   routeSegments = [],
@@ -581,6 +583,8 @@ const PaymentsFinancePage = ({
     [strings.addPayment],
   );
   const placeholderMessage = strings.placeholder ?? DEFAULT_PAYMENTS_STRINGS.placeholder;
+  const paymentsComingSoonLabel =
+    actionStrings.bulkUploadTooltip ?? placeholderMessage;
   const searchPlaceholder =
     strings.search?.placeholder ?? DEFAULT_PAYMENTS_STRINGS.search.placeholder;
 
@@ -1452,10 +1456,6 @@ const PaymentsFinancePage = ({
     </svg>
   );
 
-  const handleBackToPayments = useCallback(() => {
-    onSectionChange?.('payments', { replace: true });
-  }, [onSectionChange]);
-
   const handlePaymentDetailNavigation = useCallback(
     (paymentId) => {
       if (paymentId == null || paymentId === '') {
@@ -1492,7 +1492,7 @@ const PaymentsFinancePage = ({
               paymentId={paymentDetailId}
               language={normalizedLanguage}
               strings={strings.detail ?? {}}
-              onBack={handleBackToPayments}
+              onBreadcrumbChange={onPaymentBreadcrumbChange}
             />
           </section>
         </div>
