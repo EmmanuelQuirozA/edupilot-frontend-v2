@@ -211,7 +211,7 @@ const DEFAULT_PAYMENTS_STRINGS = {
     payments: 'Pagos',
   },
   actions: {
-    filter: 'Filtros',
+    filter: 'Filtrar',
     debtActive: 'Mostrando morosos',
     debtInactive: 'Alumnos con deuda',
     add: 'Agregar pago',
@@ -263,7 +263,7 @@ const DEFAULT_PAYMENTS_STRINGS = {
   },
   filters: {
     title: 'Filtros',
-    reset: 'Reiniciar',
+    reset: 'Borrar filtros',
     closeAria: 'Cerrar filtros',
     fields: {
       student: { label: 'Nombre del alumno', placeholder: 'Ej. FATIMA MONTSERRAT' },
@@ -281,7 +281,7 @@ const DEFAULT_PAYMENTS_STRINGS = {
   },
   paymentsFilters: {
     title: 'Filtros de pagos',
-    reset: 'Reiniciar',
+    reset: 'Borrar filtros',
     closeAria: 'Cerrar filtros',
     fields: {
       paymentId: { label: 'ID de pago', placeholder: 'Ej. 1245' },

@@ -165,7 +165,7 @@ export const translations = {
           payments: 'Pagos',
         },
         actions: {
-          filter: 'Filtros',
+          filter: 'Filtrar',
           debtActive: 'Mostrando morosos',
           debtInactive: 'Alumnos con deuda',
           add: 'Agregar pago',
@@ -201,7 +201,7 @@ export const translations = {
         },
         filters: {
           title: 'Filtros',
-          reset: 'Reiniciar',
+          reset: 'Borrar filtros',
           closeAria: 'Cerrar filtros',
           fields: {
             student: { label: 'Nombre del alumno', placeholder: 'Ej. FATIMA MONTSERRAT' },
