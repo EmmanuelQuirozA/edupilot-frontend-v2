@@ -1477,29 +1477,6 @@ const PaymentsFinancePage = ({
     [onPaymentDetail, paymentDetailBasePath],
   );
 
-  if (isPaymentDetailRoute) {
-    return (
-      <div className="page">
-        <GlobalToast alert={toast} onClose={() => setToast(null)} />
-        <header className="page__header">
-          <div>
-            <p>{strings.header?.subtitle ?? description}</p>
-          </div>
-        </header>
-        <div className="page__layout">
-          <section className="page__content">
-            <PaymentDetailPage
-              paymentId={paymentDetailId}
-              language={normalizedLanguage}
-              strings={strings.detail ?? {}}
-              onBreadcrumbChange={onPaymentBreadcrumbChange}
-            />
-          </section>
-        </div>
-      </div>
-    );
-  }
-
   const tuitionFiltersCount = useMemo(() => {
     return Object.entries(tuitionFilters).reduce((count, [, value]) => {
       if (value === null || value === undefined) {
@@ -1542,72 +1519,85 @@ const PaymentsFinancePage = ({
         </div>
       </header>
 
-      <Tabs
-        className="tabs-row"
-        tabs={tabs}
-        activeKey={activeTab}
-        onSelect={handleTabSelect}
-        navClassName="tabs nav-pills flex-wrap gap-2"
-        actionsClassName="payments-page__actions"
-        renderActions={({ activeKey }) =>
-          activeKey === 'tuition' ? (
+      {isPaymentDetailRoute ? (
+        <div className="page__layout">
+          <section className="page__content">
+            <PaymentDetailPage
+              paymentId={paymentDetailId}
+              language={normalizedLanguage}
+              strings={strings.detail ?? {}}
+              onBreadcrumbChange={onPaymentBreadcrumbChange}
+            />
+          </section>
+        </div>
+      ) : (
+        <>
+        <Tabs
+          className="tabs-row"
+          tabs={tabs}
+          activeKey={activeTab}
+          onSelect={handleTabSelect}
+          navClassName="tabs nav-pills flex-wrap gap-2"
+          actionsClassName="payments-page__actions"
+          renderActions={({ activeKey }) =>
+            activeKey === 'tuition' ? (
             <>
-              <FilterButton
-                type="button"
-                onClick={handleToggleTuitionFilters}
-                aria-expanded={showTuitionFilters}
-                aria-controls="payments-page-filters"
-                className="rounded-pill d-inline-flex align-items-center gap-2"
-              >
-                <span className="fw-semibold">{actionStrings.filter}</span>
-                {tuitionFiltersCount > 0 && (
-                  <span className="badge text-bg-primary rounded-pill">{tuitionFiltersCount}</span>
-                )}
-              </FilterButton>
-              <ActionButton
-                variant="ghost"
-                onClick={handleToggleDebt}
-                icon={DebtIcon}
-                className={`payments-page__debt-button ${showDebtOnly ? 'is-active' : ''}`}
-              >
-                {showDebtOnly ? debtToggleStrings.debtActive : debtToggleStrings.debtInactive}
-              </ActionButton>
-              <ExportButton type="button" onClick={handleTuitionExport} disabled={isTuitionExporting}>
-                {isTuitionExporting ? actionStrings.exporting : actionStrings.export}
-              </ExportButton>
+                <FilterButton
+                  type="button"
+                  onClick={handleToggleTuitionFilters}
+                  aria-expanded={showTuitionFilters}
+                  aria-controls="payments-page-filters"
+                  className="rounded-pill d-inline-flex align-items-center gap-2"
+                >
+                  <span className="fw-semibold">{actionStrings.filter}</span>
+                  {tuitionFiltersCount > 0 && (
+                    <span className="badge text-bg-primary rounded-pill">{tuitionFiltersCount}</span>
+                  )}
+                </FilterButton>
+                <ActionButton
+                  variant="ghost"
+                  onClick={handleToggleDebt}
+                  icon={DebtIcon}
+                  className={`payments-page__debt-button ${showDebtOnly ? 'is-active' : ''}`}
+                >
+                  {showDebtOnly ? debtToggleStrings.debtActive : debtToggleStrings.debtInactive}
+                </ActionButton>
+                <ExportButton type="button" onClick={handleTuitionExport} disabled={isTuitionExporting}>
+                  {isTuitionExporting ? actionStrings.exporting : actionStrings.export}
+                </ExportButton>
             </>
           ) : activeKey === 'payments' ? (
             <>
-              <ActionButton type="button" onClick={handleOpenAddPayment}>
-                {actionStrings.add}
-              </ActionButton>
-              <FilterButton
-                type="button"
-                onClick={handleTogglePaymentsFilters}
-                aria-expanded={showPaymentsFilters}
-                aria-controls="payments-table-filters"
-                className="rounded-pill d-inline-flex align-items-center gap-2"
-              >
-                <span className="fw-semibold">{actionStrings.filter}</span>
-                {paymentsFiltersCount > 0 && (
-                  <span className="badge text-bg-primary rounded-pill">{paymentsFiltersCount}</span>
-                )}
-              </FilterButton>
-              <ActionButton
-                type="button"
-                variant="upload"
-                disabled
-                title={paymentsComingSoonLabel}
-              >
-                {actionStrings.bulkUpload}
-              </ActionButton>
-              <ExportButton
-                type="button"
-                onClick={handlePaymentsExport}
-                disabled={isPaymentsExporting}
-              >
-                {isPaymentsExporting ? actionStrings.exporting : actionStrings.export}
-              </ExportButton>
+                <ActionButton type="button" onClick={handleOpenAddPayment}>
+                  {actionStrings.add}
+                </ActionButton>
+                <FilterButton
+                  type="button"
+                  onClick={handleTogglePaymentsFilters}
+                  aria-expanded={showPaymentsFilters}
+                  aria-controls="payments-table-filters"
+                  className="rounded-pill d-inline-flex align-items-center gap-2"
+                >
+                  <span className="fw-semibold">{actionStrings.filter}</span>
+                  {paymentsFiltersCount > 0 && (
+                    <span className="badge text-bg-primary rounded-pill">{paymentsFiltersCount}</span>
+                  )}
+                </FilterButton>
+                <ActionButton
+                  type="button"
+                  variant="upload"
+                  disabled
+                  title={paymentsComingSoonLabel}
+                >
+                  {actionStrings.bulkUpload}
+                </ActionButton>
+                <ExportButton
+                  type="button"
+                  onClick={handlePaymentsExport}
+                  disabled={isPaymentsExporting}
+                >
+                  {isPaymentsExporting ? actionStrings.exporting : actionStrings.export}
+                </ExportButton>
             </>
           ) : null
         }
@@ -2137,6 +2127,8 @@ const PaymentsFinancePage = ({
           </div>
         </form>
       </SidebarModal>
+        </>
+      )}
     </div>
   );
 };
