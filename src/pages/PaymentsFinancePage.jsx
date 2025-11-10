@@ -7,7 +7,7 @@ import UiCard from '../components/ui/UiCard.jsx';
 import Tabs from '../components/ui/Tabs.jsx';
 import SearchInput from '../components/ui/SearchInput.jsx';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
-import SidebarModal from '../components/ui/SidebarModal.jsx';
+import FiltersModal from '../components/ui/FiltersModal.jsx';
 import StudentInfo from '../components/ui/StudentInfo.jsx';
 import AddPaymentModal from '../components/payments/AddPaymentModal.jsx';
 import { useModal } from '../components/modal/useModal';
@@ -180,6 +180,29 @@ const normalizeSelectOption = (item, index = 0) => {
   return { value, label };
 };
 
+const DEFAULT_TUITION_FILTERS = {
+  group_status: '',
+  user_status: '',
+  student_full_name: '',
+  payment_reference: '',
+  generation: '',
+  grade_group: '',
+  scholar_level: '',
+  school_id: '',
+};
+
+const DEFAULT_PAYMENTS_FILTERS = {
+  payment_id: '',
+  payment_request_id: '',
+  student_full_name: '',
+  payment_reference: '',
+  generation: '',
+  grade_group: '',
+  pt_name: '',
+  scholar_level_name: '',
+  payment_month: '',
+};
+
 const DEFAULT_PAYMENTS_STRINGS = {
   placeholder: 'Esta sección estará disponible próximamente.',
   tabs: {
@@ -254,6 +277,22 @@ const DEFAULT_PAYMENTS_STRINGS = {
     toggles: {
       activeGroups: 'Sólo grupos activos',
       activeStudents: 'Sólo alumnos activos',
+    },
+  },
+  paymentsFilters: {
+    title: 'Filtros de pagos',
+    reset: 'Reiniciar',
+    closeAria: 'Cerrar filtros',
+    fields: {
+      paymentId: { label: 'ID de pago', placeholder: 'Ej. 1245' },
+      paymentRequestId: { label: 'ID de solicitud', placeholder: 'Ej. 257' },
+      student: { label: 'Nombre del alumno', placeholder: 'Ej. EMMA PONCE' },
+      reference: { label: 'Matrícula', placeholder: 'Ej. 1376' },
+      generation: { label: 'Generación', placeholder: 'Ej. 2024-2025' },
+      gradeGroup: { label: 'Grado y grupo', placeholder: 'Ej. 4-A' },
+      concept: { label: 'Concepto', placeholder: 'Ej. Colegiatura' },
+      scholarLevel: { label: 'Nivel académico', placeholder: 'Ej. Primaria' },
+      month: { label: 'Mes de pago' },
     },
   },
   toggles: {
@@ -429,7 +468,7 @@ const PaymentsFinancePage = ({
       paymentsTable,
     };
   }, [strings.tuitionModal]);
-  const filterStrings = useMemo(() => {
+  const tuitionFilterStrings = useMemo(() => {
     const filterOverrides = strings.filters ?? {};
     const fieldDefaults = DEFAULT_PAYMENTS_STRINGS.filters.fields;
     const fieldOverrides = filterOverrides.fields ?? {};
@@ -456,6 +495,31 @@ const PaymentsFinancePage = ({
       },
     };
   }, [strings.filters]);
+  const paymentsFilterStrings = useMemo(() => {
+    const overrides = strings.paymentsFilters ?? {};
+    const fieldDefaults = DEFAULT_PAYMENTS_STRINGS.paymentsFilters.fields;
+    const fieldOverrides = overrides.fields ?? {};
+    const fields = {
+      paymentId: { ...fieldDefaults.paymentId, ...(fieldOverrides.paymentId ?? {}) },
+      paymentRequestId: {
+        ...fieldDefaults.paymentRequestId,
+        ...(fieldOverrides.paymentRequestId ?? {}),
+      },
+      student: { ...fieldDefaults.student, ...(fieldOverrides.student ?? {}) },
+      reference: { ...fieldDefaults.reference, ...(fieldOverrides.reference ?? {}) },
+      generation: { ...fieldDefaults.generation, ...(fieldOverrides.generation ?? {}) },
+      gradeGroup: { ...fieldDefaults.gradeGroup, ...(fieldOverrides.gradeGroup ?? {}) },
+      concept: { ...fieldDefaults.concept, ...(fieldOverrides.concept ?? {}) },
+      scholarLevel: { ...fieldDefaults.scholarLevel, ...(fieldOverrides.scholarLevel ?? {}) },
+      month: { ...fieldDefaults.month, ...(fieldOverrides.month ?? {}) },
+    };
+
+    return {
+      ...DEFAULT_PAYMENTS_STRINGS.paymentsFilters,
+      ...overrides,
+      fields,
+    };
+  }, [strings.paymentsFilters]);
   const debtToggleStrings = useMemo(
     () => ({ ...DEFAULT_PAYMENTS_STRINGS.toggles, ...(strings.toggles ?? {}) }),
     [strings.toggles],
@@ -492,17 +556,10 @@ const PaymentsFinancePage = ({
     strings.search?.placeholder ?? DEFAULT_PAYMENTS_STRINGS.search.placeholder;
 
   const [activeTab, setActiveTab] = useState(activeSectionKey);
-  const [filters, setFilters] = useState({
-    group_status: '',
-    user_status: '',
-    student_full_name: '',
-    payment_reference: '',
-    generation: '',
-    grade_group: '',
-    scholar_level: '',
-    school_id: '',
-  });
-  const [showFilters, setShowFilters] = useState(false);
+  const [tuitionFilters, setTuitionFilters] = useState(() => ({ ...DEFAULT_TUITION_FILTERS }));
+  const [paymentsFilters, setPaymentsFilters] = useState(() => ({ ...DEFAULT_PAYMENTS_FILTERS }));
+  const [showTuitionFilters, setShowTuitionFilters] = useState(false);
+  const [showPaymentsFilters, setShowPaymentsFilters] = useState(false);
   const [schoolOptions, setSchoolOptions] = useState([]);
   const [isLoadingSchools, setIsLoadingSchools] = useState(false);
 
@@ -747,7 +804,7 @@ const PaymentsFinancePage = ({
       params.set('order_dir', orderDir === 'DESC' ? 'DESC' : 'ASC');
     }
 
-    for (const [key, value] of Object.entries(filters)) {
+    for (const [key, value] of Object.entries(tuitionFilters)) {
       if (value === null || value === undefined) {
         continue;
       }
@@ -763,7 +820,7 @@ const PaymentsFinancePage = ({
 
     return params;
   }, [
-    filters,
+    tuitionFilters,
     tuitionOffset,
     tuitionLimit,
     orderBy,
@@ -782,8 +839,27 @@ const PaymentsFinancePage = ({
     params.set('limit', String(paymentsLimit));
     params.set('export_all', 'false');
 
+    for (const [key, value] of Object.entries(paymentsFilters)) {
+      if (value === null || value === undefined) {
+        continue;
+      }
+
+      const trimmed = typeof value === 'string' ? value.trim() : value;
+
+      if (trimmed === '' || trimmed === false) {
+        continue;
+      }
+
+      if (key === 'payment_month' && typeof trimmed === 'string') {
+        params.set(key, `${trimmed}-01`);
+        continue;
+      }
+
+      params.set(key, String(trimmed));
+    }
+
     return params;
-  }, [normalizedLanguage, paymentsLimit, paymentsOffset]);
+  }, [normalizedLanguage, paymentsFilters, paymentsLimit, paymentsOffset]);
 
   const fetchTuitionPayments = useCallback(async () => {
     if (activeTab !== 'tuition') {
@@ -919,7 +995,7 @@ const PaymentsFinancePage = ({
   }, [fetchSchools]);
 
   const handleFilterChange = useCallback((key, value) => {
-    setFilters((previous) => ({ ...previous, [key]: value }));
+    setTuitionFilters((previous) => ({ ...previous, [key]: value }));
     setTuitionOffset(0);
   }, []);
 
@@ -938,8 +1014,12 @@ const PaymentsFinancePage = ({
     setTuitionOffset(0);
   }, []);
 
-  const handleToggleFilters = useCallback(() => {
-    setShowFilters((previous) => !previous);
+  const handleToggleTuitionFilters = useCallback(() => {
+    setShowTuitionFilters((previous) => !previous);
+  }, []);
+
+  const handleTogglePaymentsFilters = useCallback(() => {
+    setShowPaymentsFilters((previous) => !previous);
   }, []);
 
   const handleOpenAddPayment = useCallback(() => {
@@ -948,6 +1028,16 @@ const PaymentsFinancePage = ({
 
   const handleCloseAddPayment = useCallback(() => {
     setIsAddPaymentOpen(false);
+  }, []);
+
+  const handlePaymentsFilterChange = useCallback((key, value) => {
+    setPaymentsFilters((previous) => ({ ...previous, [key]: value }));
+    setPaymentsOffset(0);
+  }, []);
+
+  const handlePaymentsMonthChange = useCallback((value) => {
+    setPaymentsFilters((previous) => ({ ...previous, payment_month: value }));
+    setPaymentsOffset(0);
   }, []);
 
   const handlePaymentCreated = useCallback(
@@ -965,22 +1055,18 @@ const PaymentsFinancePage = ({
   );
 
   const handleResetFilters = useCallback(() => {
-    setFilters({
-      group_status: '',
-      user_status: '',
-      student_full_name: '',
-      payment_reference: '',
-      generation: '',
-      grade_group: '',
-      scholar_level: '',
-      school_id: '',
-    });
+    setTuitionFilters({ ...DEFAULT_TUITION_FILTERS });
     setShowDebtOnly(false);
     setStartMonth('');
     setEndMonth('');
     setOrderBy('');
     setOrderDir('ASC');
     setTuitionOffset(0);
+  }, []);
+
+  const handleResetPaymentsFilters = useCallback(() => {
+    setPaymentsFilters({ ...DEFAULT_PAYMENTS_FILTERS });
+    setPaymentsOffset(0);
   }, []);
 
   const handleStudentDetailClick = useCallback(
@@ -1267,10 +1353,16 @@ const PaymentsFinancePage = ({
   ]);
 
   useEffect(() => {
-    if (!isTuitionTab && showFilters) {
-      setShowFilters(false);
+    if (!isTuitionTab && showTuitionFilters) {
+      setShowTuitionFilters(false);
     }
-  }, [isTuitionTab, showFilters]);
+  }, [isTuitionTab, showTuitionFilters]);
+
+  useEffect(() => {
+    if (activeTab !== 'payments' && showPaymentsFilters) {
+      setShowPaymentsFilters(false);
+    }
+  }, [activeTab, showPaymentsFilters]);
 
   useEffect(() => {
     if (activeTab !== 'payments' && isAddPaymentOpen) {
@@ -1308,8 +1400,8 @@ const PaymentsFinancePage = ({
           activeKey === 'tuition' ? (
             <>
               <FilterButton
-                onClick={handleToggleFilters}
-                aria-expanded={showFilters}
+                onClick={handleToggleTuitionFilters}
+                aria-expanded={showTuitionFilters}
                 aria-controls="payments-page-filters"
               >
                 {actionStrings.filter}
@@ -1331,7 +1423,12 @@ const PaymentsFinancePage = ({
               <ActionButton type="button" onClick={handleOpenAddPayment}>
                 {actionStrings.add}
               </ActionButton>
-              <FilterButton type="button" disabled title={paymentsComingSoonLabel}>
+              <FilterButton
+                type="button"
+                onClick={handleTogglePaymentsFilters}
+                aria-expanded={showPaymentsFilters}
+                aria-controls="payments-table-filters"
+              >
                 {actionStrings.filter}
               </FilterButton>
               <ActionButton
@@ -1358,7 +1455,7 @@ const PaymentsFinancePage = ({
         <UiCard className="card-view">
           <div className="payments-page__toolbar">
             <SearchInput
-              value={filters.student_full_name}
+              value={tuitionFilters.student_full_name}
               onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
               placeholder={searchPlaceholder}
               className="payments-page__search-wrapper"
@@ -1587,93 +1684,95 @@ const PaymentsFinancePage = ({
         strings={addPaymentStrings}
       />
 
-      <SidebarModal
-        isOpen={showFilters}
-        onClose={() => setShowFilters(false)}
-        title={filterStrings.title}
-        description={filterStrings.subtitle}
+      <FiltersModal
+        isOpen={showTuitionFilters}
+        onClose={() => setShowTuitionFilters(false)}
+        title={tuitionFilterStrings.title}
+        description={tuitionFilterStrings.subtitle}
         id="payments-page-filters"
-        resetAction={{ label: filterStrings.reset, onClick: handleResetFilters }}
+        resetAction={{ label: tuitionFilterStrings.reset, onClick: handleResetFilters }}
         bodyClassName="filters-sidebar__body"
+        closeAriaLabel={tuitionFilterStrings.closeAria}
+        size="lg"
       >
         <form className="filters-sidebar__form">
           <div className="filters-sidebar__field">
             <label htmlFor="filter-student" className="filters-sidebar__label">
-              {filterStrings.fields.student.label}
+              {tuitionFilterStrings.fields.student.label}
             </label>
             <input
               id="filter-student"
               type="text"
               className="filters-sidebar__input"
-              value={filters.student_full_name}
+              value={tuitionFilters.student_full_name}
               onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
-              placeholder={filterStrings.fields.student.placeholder}
+              placeholder={tuitionFilterStrings.fields.student.placeholder}
             />
           </div>
           <div className="filters-sidebar__field">
             <label htmlFor="filter-reference" className="filters-sidebar__label">
-              {filterStrings.fields.reference.label}
+              {tuitionFilterStrings.fields.reference.label}
             </label>
             <input
               id="filter-reference"
               type="text"
               className="filters-sidebar__input"
-              value={filters.payment_reference}
+              value={tuitionFilters.payment_reference}
               onChange={(event) => handleFilterChange('payment_reference', event.target.value)}
-              placeholder={filterStrings.fields.reference.placeholder}
+              placeholder={tuitionFilterStrings.fields.reference.placeholder}
             />
           </div>
           <div className="filters-sidebar__field">
             <label htmlFor="filter-generation" className="filters-sidebar__label">
-              {filterStrings.fields.generation.label}
+              {tuitionFilterStrings.fields.generation.label}
             </label>
             <input
               id="filter-generation"
               type="text"
               className="filters-sidebar__input"
-              value={filters.generation}
+              value={tuitionFilters.generation}
               onChange={(event) => handleFilterChange('generation', event.target.value)}
-              placeholder={filterStrings.fields.generation.placeholder}
+              placeholder={tuitionFilterStrings.fields.generation.placeholder}
             />
           </div>
           <div className="filters-sidebar__field">
             <label htmlFor="filter-grade" className="filters-sidebar__label">
-              {filterStrings.fields.gradeGroup.label}
+              {tuitionFilterStrings.fields.gradeGroup.label}
             </label>
             <input
               id="filter-grade"
               type="text"
               className="filters-sidebar__input"
-              value={filters.grade_group}
+              value={tuitionFilters.grade_group}
               onChange={(event) => handleFilterChange('grade_group', event.target.value)}
-              placeholder={filterStrings.fields.gradeGroup.placeholder}
+              placeholder={tuitionFilterStrings.fields.gradeGroup.placeholder}
             />
           </div>
           <div className="filters-sidebar__field">
             <label htmlFor="filter-scholar" className="filters-sidebar__label">
-              {filterStrings.fields.scholarLevel.label}
+              {tuitionFilterStrings.fields.scholarLevel.label}
             </label>
             <input
               id="filter-scholar"
               type="text"
               className="filters-sidebar__input"
-              value={filters.scholar_level}
+              value={tuitionFilters.scholar_level}
               onChange={(event) => handleFilterChange('scholar_level', event.target.value)}
-              placeholder={filterStrings.fields.scholarLevel.placeholder}
+              placeholder={tuitionFilterStrings.fields.scholarLevel.placeholder}
             />
           </div>
           <div className="filters-sidebar__field">
             <label htmlFor="filter-school" className="filters-sidebar__label">
-              {filterStrings.fields.school.label}
+              {tuitionFilterStrings.fields.school.label}
             </label>
             <select
               id="filter-school"
               className="filters-sidebar__select"
-              value={filters.school_id}
+              value={tuitionFilters.school_id}
               onChange={(event) => handleFilterChange('school_id', event.target.value)}
               disabled={isLoadingSchools}
             >
-              <option value="">{filterStrings.schoolOptions.all}</option>
+              <option value="">{tuitionFilterStrings.schoolOptions.all}</option>
               {schoolOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -1684,21 +1783,160 @@ const PaymentsFinancePage = ({
           <label className="filters-sidebar__checkbox">
             <input
               type="checkbox"
-              checked={filters.group_status === 'true'}
+              checked={tuitionFilters.group_status === 'true'}
               onChange={(event) => handleFilterChange('group_status', event.target.checked ? 'true' : '')}
             />
-            {filterStrings.toggles.activeGroups}
+            {tuitionFilterStrings.toggles.activeGroups}
           </label>
           <label className="filters-sidebar__checkbox">
             <input
               type="checkbox"
-              checked={filters.user_status === 'true'}
+              checked={tuitionFilters.user_status === 'true'}
               onChange={(event) => handleFilterChange('user_status', event.target.checked ? 'true' : '')}
             />
-            {filterStrings.toggles.activeStudents}
+            {tuitionFilterStrings.toggles.activeStudents}
           </label>
         </form>
-      </SidebarModal>
+      </FiltersModal>
+
+      <FiltersModal
+        isOpen={showPaymentsFilters}
+        onClose={() => setShowPaymentsFilters(false)}
+        title={paymentsFilterStrings.title}
+        description={paymentsFilterStrings.subtitle}
+        id="payments-table-filters"
+        resetAction={{ label: paymentsFilterStrings.reset, onClick: handleResetPaymentsFilters }}
+        bodyClassName="filters-sidebar__body"
+        closeAriaLabel={paymentsFilterStrings.closeAria}
+        size="lg"
+      >
+        <form className="filters-sidebar__form">
+          <div className="filters-sidebar__field">
+            <label htmlFor="payments-filter-id" className="filters-sidebar__label">
+              {paymentsFilterStrings.fields.paymentId.label}
+            </label>
+            <input
+              id="payments-filter-id"
+              type="text"
+              className="filters-sidebar__input"
+              value={paymentsFilters.payment_id}
+              onChange={(event) => handlePaymentsFilterChange('payment_id', event.target.value)}
+              placeholder={paymentsFilterStrings.fields.paymentId.placeholder}
+            />
+          </div>
+          <div className="filters-sidebar__field">
+            <label htmlFor="payments-filter-request" className="filters-sidebar__label">
+              {paymentsFilterStrings.fields.paymentRequestId.label}
+            </label>
+            <input
+              id="payments-filter-request"
+              type="text"
+              className="filters-sidebar__input"
+              value={paymentsFilters.payment_request_id}
+              onChange={(event) =>
+                handlePaymentsFilterChange('payment_request_id', event.target.value)
+              }
+              placeholder={paymentsFilterStrings.fields.paymentRequestId.placeholder}
+            />
+          </div>
+          <div className="filters-sidebar__field">
+            <label htmlFor="payments-filter-student" className="filters-sidebar__label">
+              {paymentsFilterStrings.fields.student.label}
+            </label>
+            <input
+              id="payments-filter-student"
+              type="text"
+              className="filters-sidebar__input"
+              value={paymentsFilters.student_full_name}
+              onChange={(event) =>
+                handlePaymentsFilterChange('student_full_name', event.target.value)
+              }
+              placeholder={paymentsFilterStrings.fields.student.placeholder}
+            />
+          </div>
+          <div className="filters-sidebar__field">
+            <label htmlFor="payments-filter-reference" className="filters-sidebar__label">
+              {paymentsFilterStrings.fields.reference.label}
+            </label>
+            <input
+              id="payments-filter-reference"
+              type="text"
+              className="filters-sidebar__input"
+              value={paymentsFilters.payment_reference}
+              onChange={(event) =>
+                handlePaymentsFilterChange('payment_reference', event.target.value)
+              }
+              placeholder={paymentsFilterStrings.fields.reference.placeholder}
+            />
+          </div>
+          <div className="filters-sidebar__field">
+            <label htmlFor="payments-filter-generation" className="filters-sidebar__label">
+              {paymentsFilterStrings.fields.generation.label}
+            </label>
+            <input
+              id="payments-filter-generation"
+              type="text"
+              className="filters-sidebar__input"
+              value={paymentsFilters.generation}
+              onChange={(event) => handlePaymentsFilterChange('generation', event.target.value)}
+              placeholder={paymentsFilterStrings.fields.generation.placeholder}
+            />
+          </div>
+          <div className="filters-sidebar__field">
+            <label htmlFor="payments-filter-grade" className="filters-sidebar__label">
+              {paymentsFilterStrings.fields.gradeGroup.label}
+            </label>
+            <input
+              id="payments-filter-grade"
+              type="text"
+              className="filters-sidebar__input"
+              value={paymentsFilters.grade_group}
+              onChange={(event) => handlePaymentsFilterChange('grade_group', event.target.value)}
+              placeholder={paymentsFilterStrings.fields.gradeGroup.placeholder}
+            />
+          </div>
+          <div className="filters-sidebar__field">
+            <label htmlFor="payments-filter-concept" className="filters-sidebar__label">
+              {paymentsFilterStrings.fields.concept.label}
+            </label>
+            <input
+              id="payments-filter-concept"
+              type="text"
+              className="filters-sidebar__input"
+              value={paymentsFilters.pt_name}
+              onChange={(event) => handlePaymentsFilterChange('pt_name', event.target.value)}
+              placeholder={paymentsFilterStrings.fields.concept.placeholder}
+            />
+          </div>
+          <div className="filters-sidebar__field">
+            <label htmlFor="payments-filter-scholar" className="filters-sidebar__label">
+              {paymentsFilterStrings.fields.scholarLevel.label}
+            </label>
+            <input
+              id="payments-filter-scholar"
+              type="text"
+              className="filters-sidebar__input"
+              value={paymentsFilters.scholar_level_name}
+              onChange={(event) =>
+                handlePaymentsFilterChange('scholar_level_name', event.target.value)
+              }
+              placeholder={paymentsFilterStrings.fields.scholarLevel.placeholder}
+            />
+          </div>
+          <div className="filters-sidebar__field">
+            <label htmlFor="payments-filter-month" className="filters-sidebar__label">
+              {paymentsFilterStrings.fields.month.label}
+            </label>
+            <input
+              id="payments-filter-month"
+              type="month"
+              className="filters-sidebar__input"
+              value={paymentsFilters.payment_month}
+              onChange={(event) => handlePaymentsMonthChange(event.target.value)}
+            />
+          </div>
+        </form>
+      </FiltersModal>
     </div>
   );
 };
