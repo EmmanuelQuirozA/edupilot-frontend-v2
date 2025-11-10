@@ -148,7 +148,7 @@ const TuitionPaymentDetailsModal = ({
               ? String(payment.paymentId)
               : null;
             const paymentUrl = paymentId
-              ? `${paymentDetailBasePath}?payment_id=${encodeURIComponent(paymentId)}`
+              ? `${paymentDetailBasePath}/${encodeURIComponent(paymentId)}`
               : null;
             const formattedAmount =
               payment.amount != null ? currencyFormatter.format(payment.amount) : '--';

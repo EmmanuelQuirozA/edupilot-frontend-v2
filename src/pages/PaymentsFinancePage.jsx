@@ -14,6 +14,7 @@ import { useModal } from '../components/modal/useModal';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { handleExpiredToken } from '../utils/auth';
+import PaymentDetailPage from './PaymentDetailPage.jsx';
 import './PaymentsFinancePage.css';
 
 const DEFAULT_LIMIT = 10;
@@ -383,8 +384,10 @@ const PaymentsFinancePage = ({
   language = 'es',
   strings = {},
   onStudentDetail,
+  onPaymentDetail,
   activeSectionKey = DEFAULT_PAYMENTS_TAB_KEY,
   onSectionChange,
+  routeSegments = [],
 }) => {
   const { token, logout } = useAuth();
   const { openModal } = useModal();
@@ -399,6 +402,31 @@ const PaymentsFinancePage = ({
     () => `/${normalizedLanguage}/payments/requests/detail`,
     [normalizedLanguage],
   );
+
+  const detailRouteSegments = Array.isArray(routeSegments) ? routeSegments : [];
+  const isPaymentDetailRoute = detailRouteSegments[0] === 'detail';
+  const paymentDetailId = (() => {
+    if (!isPaymentDetailRoute) {
+      return null;
+    }
+
+    const candidate = detailRouteSegments[1];
+
+    if (candidate == null) {
+      return null;
+    }
+
+    if (typeof candidate !== 'string') {
+      return candidate;
+    }
+
+    try {
+      return decodeURIComponent(candidate);
+    } catch (decodeError) {
+      console.warn('Unable to decode payment id from route', decodeError);
+      return candidate;
+    }
+  })();
 
   const tabStrings = useMemo(
     () => ({ ...DEFAULT_PAYMENTS_STRINGS.tabs, ...(strings.tabs ?? {}) }),
@@ -446,6 +474,7 @@ const PaymentsFinancePage = ({
         DEFAULT_PAYMENTS_STRINGS.paymentsTable.actionsPlaceholder,
     };
   }, [strings.paymentsTable]);
+  const paymentDetailButtonLabel = paymentsTableStrings.paymentLinkLabel ?? 'Abrir detalle del pago';
   const tuitionModalStrings = useMemo(() => {
     const modalOverrides = strings.tuitionModal ?? {};
     const summary = {
@@ -1423,7 +1452,53 @@ const PaymentsFinancePage = ({
     </svg>
   );
 
-  const paymentsComingSoonLabel = paymentsTableStrings.actionsPlaceholder;
+  const handleBackToPayments = useCallback(() => {
+    onSectionChange?.('payments', { replace: true });
+  }, [onSectionChange]);
+
+  const handlePaymentDetailNavigation = useCallback(
+    (paymentId) => {
+      if (paymentId == null || paymentId === '') {
+        return;
+      }
+
+      const idValue = String(paymentId);
+
+      if (onPaymentDetail) {
+        onPaymentDetail(idValue);
+        return;
+      }
+
+      if (typeof window !== 'undefined') {
+        const fallbackUrl = `${paymentDetailBasePath}/${encodeURIComponent(idValue)}`;
+        window.location.assign(fallbackUrl);
+      }
+    },
+    [onPaymentDetail, paymentDetailBasePath],
+  );
+
+  if (isPaymentDetailRoute) {
+    return (
+      <div className="page">
+        <GlobalToast alert={toast} onClose={() => setToast(null)} />
+        <header className="page__header">
+          <div>
+            <p>{strings.header?.subtitle ?? description}</p>
+          </div>
+        </header>
+        <div className="page__layout">
+          <section className="page__content">
+            <PaymentDetailPage
+              paymentId={paymentDetailId}
+              language={normalizedLanguage}
+              strings={strings.detail ?? {}}
+              onBack={handleBackToPayments}
+            />
+          </section>
+        </div>
+      </div>
+    );
+  }
 
   const tuitionFiltersCount = useMemo(() => {
     return Object.entries(tuitionFilters).reduce((count, [, value]) => {
@@ -1695,6 +1770,18 @@ const PaymentsFinancePage = ({
                       : amountRaw != null && amountRaw !== ''
                       ? String(amountRaw)
                       : '';
+                  const paymentIdValue = row?.payment_id ?? row?.paymentId ?? null;
+                  const paymentIdLabel = paymentIdValue != null ? String(paymentIdValue) : null;
+                  const hasValidPaymentId = !(
+                    paymentIdLabel == null ||
+                    paymentIdLabel.trim() === '' ||
+                    paymentIdLabel === 'null' ||
+                    paymentIdLabel === 'undefined'
+                  );
+                  const isDetailDisabled = !hasValidPaymentId;
+                  const detailButtonLabel = hasValidPaymentId
+                    ? `${paymentDetailButtonLabel} ${paymentIdLabel}`
+                    : paymentDetailButtonLabel;
 
                   return (
                     <tr key={rowKey}>
@@ -1726,12 +1813,14 @@ const PaymentsFinancePage = ({
                       <td data-title={paymentsTableStrings.columns.actions} className="text-end">
                         <ActionButton
                           type="button"
-                          variant="text"
+                          variant="secondary"
                           size="sm"
-                          disabled
-                          title={paymentsComingSoonLabel}
+                          onClick={() => handlePaymentDetailNavigation(paymentIdValue)}
+                          disabled={isDetailDisabled}
+                          aria-label={detailButtonLabel}
+                          title={detailButtonLabel}
                         >
-                          {paymentsComingSoonLabel}
+                          {paymentDetailButtonLabel}
                         </ActionButton>
                       </td>
                     </tr>

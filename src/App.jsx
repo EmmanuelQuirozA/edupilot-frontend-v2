@@ -180,6 +180,19 @@ const App = () => {
     [language, navigate],
   );
 
+  const handlePaymentDetailNavigation = useCallback(
+    (paymentId, { replace = false } = {}) => {
+      if (paymentId == null || paymentId === '') {
+        return;
+      }
+
+      const basePath = buildPath(language, 'payments');
+      const safeId = encodeURIComponent(String(paymentId));
+      navigate(`${basePath}/detail/${safeId}`, { replace });
+    },
+    [language, navigate],
+  );
+
   const handleStudentsSectionNavigation = useCallback(
     (sectionKey, { replace = false } = {}) => {
       const basePath = buildPath(language, 'students');
@@ -211,6 +224,7 @@ const App = () => {
         onNavigateToBulkUpload={handleStudentBulkUploadNavigation}
         onPaymentsSectionChange={handlePaymentsSectionNavigation}
         onStudentsSectionChange={handleStudentsSectionNavigation}
+        onNavigateToPaymentDetail={handlePaymentDetailNavigation}
       />
     );
   }
