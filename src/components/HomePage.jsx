@@ -28,6 +28,7 @@ const HomePage = ({
   onNavigateToBulkUpload,
   onPaymentsSectionChange,
   onStudentsSectionChange,
+  onNavigateToPaymentDetail,
 }) => {
   const { user, logout } = useAuth();
   const t = getTranslation(language);
@@ -40,7 +41,12 @@ const HomePage = ({
   );
 
   const paymentsRouteSegments = activePage === 'payments' ? routeSegments : [];
-  const paymentsSectionKey = paymentsRouteSegments[0] ?? 'tuition';
+  const paymentsPrimarySegment = paymentsRouteSegments[0] ?? '';
+  const isPaymentDetailActive = activePage === 'payments' && paymentsPrimarySegment === 'detail';
+  const paymentsSectionKey =
+    !isPaymentDetailActive && paymentsPrimarySegment
+      ? paymentsPrimarySegment
+      : 'tuition';
 
   const studentsRouteSegments = activePage === 'students' ? routeSegments : [];
   const studentsPrimarySegment = studentsRouteSegments[0] ?? '';
@@ -227,6 +233,17 @@ const HomePage = ({
     [onNavigateToStudentDetail, t.home.studentsPage.detail.breadcrumbFallback],
   );
 
+  const handlePaymentDetailNavigate = useCallback(
+    (paymentId) => {
+      if (!paymentId) {
+        return;
+      }
+
+      onNavigateToPaymentDetail?.(paymentId);
+    },
+    [onNavigateToPaymentDetail],
+  );
+
   const paymentsContent = (
     <PaymentsFinancePage
       title={t.home.pages.payments.title}
@@ -234,8 +251,10 @@ const HomePage = ({
       language={language}
       strings={t.home.paymentsPage}
       onStudentDetail={handleStudentDetailNavigate}
+      onPaymentDetail={handlePaymentDetailNavigate}
       activeSectionKey={paymentsSectionKey}
       onSectionChange={handlePaymentsSectionChange}
+      routeSegments={paymentsRouteSegments}
     />
   );
 
