@@ -1777,7 +1777,6 @@ const PaymentsFinancePage = ({
         title={tuitionFilterStrings.title}
         description={tuitionFilterStrings.subtitle}
         id="payments-page-filters"
-        bodyClassName="filters-sidebar__body"
         footer={
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <ActionButton variant="text" onClick={handleClearTuitionFilters} type="button">
@@ -1789,83 +1788,79 @@ const PaymentsFinancePage = ({
           </div>
         }
       >
-        <form
-          id="tuition-filters-form"
-          className="filters-sidebar__form"
-          onSubmit={handleApplyTuitionFilters}
-        >
-          <div className="filters-sidebar__field">
-            <label htmlFor="filter-student" className="filters-sidebar__label">
+        <form id="tuition-filters-form" className="row g-3" onSubmit={handleApplyTuitionFilters}>
+          <div className="col-sm-12">
+            <label htmlFor="filter-student" className="form-label">
               {tuitionFilterStrings.fields.student.label}
             </label>
             <input
               id="filter-student"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={tuitionFiltersDraft.student_full_name}
               onChange={(event) => handleFilterChange('student_full_name', event.target.value)}
               placeholder={tuitionFilterStrings.fields.student.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="filter-reference" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="filter-reference" className="form-label">
               {tuitionFilterStrings.fields.reference.label}
             </label>
             <input
               id="filter-reference"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={tuitionFiltersDraft.payment_reference}
               onChange={(event) => handleFilterChange('payment_reference', event.target.value)}
               placeholder={tuitionFilterStrings.fields.reference.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="filter-generation" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="filter-generation" className="form-label">
               {tuitionFilterStrings.fields.generation.label}
             </label>
             <input
               id="filter-generation"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={tuitionFiltersDraft.generation}
               onChange={(event) => handleFilterChange('generation', event.target.value)}
               placeholder={tuitionFilterStrings.fields.generation.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="filter-grade" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="filter-grade" className="form-label">
               {tuitionFilterStrings.fields.gradeGroup.label}
             </label>
             <input
               id="filter-grade"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={tuitionFiltersDraft.grade_group}
               onChange={(event) => handleFilterChange('grade_group', event.target.value)}
               placeholder={tuitionFilterStrings.fields.gradeGroup.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="filter-scholar" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="filter-scholar" className="form-label">
               {tuitionFilterStrings.fields.scholarLevel.label}
             </label>
             <input
               id="filter-scholar"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={tuitionFiltersDraft.scholar_level}
               onChange={(event) => handleFilterChange('scholar_level', event.target.value)}
               placeholder={tuitionFilterStrings.fields.scholarLevel.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="filter-school" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="filter-school" className="form-label">
               {tuitionFilterStrings.fields.school.label}
             </label>
             <select
               id="filter-school"
-              className="filters-sidebar__select"
+              className="form-select"
               value={tuitionFiltersDraft.school_id}
               onChange={(event) => handleFilterChange('school_id', event.target.value)}
               disabled={isLoadingSchools}
@@ -1878,22 +1873,34 @@ const PaymentsFinancePage = ({
               ))}
             </select>
           </div>
-          <label className="filters-sidebar__checkbox">
-            <input
-              type="checkbox"
-              checked={tuitionFiltersDraft.group_status === 'true'}
-              onChange={(event) => handleFilterChange('group_status', event.target.checked ? 'true' : '')}
-            />
-            {tuitionFilterStrings.toggles.activeGroups}
-          </label>
-          <label className="filters-sidebar__checkbox">
-            <input
-              type="checkbox"
-              checked={tuitionFiltersDraft.user_status === 'true'}
-              onChange={(event) => handleFilterChange('user_status', event.target.checked ? 'true' : '')}
-            />
-            {tuitionFilterStrings.toggles.activeStudents}
-          </label>
+          <div className="col-sm-12">
+            <div className="form-check">
+              <input
+                id="filter-active-groups"
+                type="checkbox"
+                className="form-check-input"
+                checked={tuitionFiltersDraft.group_status === 'true'}
+                onChange={(event) => handleFilterChange('group_status', event.target.checked ? 'true' : '')}
+              />
+              <label className="form-check-label" htmlFor="filter-active-groups">
+                {tuitionFilterStrings.toggles.activeGroups}
+              </label>
+            </div>
+          </div>
+          <div className="col-sm-12">
+            <div className="form-check">
+              <input
+                id="filter-active-students"
+                type="checkbox"
+                className="form-check-input"
+                checked={tuitionFiltersDraft.user_status === 'true'}
+                onChange={(event) => handleFilterChange('user_status', event.target.checked ? 'true' : '')}
+              />
+              <label className="form-check-label" htmlFor="filter-active-students">
+                {tuitionFilterStrings.toggles.activeStudents}
+              </label>
+            </div>
+          </div>
         </form>
       </SidebarModal>
 
@@ -1903,7 +1910,6 @@ const PaymentsFinancePage = ({
         title={paymentsFilterStrings.title}
         description={paymentsFilterStrings.subtitle}
         id="payments-table-filters"
-        bodyClassName="filters-sidebar__body"
         footer={
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <ActionButton variant="text" onClick={handleClearPaymentsFilters} type="button">
@@ -1915,32 +1921,28 @@ const PaymentsFinancePage = ({
           </div>
         }
       >
-        <form
-          id="payments-filters-form"
-          className="filters-sidebar__form"
-          onSubmit={handleApplyPaymentsFilters}
-        >
-          <div className="filters-sidebar__field">
-            <label htmlFor="payments-filter-id" className="filters-sidebar__label">
+        <form id="payments-filters-form" className="row g-3" onSubmit={handleApplyPaymentsFilters}>
+          <div className="col-sm-12">
+            <label htmlFor="payments-filter-id" className="form-label">
               {paymentsFilterStrings.fields.paymentId.label}
             </label>
             <input
               id="payments-filter-id"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={paymentsFiltersDraft.payment_id}
               onChange={(event) => handlePaymentsFilterChange('payment_id', event.target.value)}
               placeholder={paymentsFilterStrings.fields.paymentId.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="payments-filter-request" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="payments-filter-request" className="form-label">
               {paymentsFilterStrings.fields.paymentRequestId.label}
             </label>
             <input
               id="payments-filter-request"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={paymentsFiltersDraft.payment_request_id}
               onChange={(event) =>
                 handlePaymentsFilterChange('payment_request_id', event.target.value)
@@ -1948,14 +1950,14 @@ const PaymentsFinancePage = ({
               placeholder={paymentsFilterStrings.fields.paymentRequestId.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="payments-filter-student" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="payments-filter-student" className="form-label">
               {paymentsFilterStrings.fields.student.label}
             </label>
             <input
               id="payments-filter-student"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={paymentsFiltersDraft.student_full_name}
               onChange={(event) =>
                 handlePaymentsFilterChange('student_full_name', event.target.value)
@@ -1963,14 +1965,14 @@ const PaymentsFinancePage = ({
               placeholder={paymentsFilterStrings.fields.student.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="payments-filter-reference" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="payments-filter-reference" className="form-label">
               {paymentsFilterStrings.fields.reference.label}
             </label>
             <input
               id="payments-filter-reference"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={paymentsFiltersDraft.payment_reference}
               onChange={(event) =>
                 handlePaymentsFilterChange('payment_reference', event.target.value)
@@ -1978,53 +1980,53 @@ const PaymentsFinancePage = ({
               placeholder={paymentsFilterStrings.fields.reference.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="payments-filter-generation" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="payments-filter-generation" className="form-label">
               {paymentsFilterStrings.fields.generation.label}
             </label>
             <input
               id="payments-filter-generation"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={paymentsFiltersDraft.generation}
               onChange={(event) => handlePaymentsFilterChange('generation', event.target.value)}
               placeholder={paymentsFilterStrings.fields.generation.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="payments-filter-grade" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="payments-filter-grade" className="form-label">
               {paymentsFilterStrings.fields.gradeGroup.label}
             </label>
             <input
               id="payments-filter-grade"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={paymentsFiltersDraft.grade_group}
               onChange={(event) => handlePaymentsFilterChange('grade_group', event.target.value)}
               placeholder={paymentsFilterStrings.fields.gradeGroup.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="payments-filter-concept" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="payments-filter-concept" className="form-label">
               {paymentsFilterStrings.fields.concept.label}
             </label>
             <input
               id="payments-filter-concept"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={paymentsFiltersDraft.pt_name}
               onChange={(event) => handlePaymentsFilterChange('pt_name', event.target.value)}
               placeholder={paymentsFilterStrings.fields.concept.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="payments-filter-scholar" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="payments-filter-scholar" className="form-label">
               {paymentsFilterStrings.fields.scholarLevel.label}
             </label>
             <input
               id="payments-filter-scholar"
               type="text"
-              className="filters-sidebar__input"
+              className="form-control"
               value={paymentsFiltersDraft.scholar_level_name}
               onChange={(event) =>
                 handlePaymentsFilterChange('scholar_level_name', event.target.value)
@@ -2032,14 +2034,14 @@ const PaymentsFinancePage = ({
               placeholder={paymentsFilterStrings.fields.scholarLevel.placeholder}
             />
           </div>
-          <div className="filters-sidebar__field">
-            <label htmlFor="payments-filter-month" className="filters-sidebar__label">
+          <div className="col-sm-12">
+            <label htmlFor="payments-filter-month" className="form-label">
               {paymentsFilterStrings.fields.month.label}
             </label>
             <input
               id="payments-filter-month"
               type="month"
-              className="filters-sidebar__input"
+              className="form-control"
               value={paymentsFiltersDraft.payment_month}
               onChange={(event) => handlePaymentsMonthChange(event.target.value)}
             />
