@@ -3,7 +3,6 @@
 @import './styles/search-input.css';
 @import './styles/global-table.css';
 @import './styles/sidebar-modal.css';
-@import './styles/sidebar-filters.css';
 
 * {
   box-sizing: border-box;
