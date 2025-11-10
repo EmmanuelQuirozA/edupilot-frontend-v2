@@ -10,6 +10,7 @@ const SUPPORTED_LANGUAGES = ['es', 'en'];
 
 const DEFAULT_STRINGS = {
   back: 'Volver a pagos',
+  breadcrumbFallback: 'Detalle de pago',
   loading: 'Cargando información del pago...',
   error: 'No fue posible cargar la información del pago.',
   retry: 'Reintentar',
@@ -164,7 +165,7 @@ const PaymentDetailPage = ({
   paymentId,
   language = 'es',
   strings = {},
-  onBack,
+  onBreadcrumbChange,
 }) => {
   const normalizedLanguage = normalizeLanguage(language);
   const mergedStrings = useMemo(() => ({
@@ -258,11 +259,13 @@ const PaymentDetailPage = ({
     if (!paymentId) {
       setPayment(null);
       setError(mergedStrings.error);
+      onBreadcrumbChange?.(mergedStrings.breadcrumbFallback);
       return;
     }
 
     setLoading(true);
     setError(null);
+    onBreadcrumbChange?.(mergedStrings.breadcrumbFallback);
 
     try {
       const params = new URLSearchParams();
@@ -286,6 +289,18 @@ const PaymentDetailPage = ({
       const content = Array.isArray(payload?.content) ? payload.content : [];
       const detail = content[0] ?? null;
       setPayment(detail);
+      const breadcrumbLabel = [
+        detail?.payment_id,
+        detail?.paymentId,
+        detail?.id,
+        paymentId,
+      ].find((value) => typeof value === 'string' || typeof value === 'number');
+
+      if (breadcrumbLabel != null && breadcrumbLabel !== '') {
+        onBreadcrumbChange?.(String(breadcrumbLabel));
+      } else {
+        onBreadcrumbChange?.(mergedStrings.breadcrumbFallback);
+      }
     } catch (requestError) {
       console.error('Failed to load payment detail', requestError);
       const fallbackMessage =
@@ -293,10 +308,19 @@ const PaymentDetailPage = ({
           ? requestError.message
           : mergedStrings.error;
       setError(fallbackMessage);
+      onBreadcrumbChange?.(mergedStrings.breadcrumbFallback);
     } finally {
       setLoading(false);
     }
-  }, [paymentId, mergedStrings.error, normalizedLanguage, token, logout]);
+  }, [
+    mergedStrings.breadcrumbFallback,
+    mergedStrings.error,
+    normalizedLanguage,
+    onBreadcrumbChange,
+    paymentId,
+    token,
+    logout,
+  ]);
 
   const fetchPaymentLogs = useCallback(async () => {
     if (!paymentId) {
@@ -569,14 +593,6 @@ const PaymentDetailPage = ({
 
   return (
     <div className="payment-detail">
-      <div className="payment-detail__breadcrumb">
-        {onBack ? (
-          <ActionButton variant="ghost" onClick={onBack}>
-            {mergedStrings.back}
-          </ActionButton>
-        ) : null}
-      </div>
-
       <UiCard className="payment-detail__card">
         <div className="payment-detail__header">
           <div>

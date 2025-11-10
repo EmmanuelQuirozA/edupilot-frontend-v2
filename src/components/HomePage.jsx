@@ -39,6 +39,9 @@ const HomePage = ({
   const [detailBreadcrumbLabel, setDetailBreadcrumbLabel] = useState(
     t.home.studentsPage.detail.breadcrumbFallback,
   );
+  const [paymentDetailBreadcrumbLabel, setPaymentDetailBreadcrumbLabel] = useState(
+    t.home.paymentsPage.detail?.breadcrumbFallback || t.home.menu.items.payments,
+  );
 
   const paymentsRouteSegments = activePage === 'payments' ? routeSegments : [];
   const paymentsPrimarySegment = paymentsRouteSegments[0] ?? '';
@@ -77,6 +80,18 @@ const HomePage = ({
       setDetailBreadcrumbLabel(t.home.studentsPage.detail.breadcrumbFallback);
     }
   }, [isStudentDetailActive, t.home.studentsPage.detail.breadcrumbFallback]);
+
+  useEffect(() => {
+    if (!isPaymentDetailActive) {
+      setPaymentDetailBreadcrumbLabel(
+        t.home.paymentsPage.detail?.breadcrumbFallback || t.home.menu.items.payments,
+      );
+    }
+  }, [
+    isPaymentDetailActive,
+    t.home.menu.items.payments,
+    t.home.paymentsPage.detail?.breadcrumbFallback,
+  ]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -252,6 +267,7 @@ const HomePage = ({
       strings={t.home.paymentsPage}
       onStudentDetail={handleStudentDetailNavigate}
       onPaymentDetail={handlePaymentDetailNavigate}
+      onPaymentBreadcrumbChange={setPaymentDetailBreadcrumbLabel}
       activeSectionKey={paymentsSectionKey}
       onSectionChange={handlePaymentsSectionChange}
       routeSegments={paymentsRouteSegments}
@@ -322,6 +338,17 @@ const HomePage = ({
       return items;
     }
 
+    if (isPaymentDetailActive) {
+      items.push({
+        label: t.home.menu.items.payments,
+        onClick: () => handleNavClick('payments'),
+      });
+      items.push({
+        label: paymentDetailBreadcrumbLabel,
+      });
+      return items;
+    }
+
     if (isBulkUploadActive) {
       items.push({
         label: t.home.menu.items.students,
@@ -344,10 +371,13 @@ const HomePage = ({
     headerTitle,
     handleNavClick,
     isBulkUploadActive,
+    isPaymentDetailActive,
+    paymentDetailBreadcrumbLabel,
     isStudentDetailActive,
     studentsBulkStrings.breadcrumb,
     studentsPageStrings.actions.bulkUpload,
     t.home.menu.items,
+    t.home.menu.items.payments,
   ]);
 
   const toggleSidebar = () => {

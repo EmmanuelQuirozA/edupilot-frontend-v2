@@ -134,7 +134,7 @@ export const translations = {
       pages: {
         payments: {
           title: 'Pagos y Finanzas',
-          description: 'Esta sección estará disponible próximamente.',
+          description: 'Muy pronto podrás gestionar tus pagos desde aquí.',
         },
         students: {
           title: 'Alumnos y Grupos',
@@ -158,7 +158,7 @@ export const translations = {
         },
       },
       paymentsPage: {
-        placeholder: 'Esta sección estará disponible próximamente.',
+        placeholder: 'Muy pronto podrás gestionar tus pagos desde aquí.',
         tabs: {
           tuition: 'Colegiaturas',
           requests: 'Solicitudes de pago',
@@ -169,6 +169,7 @@ export const translations = {
           debtActive: 'Mostrando morosos',
           debtInactive: 'Alumnos con deuda',
           add: 'Agregar pago',
+          bulkUploadTooltip: 'Muy pronto podrás gestionar tus pagos desde aquí.',
           export: 'Exportar CSV',
           exporting: 'Exportando…',
         },
@@ -267,6 +268,7 @@ export const translations = {
           close: 'Cerrar',
         },
         detail: {
+          breadcrumbFallback: 'Detalle de pago',
           back: 'Volver a pagos',
           loading: 'Cargando información del pago...',
           error: 'No fue posible cargar la información del pago.',
@@ -780,7 +782,7 @@ export const translations = {
       pages: {
         payments: {
           title: 'Payments & Finance',
-          description: 'This section will be available soon.',
+          description: 'You will soon be able to manage your payments here.',
         },
         students: {
           title: 'Students & Groups',
@@ -804,7 +806,7 @@ export const translations = {
         },
       },
       paymentsPage: {
-        placeholder: 'This section will be available soon.',
+        placeholder: 'You will soon be able to manage your payments here.',
         tabs: {
           tuition: 'Tuition',
           requests: 'Payment requests',
@@ -815,6 +817,7 @@ export const translations = {
           debtActive: 'Showing past due',
           debtInactive: 'Students in debt',
           add: 'Add payment',
+          bulkUploadTooltip: 'You will soon be able to manage your payments here.',
           export: 'Export CSV',
           exporting: 'Exporting…',
         },
@@ -913,6 +916,7 @@ export const translations = {
           close: 'Close',
         },
         detail: {
+          breadcrumbFallback: 'Payment detail',
           back: 'Back to payments',
           loading: 'Loading payment information...',
           error: 'Unable to load the payment information.',
