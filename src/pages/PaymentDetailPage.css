@@ -77,6 +77,10 @@
   gap: 0.25rem;
 }
 
+.payment-detail__details-item--full {
+  grid-column: 1 / -1;
+}
+
 .payment-detail__details-item dt {
   margin: 0;
   font-size: 0.75rem;
@@ -138,6 +142,10 @@
 .payment-detail__form-textarea {
   resize: vertical;
   min-height: 120px;
+}
+
+.payment-detail__details-item--full .payment-detail__form-textarea {
+  width: 100%;
 }
 
 .payment-detail__form-actions {
