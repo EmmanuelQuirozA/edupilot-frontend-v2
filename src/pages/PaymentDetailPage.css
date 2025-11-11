@@ -30,6 +30,10 @@
   gap: 0.75rem;
 }
 
+.payment-detail__approve-button {
+  --ui-button-color: #ffffff;
+}
+
 .payment-detail__title {
   margin: 0;
   font-size: 1.5rem;

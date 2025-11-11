@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import GlobalToast from '../components/GlobalToast.jsx';
 import ActionButton from '../components/ui/ActionButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
 import { API_BASE_URL } from '../config';
@@ -19,6 +20,12 @@ const DEFAULT_STRINGS = {
     print: 'Imprimir',
     approve: 'Aprobar',
     reject: 'Rechazar',
+  },
+  actionFeedback: {
+    updateSuccess: 'El pago se actualizó correctamente.',
+    updateError: 'No fue posible actualizar el pago.',
+    printError: 'No fue posible preparar la impresión del pago.',
+    printWindowError: 'Habilita las ventanas emergentes para imprimir el pago.',
   },
   studentSection: {
     title: 'Información del estudiante',
@@ -196,6 +203,10 @@ const PaymentDetailPage = ({
       ...DEFAULT_STRINGS.logs,
       ...(strings.logs ?? {}),
     },
+    actionFeedback: {
+      ...DEFAULT_STRINGS.actionFeedback,
+      ...(strings.actionFeedback ?? {}),
+    },
   }), [strings]);
 
   const { token, logout } = useAuth();
@@ -217,6 +228,9 @@ const PaymentDetailPage = ({
   const [receiptFileName, setReceiptFileName] = useState('');
   const receiptPath = payment?.receipt_path ?? null;
   const receiptDisplayName = payment?.receipt_file_name ?? null;
+  const [toast, setToast] = useState(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     setIsReceiptModalOpen(false);
@@ -255,39 +269,62 @@ const PaymentDetailPage = ({
     };
   }, [receiptPreviewUrl]);
 
+  const requestPaymentDetail = useCallback(async () => {
+    if (!paymentId) {
+      return null;
+    }
+
+    const params = new URLSearchParams();
+    params.set('payment_id', String(paymentId));
+    params.set('lang', normalizedLanguage);
+
+    const url = `${API_BASE_URL}/reports/payments?${params.toString()}`;
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (parseError) {
+      payload = null;
+    }
+
+    if (!response.ok) {
+      handleExpiredToken(response, logout);
+      const message =
+        (payload && (payload.message || payload.error)) || mergedStrings.error || 'Error al cargar el pago.';
+      throw new Error(message);
+    }
+
+    const content = Array.isArray(payload?.content) ? payload.content : [];
+    return content[0] ?? null;
+  }, [
+    logout,
+    mergedStrings.error,
+    normalizedLanguage,
+    paymentId,
+    token,
+  ]);
+
   const fetchPaymentDetail = useCallback(async () => {
     if (!paymentId) {
       setPayment(null);
       setError(mergedStrings.error);
       onBreadcrumbChange?.(mergedStrings.breadcrumbFallback);
-      return;
+      return null;
     }
 
     setLoading(true);
     setError(null);
     onBreadcrumbChange?.(mergedStrings.breadcrumbFallback);
 
+    let detail = null;
     try {
-      const params = new URLSearchParams();
-      params.set('payment_id', String(paymentId));
-      params.set('lang', normalizedLanguage);
-
-      const url = `${API_BASE_URL}/reports/payments?${params.toString()}`;
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        handleExpiredToken(response, logout);
-        throw new Error(mergedStrings.error);
-      }
-
-      const payload = await response.json();
-      const content = Array.isArray(payload?.content) ? payload.content : [];
-      const detail = content[0] ?? null;
+      detail = await requestPaymentDetail();
       setPayment(detail);
       const breadcrumbLabel = [
         detail?.payment_id,
@@ -309,18 +346,219 @@ const PaymentDetailPage = ({
           : mergedStrings.error;
       setError(fallbackMessage);
       onBreadcrumbChange?.(mergedStrings.breadcrumbFallback);
+      setPayment(null);
     } finally {
       setLoading(false);
     }
+    return detail;
   }, [
     mergedStrings.breadcrumbFallback,
     mergedStrings.error,
     normalizedLanguage,
     onBreadcrumbChange,
     paymentId,
-    token,
-    logout,
+    requestPaymentDetail,
   ]);
+
+  const handleUpdateStatus = useCallback(
+    async (statusId) => {
+      if (!paymentId) {
+        return;
+      }
+
+      setIsUpdatingStatus(true);
+      try {
+        const url = `${API_BASE_URL}/api/payments/update/${paymentId}?lang=${normalizedLanguage}`;
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ payment_status_id: statusId }),
+        });
+
+        let payload = null;
+        try {
+          payload = await response.json();
+        } catch (parseError) {
+          payload = null;
+        }
+
+        if (!response.ok) {
+          handleExpiredToken(response, logout);
+          const message =
+            (payload && (payload.message || payload.error)) || mergedStrings.actionFeedback.updateError;
+          throw new Error(message);
+        }
+
+        const successMessage =
+          (payload && [payload.title, payload.message].filter(Boolean).join('. ')) ||
+          mergedStrings.actionFeedback.updateSuccess;
+        setToast({ type: 'success', message: successMessage });
+        await fetchPaymentDetail();
+      } catch (updateError) {
+        console.error('Failed to update payment status', updateError);
+        const fallbackMessage =
+          updateError instanceof Error && updateError.message
+            ? updateError.message
+            : mergedStrings.actionFeedback.updateError;
+        setToast({ type: 'error', message: fallbackMessage });
+      } finally {
+        setIsUpdatingStatus(false);
+      }
+    },
+    [
+      fetchPaymentDetail,
+      logout,
+      mergedStrings.actionFeedback,
+      normalizedLanguage,
+      paymentId,
+      token,
+    ],
+  );
+
+  const handlePrint = useCallback(async () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    setIsPrinting(true);
+    try {
+      const detail = await fetchPaymentDetail();
+      if (!detail) {
+        throw new Error('Missing payment detail');
+      }
+
+      await new Promise((resolve) => {
+        if (typeof window.requestAnimationFrame === 'function') {
+          window.requestAnimationFrame(() => resolve());
+        } else {
+          setTimeout(resolve, 0);
+        }
+      });
+
+      const cardElement = document.querySelector('.payment-detail__card');
+      if (!cardElement) {
+        throw new Error('Missing payment card');
+      }
+
+      const clonedCard = cardElement.cloneNode(true);
+      const printWindow = window.open('', '_blank');
+
+      if (!printWindow) {
+        setToast({ type: 'error', message: mergedStrings.actionFeedback.printWindowError });
+        return;
+      }
+
+      const printLocale = normalizedLanguage === 'en' ? 'en-US' : 'es-MX';
+      const formatter = new Intl.DateTimeFormat(printLocale, {
+        dateStyle: 'long',
+        timeStyle: 'short',
+      });
+      const printDate = formatter.format(new Date());
+      const schoolName =
+        detail?.school_description || detail?.schoolDescription || detail?.school_name || 'Detalle de pago';
+      const paymentTitle = `Pago #${paymentId ?? ''}`;
+      const faviconLink = document.querySelector('link[rel*="icon"]');
+      const faviconUrl = faviconLink?.href || '/favicon.ico';
+
+      const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+        .map((node) => node.outerHTML)
+        .join('\n');
+
+      const printDocument = printWindow.document;
+      printDocument.open();
+      printDocument.write(`
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <title>${paymentTitle}</title>
+            ${styles}
+            <link rel="icon" href="${faviconUrl}" />
+            <style>
+              body {
+                font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                padding: 2rem;
+                background: #ffffff;
+                color: #0f172a;
+              }
+
+              .print-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+                border-bottom: 1px solid #e2e8f0;
+                padding-bottom: 1rem;
+              }
+
+              .print-header__identity {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+              }
+
+              .print-header__favicon {
+                width: 48px;
+                height: 48px;
+              }
+
+              .print-header__title {
+                margin: 0;
+                font-size: 1.5rem;
+              }
+
+              .print-header__subtitle {
+                margin: 0;
+                font-size: 1rem;
+                color: #475569;
+              }
+
+              .print-header__meta {
+                text-align: right;
+                font-size: 0.95rem;
+                color: #334155;
+              }
+            </style>
+          </head>
+          <body>
+            <header class="print-header">
+              <div class="print-header__identity">
+                <img src="${faviconUrl}" alt="Logotipo" class="print-header__favicon" />
+                <div>
+                  <h1 class="print-header__title">${schoolName}</h1>
+                  <p class="print-header__subtitle">${paymentTitle}</p>
+                </div>
+              </div>
+              <div class="print-header__meta">
+                <span>${printDate}</span>
+              </div>
+            </header>
+            ${clonedCard.outerHTML}
+          </body>
+        </html>
+      `);
+      printDocument.close();
+
+      const finalizePrint = () => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      };
+
+      if (printWindow.document.readyState === 'complete') {
+        finalizePrint();
+      } else {
+        printWindow.addEventListener('load', finalizePrint, { once: true });
+      }
+    } catch (printError) {
+      console.error('Failed to print payment detail', printError);
+      setToast({ type: 'error', message: mergedStrings.actionFeedback.printError });
+    } finally {
+      setIsPrinting(false);
+    }
+  }, [fetchPaymentDetail, mergedStrings.actionFeedback, normalizedLanguage, paymentId]);
 
   const fetchPaymentLogs = useCallback(async () => {
     if (!paymentId) {
@@ -592,17 +830,40 @@ const PaymentDetailPage = ({
   const hasReceipt = Boolean(payment?.receipt_path);
 
   return (
-    <div className="payment-detail">
-      <UiCard className="payment-detail__card">
+    <>
+      <div className="payment-detail">
+        <UiCard className="payment-detail__card">
         <div className="payment-detail__header">
           <div>
             <h1 className="payment-detail__title">{`Pago #${paymentId ?? '--'}`}</h1>
             <p className="payment-detail__subtitle">{mergedStrings.generalTitle}</p>
           </div>
           <div className="payment-detail__header-actions">
-            <ActionButton variant="secondary">{mergedStrings.actions.print}</ActionButton>
-            <ActionButton variant="success">{mergedStrings.actions.approve}</ActionButton>
-            <ActionButton variant="danger">{mergedStrings.actions.reject}</ActionButton>
+            <ActionButton
+              variant="secondary"
+              onClick={handlePrint}
+              disabled={isPrinting || isUpdatingStatus}
+              aria-busy={isPrinting ? 'true' : undefined}
+            >
+              {mergedStrings.actions.print}
+            </ActionButton>
+            <ActionButton
+              variant="success"
+              className="payment-detail__approve-button"
+              onClick={() => handleUpdateStatus(3)}
+              disabled={isUpdatingStatus}
+              aria-busy={isUpdatingStatus ? 'true' : undefined}
+            >
+              {mergedStrings.actions.approve}
+            </ActionButton>
+            <ActionButton
+              variant="danger"
+              onClick={() => handleUpdateStatus(4)}
+              disabled={isUpdatingStatus}
+              aria-busy={isUpdatingStatus ? 'true' : undefined}
+            >
+              {mergedStrings.actions.reject}
+            </ActionButton>
           </div>
         </div>
 
@@ -812,7 +1073,9 @@ const PaymentDetailPage = ({
           <div className="modal-backdrop fade show" />
         </div>
       ) : null}
-    </div>
+      </div>
+      <GlobalToast alert={toast} onClose={() => setToast(null)} />
+    </>
   );
 };
 
