@@ -43,6 +43,8 @@ const DEFAULT_STRINGS = {
     detailsUpdateError: 'No fue posible actualizar los detalles del pago.',
     receiptUploadSuccess: 'El comprobante se guardó correctamente.',
     receiptUploadError: 'No fue posible guardar el comprobante.',
+    receiptRemoveSuccess: 'El comprobante se eliminó correctamente.',
+    receiptRemoveError: 'No fue posible eliminar el comprobante.',
     printError: 'No fue posible preparar la impresión del pago.',
     printWindowError: 'Habilita las ventanas emergentes para imprimir el pago.',
   },
@@ -98,6 +100,8 @@ const DEFAULT_STRINGS = {
     missingSelection: 'Selecciona un archivo para continuar.',
     viewLabel: 'Ver comprobante',
     downloadLabel: 'Descargar',
+    removeLabel: 'Eliminar comprobante',
+    removingLabel: 'Eliminando comprobante...',
     closeLabel: 'Cerrar',
     missingFileName: 'Comprobante sin nombre',
     previewError: 'No fue posible cargar el comprobante.',
@@ -399,6 +403,7 @@ const PaymentDetailPage = ({
   const [receiptFileName, setReceiptFileName] = useState('');
   const [receiptUploadError, setReceiptUploadError] = useState('');
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [isRemovingReceipt, setIsRemovingReceipt] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
   const receiptPath = payment?.receipt_path ?? null;
   const receiptDisplayName = payment?.receipt_file_name ?? null;
@@ -1476,6 +1481,71 @@ const PaymentDetailPage = ({
     token,
   ]);
 
+  const handleRemoveReceipt = useCallback(async () => {
+    if (!paymentId) {
+      return;
+    }
+
+    setReceiptUploadError('');
+    setIsRemovingReceipt(true);
+
+    try {
+      const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}&removeReceipt=true`;
+      const formData = new FormData();
+      formData.append('request', new Blob([JSON.stringify({})], { type: 'application/json' }));
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (parseError) {
+        payload = null;
+      }
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+        const message =
+          (payload && (payload.message || payload.error)) ||
+          mergedStrings.actionFeedback.receiptRemoveError;
+        throw new Error(message);
+      }
+
+      await fetchPaymentDetail();
+      setSelectedFile(null);
+      setFileInputKey((previous) => previous + 1);
+      setToast({
+        type: 'success',
+        message:
+          (payload && (payload.message || payload.title)) ||
+          mergedStrings.actionFeedback.receiptRemoveSuccess,
+      });
+    } catch (error) {
+      console.error('Failed to remove receipt', error);
+      const fallbackMessage =
+        error instanceof Error && error.message
+          ? error.message
+          : mergedStrings.actionFeedback.receiptRemoveError;
+      setToast({ type: 'error', message: fallbackMessage });
+    } finally {
+      setIsRemovingReceipt(false);
+    }
+  }, [
+    fetchPaymentDetail,
+    logout,
+    mergedStrings.actionFeedback.receiptRemoveError,
+    mergedStrings.actionFeedback.receiptRemoveSuccess,
+    normalizedLanguage,
+    paymentId,
+    token,
+  ]);
+
   const formattedStudentDetails = useMemo(() => {
     if (!payment) {
       return [];
@@ -1925,11 +1995,20 @@ const PaymentDetailPage = ({
                       </div>
                     </div>
                     <div className="payment-detail__receipt-actions">
-                      <ActionButton variant="secondary" onClick={handleOpenReceipt}>
+                      <ActionButton variant="secondary" onClick={handleOpenReceipt} disabled={isRemovingReceipt}>
                         {mergedStrings.attachments.viewLabel}
                       </ActionButton>
-                      <ActionButton variant="outline" onClick={handleDownloadReceipt}>
+                      <ActionButton variant="outline" onClick={handleDownloadReceipt} disabled={isRemovingReceipt}>
                         {mergedStrings.attachments.downloadLabel}
+                      </ActionButton>
+                      <ActionButton
+                        variant="danger"
+                        onClick={handleRemoveReceipt}
+                        disabled={isRemovingReceipt}
+                      >
+                        {isRemovingReceipt
+                          ? mergedStrings.attachments.removingLabel
+                          : mergedStrings.attachments.removeLabel}
                       </ActionButton>
                     </div>
                   </div>
@@ -1939,39 +2018,41 @@ const PaymentDetailPage = ({
                   </div>
                 )}
 
-                <div className="payment-detail__upload payment-detail__upload--form">
-                  <label className="payment-detail__upload-label">
-                    {hasReceipt ? mergedStrings.attachments.replaceLabel : mergedStrings.attachments.uploadLabel}
-                    <input
-                      key={fileInputKey}
-                      type="file"
-                      className="payment-detail__upload-input"
-                      onChange={handleFileSelect}
-                    />
-                  </label>
-                  {selectedFile ? (
-                    <p className="payment-detail__selected-file">
-                      {mergedStrings.attachments.selectedFile}{' '}
-                      <strong>{selectedFile.name}</strong>
-                    </p>
-                  ) : null}
-                  {receiptUploadError ? (
-                    <p className="payment-detail__upload-error" role="alert">
-                      {receiptUploadError}
-                    </p>
-                  ) : null}
-                  <div className="payment-detail__upload-actions">
-                    <ActionButton
-                      variant="primary"
-                      onClick={handleUploadReceipt}
-                      disabled={isUploadingReceipt}
-                    >
-                      {isUploadingReceipt
-                        ? mergedStrings.attachments.uploadingLabel
-                        : mergedStrings.attachments.submitLabel}
-                    </ActionButton>
+                {!hasReceipt ? (
+                  <div className="payment-detail__upload payment-detail__upload--form">
+                    <label className="payment-detail__upload-label">
+                      {mergedStrings.attachments.uploadLabel}
+                      <input
+                        key={fileInputKey}
+                        type="file"
+                        className="payment-detail__upload-input"
+                        onChange={handleFileSelect}
+                      />
+                    </label>
+                    {selectedFile ? (
+                      <p className="payment-detail__selected-file">
+                        {mergedStrings.attachments.selectedFile}{' '}
+                        <strong>{selectedFile.name}</strong>
+                      </p>
+                    ) : null}
+                    {receiptUploadError ? (
+                      <p className="payment-detail__upload-error" role="alert">
+                        {receiptUploadError}
+                      </p>
+                    ) : null}
+                    <div className="payment-detail__upload-actions">
+                      <ActionButton
+                        variant="primary"
+                        onClick={handleUploadReceipt}
+                        disabled={isUploadingReceipt}
+                      >
+                        {isUploadingReceipt
+                          ? mergedStrings.attachments.uploadingLabel
+                          : mergedStrings.attachments.submitLabel}
+                      </ActionButton>
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </UiCard>
             ) : null}
 
