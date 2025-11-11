@@ -21,9 +21,28 @@ const DEFAULT_STRINGS = {
     approve: 'Aprobar',
     reject: 'Rechazar',
   },
+  editing: {
+    editButton: 'Editar detalles',
+    cancelButton: 'Cancelar edición',
+    saveButton: 'Guardar cambios',
+    savingButton: 'Guardando cambios...',
+    unsavedChanges: 'Si sales, perderás los cambios sin guardar.',
+    loadingOption: 'Cargando opciones...',
+    validation: {
+      conceptRequired: 'Selecciona un concepto de pago.',
+      throughRequired: 'Selecciona un método de pago.',
+      createdAtRequired: 'Ingresa la fecha de creación.',
+      monthRequired: 'Selecciona el mes del pago.',
+      amountRequired: 'Ingresa el monto del pago.',
+    },
+  },
   actionFeedback: {
     updateSuccess: 'El pago se actualizó correctamente.',
     updateError: 'No fue posible actualizar el pago.',
+    detailsUpdateSuccess: 'Los detalles del pago se actualizaron correctamente.',
+    detailsUpdateError: 'No fue posible actualizar los detalles del pago.',
+    receiptUploadSuccess: 'El comprobante se guardó correctamente.',
+    receiptUploadError: 'No fue posible guardar el comprobante.',
     printError: 'No fue posible preparar la impresión del pago.',
     printWindowError: 'Habilita las ventanas emergentes para imprimir el pago.',
   },
@@ -72,7 +91,11 @@ const DEFAULT_STRINGS = {
     title: 'Comprobantes',
     emptyDescription: 'No hay comprobante adjunto. Puedes adjuntar un archivo para complementar la validación.',
     uploadLabel: 'Adjuntar comprobante',
+    replaceLabel: 'Actualizar comprobante',
     selectedFile: 'Archivo seleccionado:',
+    submitLabel: 'Guardar comprobante',
+    uploadingLabel: 'Guardando comprobante...',
+    missingSelection: 'Selecciona un archivo para continuar.',
     viewLabel: 'Ver comprobante',
     downloadLabel: 'Descargar',
     closeLabel: 'Cerrar',
@@ -184,6 +207,101 @@ const buildProtectedFilePath = (path) => {
   return `${API_BASE_URL}/protectedfiles/${segments}`;
 };
 
+const toDateTimeLocalValue = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const match = String(value).match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
+  if (match) {
+    return match[1];
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return '';
+  }
+
+  return parsed.toISOString().slice(0, 16);
+};
+
+const normalizeDateTimeForPayload = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value)) {
+    return value.length === 16 ? `${value}:00` : value;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toISOString().replace(/Z$/, '');
+};
+
+const toMonthInputValue = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const match = String(value).match(/^(\d{4}-\d{2})/);
+  return match ? match[1] : '';
+};
+
+const buildMonthPayload = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  if (/^\d{4}-\d{2}$/.test(value)) {
+    return `${value}-01`;
+  }
+
+  return value;
+};
+
+const mergeCatalogOptions = (current = [], next = []) => {
+  const map = new Map();
+  [...current, ...next].forEach((option) => {
+    if (!option || !option.id) {
+      return;
+    }
+    if (!map.has(option.id)) {
+      map.set(option.id, option);
+    }
+  });
+  return Array.from(map.values());
+};
+
+const extractCatalogItems = (payload) => {
+  if (!payload) {
+    return [];
+  }
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  const candidates = [
+    payload.content,
+    payload.data,
+    payload.items,
+    payload.results,
+    payload.list,
+    payload.catalog,
+    payload.catalogs,
+    payload.response,
+    payload.data?.items,
+    payload.data?.results,
+    payload.data?.data,
+  ];
+
+  return candidates.find(Array.isArray) ?? [];
+};
+
 const getSwalInstance = () => {
   if (typeof window === 'undefined') {
     return null;
@@ -208,6 +326,14 @@ const PaymentDetailPage = ({
     ...DEFAULT_STRINGS,
     ...strings,
     actions: { ...DEFAULT_STRINGS.actions, ...(strings.actions ?? {}) },
+    editing: {
+      ...DEFAULT_STRINGS.editing,
+      ...(strings.editing ?? {}),
+      validation: {
+        ...DEFAULT_STRINGS.editing.validation,
+        ...((strings.editing && strings.editing.validation) || {}),
+      },
+    },
     confirmations: {
       ...DEFAULT_STRINGS.confirmations,
       ...(strings.confirmations ?? {}),
@@ -267,17 +393,38 @@ const PaymentDetailPage = ({
   const [receiptError, setReceiptError] = useState(null);
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState(null);
   const [receiptFileName, setReceiptFileName] = useState('');
+  const [receiptUploadError, setReceiptUploadError] = useState('');
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const receiptPath = payment?.receipt_path ?? null;
   const receiptDisplayName = payment?.receipt_file_name ?? null;
   const [toast, setToast] = useState(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
+  const [editValues, setEditValues] = useState({
+    paymentConceptId: '',
+    paymentThroughId: '',
+    paymentCreatedAt: '',
+    paymentMonth: '',
+    amount: '',
+    comments: '',
+  });
+  const [editError, setEditError] = useState('');
+  const [conceptOptions, setConceptOptions] = useState([]);
+  const [throughOptions, setThroughOptions] = useState([]);
+  const [isLoadingConcepts, setIsLoadingConcepts] = useState(false);
+  const [isLoadingThrough, setIsLoadingThrough] = useState(false);
 
   useEffect(() => {
     setIsReceiptModalOpen(false);
     setReceiptError(null);
     setReceiptLoading(false);
     setReceiptFileName('');
+    setReceiptUploadError('');
+    setSelectedFile(null);
+    setFileInputKey((previous) => previous + 1);
     setReceiptPreviewUrl((previous) => {
       if (previous) {
         URL.revokeObjectURL(previous);
@@ -447,13 +594,14 @@ const PaymentDetailPage = ({
       setIsUpdatingStatus(true);
       try {
         const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
+        const formData = new FormData();
+        formData.append('request', JSON.stringify({ payment_status_id: statusId }));
         const response = await fetch(url, {
           method: 'PUT',
           headers: {
-            'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ payment_status_id: statusId }),
+          body: formData,
         });
 
         let payload = null;
@@ -722,6 +870,7 @@ const PaymentDetailPage = ({
   const handleFileSelect = useCallback((event) => {
     const file = event.target?.files?.[0];
     setSelectedFile(file ?? null);
+    setReceiptUploadError('');
   }, []);
 
   const handleCloseReceiptModal = useCallback(() => {
@@ -831,6 +980,421 @@ const PaymentDetailPage = ({
     receiptFileName,
     receiptPreviewUrl,
     receiptPath,
+  ]);
+
+  const defaultEditValues = useMemo(() => {
+    return {
+      paymentConceptId:
+        payment && payment.payment_concept_id != null
+          ? String(payment.payment_concept_id)
+          : '',
+      paymentThroughId:
+        payment && payment.payment_through_id != null
+          ? String(payment.payment_through_id)
+          : '',
+      paymentCreatedAt: toDateTimeLocalValue(payment?.payment_created_at || payment?.created_at || ''),
+      paymentMonth: toMonthInputValue(payment?.payment_month || ''),
+      amount: payment && payment.amount != null ? String(payment.amount) : '',
+      comments: payment?.comments ?? '',
+    };
+  }, [payment]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setEditValues(defaultEditValues);
+      setEditError('');
+    }
+  }, [defaultEditValues, isEditing]);
+
+  useEffect(() => {
+    if (!payment) {
+      return;
+    }
+
+    if (payment.payment_concept_id != null) {
+      setConceptOptions((previous) =>
+        mergeCatalogOptions(previous, [
+          {
+            id: String(payment.payment_concept_id),
+            name: payment.pt_name || mergedStrings.paymentSection.fields.paymentConcept,
+          },
+        ]),
+      );
+    }
+
+    if (payment.payment_through_id != null) {
+      setThroughOptions((previous) =>
+        mergeCatalogOptions(previous, [
+          {
+            id: String(payment.payment_through_id),
+            name: payment.payt_name || mergedStrings.paymentSection.fields.paymentType,
+          },
+        ]),
+      );
+    }
+  }, [mergedStrings.paymentSection.fields.paymentConcept, mergedStrings.paymentSection.fields.paymentType, payment]);
+
+  const isEditDirty = useMemo(() => {
+    if (!isEditing) {
+      return false;
+    }
+
+    return Object.keys(defaultEditValues).some((key) => defaultEditValues[key] !== editValues[key]);
+  }, [defaultEditValues, editValues, isEditing]);
+
+  useEffect(() => {
+    if (!isEditDirty || typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleBeforeUnload = (event) => {
+      const warning = mergedStrings.editing?.unsavedChanges;
+      if (warning) {
+        event.preventDefault();
+        event.returnValue = warning;
+      }
+      return warning;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isEditDirty, mergedStrings.editing]);
+
+  const loadPaymentConcepts = useCallback(async () => {
+    setIsLoadingConcepts(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/catalog/payment-concepts?lang=${normalizedLanguage}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        },
+      );
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+        throw new Error('Failed to load concepts');
+      }
+
+      const payload = await response.json();
+      const list = extractCatalogItems(payload);
+      const options = list.map((item, index) => ({
+        id:
+          String(
+            item?.id ??
+              item?.value ??
+              item?.catalog_id ??
+              item?.payment_concept_id ??
+              index,
+          ),
+        name:
+          item?.name ??
+          item?.label ??
+          item?.title ??
+          item?.description ??
+          item?.concept ??
+          `Concepto ${index + 1}`,
+      }));
+      setConceptOptions((previous) => mergeCatalogOptions(previous, options));
+    } catch (error) {
+      console.error('Payment concepts fetch error', error);
+    } finally {
+      setIsLoadingConcepts(false);
+    }
+  }, [normalizedLanguage, token, logout]);
+
+  const loadPaymentThrough = useCallback(async () => {
+    setIsLoadingThrough(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/catalog/payment-through?lang=${normalizedLanguage}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        },
+      );
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+        throw new Error('Failed to load through');
+      }
+
+      const payload = await response.json();
+      const list = extractCatalogItems(payload);
+      const options = list.map((item, index) => ({
+        id:
+          String(
+            item?.id ??
+              item?.value ??
+              item?.catalog_id ??
+              item?.payment_through_id ??
+              index,
+          ),
+        name:
+          item?.name ??
+          item?.label ??
+          item?.title ??
+          item?.description ??
+          item?.through ??
+          `Método ${index + 1}`,
+      }));
+      setThroughOptions((previous) => mergeCatalogOptions(previous, options));
+    } catch (error) {
+      console.error('Payment through fetch error', error);
+    } finally {
+      setIsLoadingThrough(false);
+    }
+  }, [normalizedLanguage, token, logout]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      return;
+    }
+
+    loadPaymentConcepts();
+    loadPaymentThrough();
+  }, [isEditing, loadPaymentConcepts, loadPaymentThrough]);
+
+  const handleToggleEdit = useCallback(async () => {
+    if (isEditing) {
+      if (isEditDirty) {
+        const warning =
+          mergedStrings.editing?.unsavedChanges || 'Si sales, perderás los cambios sin guardar.';
+        const swalInstance = getSwalInstance();
+        if (swalInstance) {
+          const confirmation = await swalInstance.fire({
+            title: warning,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: mergedStrings.confirmations?.confirmButtonText || 'Sí, continuar',
+            cancelButtonText: mergedStrings.confirmations?.cancelButtonText || 'Cancelar',
+            reverseButtons: true,
+            focusCancel: true,
+          });
+
+          if (!confirmation.isConfirmed) {
+            return;
+          }
+        } else if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+          const confirmed = window.confirm(warning || '');
+          if (!confirmed) {
+            return;
+          }
+        }
+      }
+
+      setIsEditing(false);
+      setEditError('');
+      setEditValues(defaultEditValues);
+      return;
+    }
+
+    setEditError('');
+    setIsEditing(true);
+  }, [defaultEditValues, isEditDirty, isEditing, mergedStrings.confirmations, mergedStrings.editing]);
+
+  const validateEditValues = useCallback(() => {
+    if (!mergedStrings.editing?.validation) {
+      return '';
+    }
+
+    if (!editValues.paymentConceptId) {
+      return mergedStrings.editing.validation.conceptRequired;
+    }
+
+    if (!editValues.paymentThroughId) {
+      return mergedStrings.editing.validation.throughRequired;
+    }
+
+    if (!editValues.paymentCreatedAt) {
+      return mergedStrings.editing.validation.createdAtRequired;
+    }
+
+    if (!editValues.paymentMonth) {
+      return mergedStrings.editing.validation.monthRequired;
+    }
+
+    if (editValues.amount === '' || editValues.amount == null) {
+      return mergedStrings.editing.validation.amountRequired;
+    }
+
+    return '';
+  }, [editValues, mergedStrings.editing]);
+
+  const handleSaveDetails = useCallback(
+    async (event) => {
+      event?.preventDefault?.();
+
+      if (!paymentId) {
+        return;
+      }
+
+      const validationError = validateEditValues();
+      if (validationError) {
+        setEditError(validationError);
+        return;
+      }
+
+      setEditError('');
+      setIsSavingDetails(true);
+
+      const requestPayload = {
+        payment_concept_id: Number(editValues.paymentConceptId),
+        payment_through_id: Number(editValues.paymentThroughId),
+        payment_created_at: normalizeDateTimeForPayload(editValues.paymentCreatedAt),
+        payment_month: buildMonthPayload(editValues.paymentMonth),
+        amount: String(editValues.amount),
+        comments: editValues.comments ?? '',
+      };
+
+      try {
+        const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
+        const formData = new FormData();
+        formData.append('request', JSON.stringify(requestPayload));
+
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: formData,
+        });
+
+        let payload = null;
+        try {
+          payload = await response.json();
+        } catch (parseError) {
+          payload = null;
+        }
+
+        if (!response.ok) {
+          handleExpiredToken(response, logout);
+          const message =
+            (payload && (payload.message || payload.error)) ||
+            mergedStrings.actionFeedback.detailsUpdateError;
+          throw new Error(message);
+        }
+
+        await fetchPaymentDetail();
+        setIsEditing(false);
+        setToast({
+          type: 'success',
+          message:
+            (payload && (payload.message || payload.title)) ||
+            mergedStrings.actionFeedback.detailsUpdateSuccess,
+        });
+      } catch (updateError) {
+        console.error('Failed to update payment details', updateError);
+        const fallbackMessage =
+          updateError instanceof Error && updateError.message
+            ? updateError.message
+            : mergedStrings.actionFeedback.detailsUpdateError;
+        setEditError(fallbackMessage);
+      } finally {
+        setIsSavingDetails(false);
+      }
+    },
+    [
+      editValues,
+      fetchPaymentDetail,
+      logout,
+      mergedStrings.actionFeedback.detailsUpdateError,
+      mergedStrings.actionFeedback.detailsUpdateSuccess,
+      normalizedLanguage,
+      paymentId,
+      token,
+      validateEditValues,
+    ],
+  );
+
+  useEffect(() => {
+    if (!isEditing) {
+      return;
+    }
+
+    setEditError('');
+  }, [isEditing]);
+
+  const handleUploadReceipt = useCallback(async () => {
+    if (!paymentId) {
+      return;
+    }
+
+    if (!selectedFile) {
+      setReceiptUploadError(mergedStrings.attachments.missingSelection);
+      return;
+    }
+
+    setReceiptUploadError('');
+    setIsUploadingReceipt(true);
+
+    try {
+      const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
+      const formData = new FormData();
+      formData.append('request', JSON.stringify({}));
+      formData.append('receipt', selectedFile);
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (parseError) {
+        payload = null;
+      }
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+        const message =
+          (payload && (payload.message || payload.error)) ||
+          mergedStrings.actionFeedback.receiptUploadError;
+        throw new Error(message);
+      }
+
+      await fetchPaymentDetail();
+      setSelectedFile(null);
+      setFileInputKey((previous) => previous + 1);
+      setReceiptUploadError('');
+      setToast({
+        type: 'success',
+        message:
+          (payload && (payload.message || payload.title)) ||
+          mergedStrings.actionFeedback.receiptUploadSuccess,
+      });
+    } catch (error) {
+      console.error('Failed to upload receipt', error);
+      const fallbackMessage =
+        error instanceof Error && error.message
+          ? error.message
+          : mergedStrings.actionFeedback.receiptUploadError;
+      setReceiptUploadError(fallbackMessage);
+    } finally {
+      setIsUploadingReceipt(false);
+    }
+  }, [
+    fetchPaymentDetail,
+    logout,
+    mergedStrings.actionFeedback.receiptUploadError,
+    mergedStrings.actionFeedback.receiptUploadSuccess,
+    mergedStrings.attachments.missingSelection,
+    normalizedLanguage,
+    paymentId,
+    selectedFile,
+    token,
   ]);
 
   const formattedStudentDetails = useMemo(() => {
@@ -950,6 +1514,14 @@ const PaymentDetailPage = ({
           </div>
           <div className="payment-detail__header-actions">
             <ActionButton
+              variant={isEditing ? 'outline' : 'primary'}
+              onClick={handleToggleEdit}
+              disabled={loading || !payment || isSavingDetails}
+              aria-pressed={isEditing ? 'true' : 'false'}
+            >
+              {isEditing ? mergedStrings.editing.cancelButton : mergedStrings.editing.editButton}
+            </ActionButton>
+            <ActionButton
               variant="secondary"
               onClick={handlePrint}
               disabled={isPrinting || isUpdatingStatus}
@@ -1004,24 +1576,208 @@ const PaymentDetailPage = ({
 
             <section className="payment-detail__section">
               <h2 className="payment-detail__section-title">{mergedStrings.paymentSection.title}</h2>
-              <dl className="payment-detail__details-grid">
-                {formattedPaymentDetails.map((item) => (
-                  <div key={item.label} className="payment-detail__details-item">
-                    <dt>{item.label}</dt>
-                    <dd>
-                      {item.variant ? (
-                        <span className={`payment-detail__status payment-detail__status--${item.variant}`}>
-                          {item.value && String(item.value).trim() !== '' ? item.value : '--'}
-                        </span>
-                      ) : item.value && String(item.value).trim() !== '' ? (
-                        item.value
-                      ) : (
-                        <span className="payment-detail__placeholder">--</span>
-                      )}
-                    </dd>
+              {isEditing ? (
+                <form className="payment-detail__form" onSubmit={handleSaveDetails}>
+                  <div className="payment-detail__details-grid">
+                    <div className="payment-detail__details-item">
+                      <dt>{mergedStrings.paymentSection.fields.status}</dt>
+                      <dd>
+                        {(() => {
+                          const statusItem = formattedPaymentDetails.find(
+                            (item) => item.label === mergedStrings.paymentSection.fields.status,
+                          );
+                          if (!statusItem) {
+                            return <span className="payment-detail__placeholder">--</span>;
+                          }
+                          return (
+                            <span
+                              className={`payment-detail__status payment-detail__status--${
+                                statusItem.variant ?? 'neutral'
+                              }`}
+                            >
+                              {statusItem.value && String(statusItem.value).trim() !== '' ? (
+                                statusItem.value
+                              ) : (
+                                <span className="payment-detail__placeholder">--</span>
+                              )}
+                            </span>
+                          );
+                        })()}
+                      </dd>
+                    </div>
+
+                    <div className="payment-detail__form-field">
+                      <label className="payment-detail__form-label" htmlFor="payment-edit-created-at">
+                        {mergedStrings.paymentSection.fields.createdAt}
+                      </label>
+                      <input
+                        id="payment-edit-created-at"
+                        className="payment-detail__form-input"
+                        type="datetime-local"
+                        value={editValues.paymentCreatedAt}
+                        onChange={(event) =>
+                          setEditValues((previous) => ({
+                            ...previous,
+                            paymentCreatedAt: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="payment-detail__form-field">
+                      <label className="payment-detail__form-label" htmlFor="payment-edit-month">
+                        {mergedStrings.paymentSection.fields.paymentMonth}
+                      </label>
+                      <input
+                        id="payment-edit-month"
+                        className="payment-detail__form-input"
+                        type="month"
+                        value={editValues.paymentMonth}
+                        onChange={(event) =>
+                          setEditValues((previous) => ({
+                            ...previous,
+                            paymentMonth: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="payment-detail__form-field">
+                      <label className="payment-detail__form-label" htmlFor="payment-edit-amount">
+                        {mergedStrings.paymentSection.fields.amount}
+                      </label>
+                      <input
+                        id="payment-edit-amount"
+                        className="payment-detail__form-input"
+                        type="number"
+                        step="0.01"
+                        value={editValues.amount}
+                        onChange={(event) =>
+                          setEditValues((previous) => ({
+                            ...previous,
+                            amount: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="payment-detail__form-field">
+                      <label className="payment-detail__form-label" htmlFor="payment-edit-through">
+                        {mergedStrings.paymentSection.fields.paymentType}
+                      </label>
+                      <select
+                        id="payment-edit-through"
+                        className="payment-detail__form-input"
+                        value={editValues.paymentThroughId}
+                        onChange={(event) =>
+                          setEditValues((previous) => ({
+                            ...previous,
+                            paymentThroughId: event.target.value,
+                          }))
+                        }
+                        disabled={isLoadingThrough}
+                      >
+                        <option value="" disabled>
+                          {isLoadingThrough
+                            ? mergedStrings.editing.loadingOption
+                            : mergedStrings.paymentSection.fields.paymentType}
+                        </option>
+                        {throughOptions.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="payment-detail__form-field">
+                      <label className="payment-detail__form-label" htmlFor="payment-edit-concept">
+                        {mergedStrings.paymentSection.fields.paymentConcept}
+                      </label>
+                      <select
+                        id="payment-edit-concept"
+                        className="payment-detail__form-input"
+                        value={editValues.paymentConceptId}
+                        onChange={(event) =>
+                          setEditValues((previous) => ({
+                            ...previous,
+                            paymentConceptId: event.target.value,
+                          }))
+                        }
+                        disabled={isLoadingConcepts}
+                      >
+                        <option value="" disabled>
+                          {isLoadingConcepts
+                            ? mergedStrings.editing.loadingOption
+                            : mergedStrings.paymentSection.fields.paymentConcept}
+                        </option>
+                        {conceptOptions.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="payment-detail__form-field payment-detail__form-field--full">
+                      <label className="payment-detail__form-label" htmlFor="payment-edit-comments">
+                        {mergedStrings.paymentSection.fields.comments}
+                      </label>
+                      <textarea
+                        id="payment-edit-comments"
+                        className="payment-detail__form-input payment-detail__form-textarea"
+                        rows={3}
+                        value={editValues.comments}
+                        onChange={(event) =>
+                          setEditValues((previous) => ({
+                            ...previous,
+                            comments: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
                   </div>
-                ))}
-              </dl>
+                  {editError ? (
+                    <p className="payment-detail__form-error" role="alert">
+                      {editError}
+                    </p>
+                  ) : null}
+                  <div className="payment-detail__form-actions">
+                    <ActionButton type="submit" disabled={isSavingDetails}>
+                      {isSavingDetails
+                        ? mergedStrings.editing.savingButton
+                        : mergedStrings.editing.saveButton}
+                    </ActionButton>
+                    <ActionButton
+                      type="button"
+                      variant="ghost"
+                      onClick={handleToggleEdit}
+                      disabled={isSavingDetails}
+                    >
+                      {mergedStrings.editing.cancelButton}
+                    </ActionButton>
+                  </div>
+                </form>
+              ) : (
+                <dl className="payment-detail__details-grid">
+                  {formattedPaymentDetails.map((item) => (
+                    <div key={item.label} className="payment-detail__details-item">
+                      <dt>{item.label}</dt>
+                      <dd>
+                        {item.variant ? (
+                          <span className={`payment-detail__status payment-detail__status--${item.variant}`}>
+                            {item.value && String(item.value).trim() !== '' ? item.value : '--'}
+                          </span>
+                        ) : item.value && String(item.value).trim() !== '' ? (
+                          item.value
+                        ) : (
+                          <span className="payment-detail__placeholder">--</span>
+                        )}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
             </section>
           </>
         ) : (
@@ -1059,17 +1815,42 @@ const PaymentDetailPage = ({
         ) : (
           <div className="payment-detail__upload">
             <p>{mergedStrings.attachments.emptyDescription}</p>
-            <label className="payment-detail__upload-label">
-              {mergedStrings.attachments.uploadLabel}
-              <input type="file" className="payment-detail__upload-input" onChange={handleFileSelect} />
-            </label>
-            {selectedFile ? (
-              <p className="payment-detail__selected-file">
-                {mergedStrings.attachments.selectedFile} <strong>{selectedFile.name}</strong>
-              </p>
-            ) : null}
           </div>
         )}
+
+        <div className="payment-detail__upload payment-detail__upload--form">
+          <label className="payment-detail__upload-label">
+            {hasReceipt ? mergedStrings.attachments.replaceLabel : mergedStrings.attachments.uploadLabel}
+            <input
+              key={fileInputKey}
+              type="file"
+              className="payment-detail__upload-input"
+              onChange={handleFileSelect}
+            />
+          </label>
+          {selectedFile ? (
+            <p className="payment-detail__selected-file">
+              {mergedStrings.attachments.selectedFile}{' '}
+              <strong>{selectedFile.name}</strong>
+            </p>
+          ) : null}
+          {receiptUploadError ? (
+            <p className="payment-detail__upload-error" role="alert">
+              {receiptUploadError}
+            </p>
+          ) : null}
+          <div className="payment-detail__upload-actions">
+            <ActionButton
+              variant="primary"
+              onClick={handleUploadReceipt}
+              disabled={isUploadingReceipt}
+            >
+              {isUploadingReceipt
+                ? mergedStrings.attachments.uploadingLabel
+                : mergedStrings.attachments.submitLabel}
+            </ActionButton>
+          </div>
+        </div>
       </UiCard>
 
       <UiCard className="payment-detail__card">
