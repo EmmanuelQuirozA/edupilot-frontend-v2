@@ -279,6 +279,22 @@ export const translations = {
             approve: 'Aprobar',
             reject: 'Rechazar',
           },
+          confirmations: {
+            confirmButtonText: 'Sí, continuar',
+            cancelButtonText: 'Cancelar',
+            approve: {
+              title: '¿Aprobar pago?',
+              message: 'Confirma que deseas aprobar el pago seleccionado.',
+              confirmButtonText: 'Sí, aprobar',
+              cancelButtonText: 'Cancelar',
+            },
+            reject: {
+              title: '¿Rechazar pago?',
+              message: 'Confirma que deseas rechazar el pago seleccionado.',
+              confirmButtonText: 'Sí, rechazar',
+              cancelButtonText: 'Cancelar',
+            },
+          },
           studentSection: {
             title: 'Información del estudiante',
             fields: {
@@ -926,6 +942,22 @@ export const translations = {
             print: 'Print',
             approve: 'Approve',
             reject: 'Reject',
+          },
+          confirmations: {
+            confirmButtonText: 'Yes, continue',
+            cancelButtonText: 'Cancel',
+            approve: {
+              title: 'Approve payment?',
+              message: 'Please confirm you want to approve this payment.',
+              confirmButtonText: 'Yes, approve',
+              cancelButtonText: 'Cancel',
+            },
+            reject: {
+              title: 'Reject payment?',
+              message: 'Please confirm you want to reject this payment.',
+              confirmButtonText: 'Yes, reject',
+              cancelButtonText: 'Cancel',
+            },
           },
           studentSection: {
             title: 'Student information',
