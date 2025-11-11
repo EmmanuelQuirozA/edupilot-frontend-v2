@@ -417,9 +417,9 @@ const PaymentDetailPage = ({
   const [isLoadingConcepts, setIsLoadingConcepts] = useState(false);
   const [isLoadingThrough, setIsLoadingThrough] = useState(false);
 
-  const isPaymentApproved = useMemo(() => {
+  const { isApproved: isPaymentApproved, isRejected: isPaymentRejected } = useMemo(() => {
     if (!payment) {
-      return false;
+      return { isApproved: false, isRejected: false };
     }
 
     const statusIdCandidates = [
@@ -429,11 +429,14 @@ const PaymentDetailPage = ({
       payment.statusId,
     ];
 
+    let numericStatusId = null;
+
     for (const candidate of statusIdCandidates) {
       if (candidate != null && candidate !== '') {
         const numericValue = Number(candidate);
         if (!Number.isNaN(numericValue)) {
-          return numericValue === 3;
+          numericStatusId = numericValue;
+          break;
         }
       }
     }
@@ -445,13 +448,20 @@ const PaymentDetailPage = ({
       payment.statusName ||
       '';
 
-    if (typeof statusName !== 'string') {
-      return false;
-    }
+    const normalizedStatus =
+      typeof statusName === 'string' ? statusName.toLowerCase() : '';
 
-    const normalizedStatus = statusName.toLowerCase();
-    return normalizedStatus.includes('aprob') || normalizedStatus.includes('valid');
+    const isApproved =
+      numericStatusId === 3 ||
+      normalizedStatus.includes('aprob') ||
+      normalizedStatus.includes('valid');
+    const isRejected =
+      numericStatusId === 4 || normalizedStatus.includes('rech');
+
+    return { isApproved, isRejected };
   }, [payment]);
+
+  const isPaymentFinalized = isPaymentApproved || isPaymentRejected;
 
   useEffect(() => {
     setIsReceiptModalOpen(false);
@@ -1207,7 +1217,7 @@ const PaymentDetailPage = ({
   }, [isEditing, loadPaymentConcepts, loadPaymentThrough]);
 
   const handleToggleEdit = useCallback(async () => {
-    if (!isEditing && isPaymentApproved) {
+    if (!isEditing && isPaymentFinalized) {
       return;
     }
 
@@ -1250,18 +1260,18 @@ const PaymentDetailPage = ({
     defaultEditValues,
     isEditDirty,
     isEditing,
-    isPaymentApproved,
+    isPaymentFinalized,
     mergedStrings.confirmations,
     mergedStrings.editing,
   ]);
 
   useEffect(() => {
-    if (isPaymentApproved && isEditing) {
+    if (isPaymentFinalized && isEditing) {
       setIsEditing(false);
       setEditError('');
       setEditValues(defaultEditValues);
     }
-  }, [defaultEditValues, isEditing, isPaymentApproved]);
+  }, [defaultEditValues, isEditing, isPaymentFinalized]);
 
   const validateEditValues = useCallback(() => {
     if (!mergedStrings.editing?.validation) {
@@ -1578,7 +1588,7 @@ const PaymentDetailPage = ({
             <p className="payment-detail__subtitle">{mergedStrings.generalTitle}</p>
           </div>
           <div className="payment-detail__header-actions">
-            {!isPaymentApproved ? (
+            {!isPaymentFinalized ? (
               <ActionButton
                 variant={isEditing ? 'outline' : 'primary'}
                 onClick={handleToggleEdit}
@@ -1596,7 +1606,7 @@ const PaymentDetailPage = ({
             >
               {mergedStrings.actions.print}
             </ActionButton>
-            {!isPaymentApproved ? (
+            {!isPaymentFinalized ? (
               <>
                 <ActionButton
                   variant="success"
