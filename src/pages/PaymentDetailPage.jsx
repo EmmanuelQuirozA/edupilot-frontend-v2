@@ -1256,13 +1256,18 @@ const PaymentDetailPage = ({
 
       try {
         const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
+        const formData = new FormData();
+        formData.append(
+          'request',
+          new Blob([JSON.stringify(requestPayload)], { type: 'application/json' }),
+        );
+
         const response = await fetch(url, {
           method: 'PUT',
           headers: {
-            'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify(requestPayload),
+          body: formData,
         });
 
         let payload = null;
@@ -1336,6 +1341,7 @@ const PaymentDetailPage = ({
     try {
       const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
       const formData = new FormData();
+      formData.append('request', new Blob([JSON.stringify({})], { type: 'application/json' }));
       formData.append('receipt', selectedFile);
 
       const response = await fetch(url, {
