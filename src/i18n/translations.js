@@ -134,7 +134,7 @@ export const translations = {
       pages: {
         payments: {
           title: 'Pagos y Finanzas',
-          description: 'Muy pronto podrás gestionar tus pagos desde aquí.',
+          description: 'Administra los pagos desde aquí.',
         },
         students: {
           title: 'Alumnos y Grupos',
@@ -158,7 +158,7 @@ export const translations = {
         },
       },
       paymentsPage: {
-        placeholder: 'Muy pronto podrás gestionar tus pagos desde aquí.',
+        placeholder: 'Administra los pagos desde aquí.',
         tabs: {
           tuition: 'Colegiaturas',
           requests: 'Solicitudes de pago',

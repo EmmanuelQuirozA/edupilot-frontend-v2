@@ -394,7 +394,7 @@ const HomePage = ({
     const { hero, stats, studentsCard, paymentsCard } = t.home.dashboard;
 
     return (
-      <>
+      <div className='page'>
         <section className="dashboard__hero">
           <div className="hero__content">
             <span className="hero__tag">{hero.tag}</span>
@@ -556,7 +556,7 @@ const HomePage = ({
             </div>
           </article>
         </section>
-      </>
+      </div>
     );
   };
 

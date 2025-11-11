@@ -2044,8 +2044,8 @@ const PaymentDetailPage = ({
         )}
 
         {isReceiptModalOpen ? (
-          <div className="modal fade show payment-detail__modal" style={{ display: 'block' }} role="dialog" aria-modal="true">
-            <div className="modal-dialog modal-xl modal-dialog-centered">
+          <div className="modal fade show d-block" style={{ display: 'block' }} role="dialog" aria-modal="true">
+            <div className="modal-dialog modal-dialog-scrollable modal-xl">
               <div className="modal-content">
                 <div className="modal-header">
                   <h2 className="modal-title h5 mb-0">{receiptFileName || mergedStrings.attachments.viewLabel}</h2>
@@ -2087,7 +2087,6 @@ const PaymentDetailPage = ({
                 </div>
               </div>
             </div>
-            <div className="modal-backdrop fade show" />
           </div>
         ) : null}
       </div>
