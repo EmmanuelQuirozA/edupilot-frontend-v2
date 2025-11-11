@@ -215,14 +215,36 @@ const buildProtectedFilePath = (path) => {
   return `${API_BASE_URL}/protectedfiles/${segments}`;
 };
 
+const padToTwoDigits = (value) => String(value).padStart(2, '0');
+
+const formatDateToLocalDateTime = (date) => {
+  return [
+    date.getFullYear(),
+    '-',
+    padToTwoDigits(date.getMonth() + 1),
+    '-',
+    padToTwoDigits(date.getDate()),
+    'T',
+    padToTwoDigits(date.getHours()),
+    ':',
+    padToTwoDigits(date.getMinutes()),
+    ':',
+    padToTwoDigits(date.getSeconds()),
+  ].join('');
+};
+
 const toDateTimeLocalValue = (value) => {
   if (!value) {
     return '';
   }
 
-  const match = String(value).match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
+  const match = String(value)
+    .trim()
+    .match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(:\d{2})?/);
   if (match) {
-    return match[1];
+    const base = match[1];
+    const seconds = match[2] ?? ':00';
+    return `${base}${seconds}`;
   }
 
   const parsed = new Date(value);
@@ -230,7 +252,7 @@ const toDateTimeLocalValue = (value) => {
     return '';
   }
 
-  return parsed.toISOString().slice(0, 16);
+  return formatDateToLocalDateTime(parsed);
 };
 
 const normalizeDateTimeForPayload = (value) => {
@@ -1833,7 +1855,8 @@ const PaymentDetailPage = ({
                             <dt>{mergedStrings.paymentSection.fields.createdAt}</dt>
                             <dd>
                               <input
-                                type="date"
+                                type="datetime-local"
+                                step="1"
                                 className="payment-detail__form-input"
                                 value={editValues.paymentCreatedAt}
                                 onChange={(event) =>
