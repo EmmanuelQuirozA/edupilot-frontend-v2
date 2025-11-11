@@ -110,6 +110,10 @@ const DEFAULT_STRINGS = {
   },
 };
 
+const SKELETON_DETAIL_ITEMS = Array.from({ length: 6 }, (_, index) => index);
+const SKELETON_ATTACHMENT_ROWS = Array.from({ length: 3 }, (_, index) => index);
+const SKELETON_LOG_ROWS = Array.from({ length: 4 }, (_, index) => index);
+
 const normalizeLanguage = (language) => (SUPPORTED_LANGUAGES.includes(language) ? language : 'es');
 
 const formatDateTime = (value, language) => {
@@ -1578,477 +1582,519 @@ const PaymentDetailPage = ({
 
   const hasReceipt = Boolean(payment?.receipt_path);
 
+
   return (
     <>
       <div className="payment-detail">
-        <UiCard className="payment-detail__card">
-        <div className="payment-detail__header">
-          <div>
-            <h1 className="payment-detail__title">{`Pago #${paymentId ?? '--'}`}</h1>
-            <p className="payment-detail__subtitle">{mergedStrings.generalTitle}</p>
-          </div>
-          <div className="payment-detail__header-actions">
-            {!isPaymentFinalized ? (
-              <ActionButton
-                variant={isEditing ? 'outline' : 'primary'}
-                onClick={handleToggleEdit}
-                disabled={loading || !payment || isSavingDetails}
-                aria-pressed={isEditing ? 'true' : 'false'}
-              >
-                {isEditing ? mergedStrings.editing.cancelButton : mergedStrings.editing.editButton}
-              </ActionButton>
-            ) : null}
-            <ActionButton
-              variant="secondary"
-              onClick={handlePrint}
-              disabled={isPrinting || isUpdatingStatus}
-              aria-busy={isPrinting ? 'true' : undefined}
-            >
-              {mergedStrings.actions.print}
-            </ActionButton>
-            {!isPaymentFinalized ? (
-              <>
-                <ActionButton
-                  variant="success"
-                  className="payment-detail__approve-button"
-                  onClick={() => handleUpdateStatus(3)}
-                  disabled={isUpdatingStatus}
-                  aria-busy={isUpdatingStatus ? 'true' : undefined}
-                >
-                  {mergedStrings.actions.approve}
-                </ActionButton>
-                <ActionButton
-                  variant="danger"
-                  onClick={() => handleUpdateStatus(4)}
-                  disabled={isUpdatingStatus}
-                  aria-busy={isUpdatingStatus ? 'true' : undefined}
-                >
-                  {mergedStrings.actions.reject}
-                </ActionButton>
-              </>
-            ) : null}
-          </div>
-        </div>
-
         {loading ? (
-          <p className="payment-detail__status-text" role="status">
-            {mergedStrings.loading}
-          </p>
-        ) : error ? (
-          <div className="payment-detail__error" role="alert">
-            <p>{error}</p>
-            <ActionButton variant="secondary" onClick={fetchPaymentDetail}>
-              {mergedStrings.retry}
-            </ActionButton>
-          </div>
-        ) : payment ? (
           <>
-            <section className="payment-detail__section">
-              <h2 className="payment-detail__section-title">{mergedStrings.studentSection.title}</h2>
-              <dl className="payment-detail__details-grid">
-                {formattedStudentDetails.map((item) => (
-                  <div key={item.label} className="payment-detail__details-item">
-                    <dt>{item.label}</dt>
-                    <dd>{item.value && String(item.value).trim() !== '' ? item.value : <span className="payment-detail__placeholder">--</span>}</dd>
+            <UiCard className="payment-detail__card">
+              <div className="payment-detail__skeleton" role="status" aria-live="polite">
+                <span className="payment-detail__sr-only">{mergedStrings.loading}</span>
+                <div className="payment-detail__skeleton-header">
+                  <div className="payment-detail__skeleton-line payment-detail__skeleton-line--title" />
+                  <div className="payment-detail__skeleton-line payment-detail__skeleton-line--subtitle" />
+                </div>
+                <div className="payment-detail__skeleton-actions">
+                  <div className="payment-detail__skeleton-pill" />
+                  <div className="payment-detail__skeleton-pill" />
+                  <div className="payment-detail__skeleton-pill" />
+                </div>
+                <div className="payment-detail__skeleton-section">
+                  <div className="payment-detail__skeleton-line payment-detail__skeleton-line--section-title" />
+                  <div className="payment-detail__skeleton-grid">
+                    {SKELETON_DETAIL_ITEMS.map((item) => (
+                      <div key={`student-skeleton-${item}`} className="payment-detail__skeleton-field" />
+                    ))}
                   </div>
-                ))}
-              </dl>
-            </section>
+                </div>
+                <div className="payment-detail__skeleton-section">
+                  <div className="payment-detail__skeleton-line payment-detail__skeleton-line--section-title" />
+                  <div className="payment-detail__skeleton-grid">
+                    {SKELETON_DETAIL_ITEMS.map((item) => (
+                      <div key={`payment-skeleton-${item}`} className="payment-detail__skeleton-field" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </UiCard>
+            <UiCard className="payment-detail__card" aria-hidden="true">
+              <div className="payment-detail__skeleton">
+                <div className="payment-detail__skeleton-line payment-detail__skeleton-line--section-title" />
+                <div className="payment-detail__skeleton-rows">
+                  {SKELETON_ATTACHMENT_ROWS.map((item) => (
+                    <div key={`attachment-skeleton-${item}`} className="payment-detail__skeleton-rectangle" />
+                  ))}
+                </div>
+              </div>
+            </UiCard>
+            <UiCard className="payment-detail__card" aria-hidden="true">
+              <div className="payment-detail__skeleton">
+                <div className="payment-detail__skeleton-line payment-detail__skeleton-line--section-title" />
+                <div className="payment-detail__skeleton-rows">
+                  {SKELETON_LOG_ROWS.map((item) => (
+                    <div key={`log-skeleton-${item}`} className="payment-detail__skeleton-rectangle" />
+                  ))}
+                </div>
+              </div>
+            </UiCard>
+          </>
+        ) : (
+          <>
+            <UiCard className="payment-detail__card">
+              <div className="payment-detail__header">
+                <div>
+                  <h1 className="payment-detail__title">{`Pago #${paymentId ?? '--'}`}</h1>
+                  <p className="payment-detail__subtitle">{mergedStrings.generalTitle}</p>
+                </div>
+                {payment ? (
+                  <div className="payment-detail__header-actions">
+                    {!isPaymentFinalized ? (
+                      <ActionButton
+                        variant={isEditing ? 'outline' : 'primary'}
+                        onClick={handleToggleEdit}
+                        disabled={!payment || isSavingDetails}
+                        aria-pressed={isEditing ? 'true' : 'false'}
+                      >
+                        {isEditing ? mergedStrings.editing.cancelButton : mergedStrings.editing.editButton}
+                      </ActionButton>
+                    ) : null}
+                    <ActionButton
+                      variant="secondary"
+                      onClick={handlePrint}
+                      disabled={!payment || isPrinting || isUpdatingStatus}
+                      aria-busy={isPrinting ? 'true' : undefined}
+                    >
+                      {mergedStrings.actions.print}
+                    </ActionButton>
+                    {!isPaymentFinalized ? (
+                      <>
+                        <ActionButton
+                          variant="success"
+                          className="payment-detail__approve-button"
+                          onClick={() => handleUpdateStatus(3)}
+                          disabled={isUpdatingStatus}
+                          aria-busy={isUpdatingStatus ? 'true' : undefined}
+                        >
+                          {mergedStrings.actions.approve}
+                        </ActionButton>
+                        <ActionButton
+                          variant="danger"
+                          onClick={() => handleUpdateStatus(4)}
+                          disabled={isUpdatingStatus}
+                          aria-busy={isUpdatingStatus ? 'true' : undefined}
+                        >
+                          {mergedStrings.actions.reject}
+                        </ActionButton>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
 
-            <section className="payment-detail__section">
-              <h2 className="payment-detail__section-title">{mergedStrings.paymentSection.title}</h2>
-              {isEditing ? (
-                <form className="payment-detail__form" onSubmit={handleSaveDetails}>
-                  <div className="payment-detail__details-grid">
-                    <div className="payment-detail__details-item">
-                      <dt>{mergedStrings.paymentSection.fields.status}</dt>
-                      <dd>
-                        {(() => {
-                          const statusItem = formattedPaymentDetails.find(
-                            (item) => item.label === mergedStrings.paymentSection.fields.status,
-                          );
-                          if (!statusItem) {
-                            return <span className="payment-detail__placeholder">--</span>;
-                          }
-                          return (
-                            <span
-                              className={`payment-detail__status payment-detail__status--${
-                                statusItem.variant ?? 'neutral'
-                              }`}
-                            >
-                              {statusItem.value && String(statusItem.value).trim() !== '' ? (
-                                statusItem.value
+              {error ? (
+                <div className="payment-detail__error" role="alert">
+                  <p>{error}</p>
+                  <ActionButton variant="secondary" onClick={fetchPaymentDetail}>
+                    {mergedStrings.retry}
+                  </ActionButton>
+                </div>
+              ) : payment ? (
+                <>
+                  <section className="payment-detail__section">
+                    <h2 className="payment-detail__section-title">{mergedStrings.studentSection.title}</h2>
+                    <dl className="payment-detail__details-grid">
+                      {formattedStudentDetails.map((item) => (
+                        <div key={item.label} className="payment-detail__details-item">
+                          <dt>{item.label}</dt>
+                          <dd>
+                            {item.value && String(item.value).trim() !== '' ? (
+                              item.value
+                            ) : (
+                              <span className="payment-detail__placeholder">--</span>
+                            )}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </section>
+
+                  <section className="payment-detail__section">
+                    <h2 className="payment-detail__section-title">{mergedStrings.paymentSection.title}</h2>
+                    {isEditing ? (
+                      <form className="payment-detail__form" onSubmit={handleSaveDetails}>
+                        <div className="payment-detail__details-grid">
+                          <div className="payment-detail__details-item">
+                            <dt>{mergedStrings.paymentSection.fields.status}</dt>
+                            <dd>
+                              {(() => {
+                                const statusItem = formattedPaymentDetails.find(
+                                  (item) => item.label === mergedStrings.paymentSection.fields.status,
+                                );
+                                if (!statusItem) {
+                                  return <span className="payment-detail__placeholder">--</span>;
+                                }
+                                return (
+                                  <span
+                                    className={`payment-detail__status payment-detail__status--${
+                                      statusItem.variant ?? 'neutral'
+                                    }`}
+                                  >
+                                    {statusItem.value && String(statusItem.value).trim() !== '' ? (
+                                      statusItem.value
+                                    ) : (
+                                      <span className="payment-detail__placeholder">--</span>
+                                    )}
+                                  </span>
+                                );
+                              })()}
+                            </dd>
+                          </div>
+                          <div className="payment-detail__details-item">
+                            <dt>{mergedStrings.paymentSection.fields.createdAt}</dt>
+                            <dd>
+                              <input
+                                type="date"
+                                className="payment-detail__form-input"
+                                value={editValues.paymentCreatedAt}
+                                onChange={(event) =>
+                                  setEditValues((previous) => ({
+                                    ...previous,
+                                    paymentCreatedAt: event.target.value,
+                                  }))
+                                }
+                                required
+                              />
+                            </dd>
+                          </div>
+                          <div className="payment-detail__details-item">
+                            <dt>{mergedStrings.paymentSection.fields.paymentMonth}</dt>
+                            <dd>
+                              <input
+                                type="month"
+                                className="payment-detail__form-input"
+                                value={editValues.paymentMonth}
+                                onChange={(event) =>
+                                  setEditValues((previous) => ({
+                                    ...previous,
+                                    paymentMonth: event.target.value,
+                                  }))
+                                }
+                                required
+                              />
+                            </dd>
+                          </div>
+                          <div className="payment-detail__details-item">
+                            <dt>{mergedStrings.paymentSection.fields.amount}</dt>
+                            <dd>
+                              <input
+                                type="number"
+                                className="payment-detail__form-input"
+                                value={editValues.amount}
+                                onChange={(event) =>
+                                  setEditValues((previous) => ({
+                                    ...previous,
+                                    amount: event.target.value,
+                                  }))
+                                }
+                                min="0"
+                                step="0.01"
+                                required
+                              />
+                            </dd>
+                          </div>
+                          <div className="payment-detail__details-item">
+                            <dt>{mergedStrings.paymentSection.fields.paymentType}</dt>
+                            <dd>
+                              <select
+                                className="payment-detail__form-input"
+                                value={editValues.paymentThroughId}
+                                onChange={(event) =>
+                                  setEditValues((previous) => ({
+                                    ...previous,
+                                    paymentThroughId: event.target.value,
+                                  }))
+                                }
+                                required
+                              >
+                                <option value="">--</option>
+                                {throughOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </dd>
+                          </div>
+                          <div className="payment-detail__details-item">
+                            <dt>{mergedStrings.paymentSection.fields.paymentConcept}</dt>
+                            <dd>
+                              <select
+                                className="payment-detail__form-input"
+                                value={editValues.paymentConceptId}
+                                onChange={(event) =>
+                                  setEditValues((previous) => ({
+                                    ...previous,
+                                    paymentConceptId: event.target.value,
+                                  }))
+                                }
+                                required
+                              >
+                                <option value="">--</option>
+                                {conceptOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </dd>
+                          </div>
+                          <div className="payment-detail__details-item payment-detail__details-item--full">
+                            <dt>{mergedStrings.paymentSection.fields.comments}</dt>
+                            <dd>
+                              <textarea
+                                className="payment-detail__form-input payment-detail__form-textarea"
+                                value={editValues.comments}
+                                onChange={(event) =>
+                                  setEditValues((previous) => ({
+                                    ...previous,
+                                    comments: event.target.value,
+                                  }))
+                                }
+                                rows={4}
+                              />
+                            </dd>
+                          </div>
+                        </div>
+                        {editError ? <p className="payment-detail__form-error">{editError}</p> : null}
+                        <div className="payment-detail__form-actions">
+                          <ActionButton type="submit" variant="primary" disabled={isSavingDetails}>
+                            {isSavingDetails
+                              ? mergedStrings.editing.savingButton
+                              : mergedStrings.editing.saveButton}
+                          </ActionButton>
+                          <ActionButton type="button" variant="secondary" onClick={handleToggleEdit}>
+                            {mergedStrings.editing.cancelButton}
+                          </ActionButton>
+                        </div>
+                      </form>
+                    ) : (
+                      <dl className="payment-detail__details-grid">
+                        {formattedPaymentDetails.map((item) => (
+                          <div key={item.label} className="payment-detail__details-item">
+                            <dt>{item.label}</dt>
+                            <dd>
+                              {item.variant ? (
+                                <span className={`payment-detail__status payment-detail__status--${item.variant}`}>
+                                  {item.value && String(item.value).trim() !== '' ? item.value : '--'}
+                                </span>
+                              ) : item.value && String(item.value).trim() !== '' ? (
+                                item.value
                               ) : (
                                 <span className="payment-detail__placeholder">--</span>
                               )}
-                            </span>
-                          );
-                        })()}
-                      </dd>
-                    </div>
-
-                    <div className="payment-detail__form-field">
-                      <label className="payment-detail__form-label" htmlFor="payment-edit-created-at">
-                        {mergedStrings.paymentSection.fields.createdAt}
-                      </label>
-                      <input
-                        id="payment-edit-created-at"
-                        className="payment-detail__form-input"
-                        type="datetime-local"
-                        value={editValues.paymentCreatedAt}
-                        onChange={(event) =>
-                          setEditValues((previous) => ({
-                            ...previous,
-                            paymentCreatedAt: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="payment-detail__form-field">
-                      <label className="payment-detail__form-label" htmlFor="payment-edit-month">
-                        {mergedStrings.paymentSection.fields.paymentMonth}
-                      </label>
-                      <input
-                        id="payment-edit-month"
-                        className="payment-detail__form-input"
-                        type="month"
-                        value={editValues.paymentMonth}
-                        onChange={(event) =>
-                          setEditValues((previous) => ({
-                            ...previous,
-                            paymentMonth: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="payment-detail__form-field">
-                      <label className="payment-detail__form-label" htmlFor="payment-edit-amount">
-                        {mergedStrings.paymentSection.fields.amount}
-                      </label>
-                      <input
-                        id="payment-edit-amount"
-                        className="payment-detail__form-input"
-                        type="number"
-                        step="0.01"
-                        value={editValues.amount}
-                        onChange={(event) =>
-                          setEditValues((previous) => ({
-                            ...previous,
-                            amount: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="payment-detail__form-field">
-                      <label className="payment-detail__form-label" htmlFor="payment-edit-through">
-                        {mergedStrings.paymentSection.fields.paymentType}
-                      </label>
-                      <select
-                        id="payment-edit-through"
-                        className="payment-detail__form-input"
-                        value={editValues.paymentThroughId}
-                        onChange={(event) =>
-                          setEditValues((previous) => ({
-                            ...previous,
-                            paymentThroughId: event.target.value,
-                          }))
-                        }
-                        disabled={isLoadingThrough}
-                      >
-                        <option value="" disabled>
-                          {isLoadingThrough
-                            ? mergedStrings.editing.loadingOption
-                            : mergedStrings.paymentSection.fields.paymentType}
-                        </option>
-                        {throughOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.name}
-                          </option>
+                            </dd>
+                          </div>
                         ))}
-                      </select>
-                    </div>
+                      </dl>
+                    )}
+                  </section>
+                </>
+              ) : (
+                <p className="payment-detail__status-text" role="status">
+                  {mergedStrings.error}
+                </p>
+              )}
+            </UiCard>
 
-                    <div className="payment-detail__form-field">
-                      <label className="payment-detail__form-label" htmlFor="payment-edit-concept">
-                        {mergedStrings.paymentSection.fields.paymentConcept}
-                      </label>
-                      <select
-                        id="payment-edit-concept"
-                        className="payment-detail__form-input"
-                        value={editValues.paymentConceptId}
-                        onChange={(event) =>
-                          setEditValues((previous) => ({
-                            ...previous,
-                            paymentConceptId: event.target.value,
-                          }))
-                        }
-                        disabled={isLoadingConcepts}
-                      >
-                        <option value="" disabled>
-                          {isLoadingConcepts
-                            ? mergedStrings.editing.loadingOption
-                            : mergedStrings.paymentSection.fields.paymentConcept}
-                        </option>
-                        {conceptOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+            {payment ? (
+              <UiCard className="payment-detail__card">
+                <div className="payment-detail__section-header">
+                  <h2 className="payment-detail__section-title">{mergedStrings.attachments.title}</h2>
+                </div>
 
-                    <div className="payment-detail__form-field payment-detail__form-field--full">
-                      <label className="payment-detail__form-label" htmlFor="payment-edit-comments">
-                        {mergedStrings.paymentSection.fields.comments}
-                      </label>
-                      <textarea
-                        id="payment-edit-comments"
-                        className="payment-detail__form-input payment-detail__form-textarea"
-                        rows={3}
-                        value={editValues.comments}
-                        onChange={(event) =>
-                          setEditValues((previous) => ({
-                            ...previous,
-                            comments: event.target.value,
-                          }))
-                        }
-                      />
+                {hasReceipt ? (
+                  <div className="payment-detail__receipt">
+                    <div className="payment-detail__receipt-meta">
+                      <div className="payment-detail__receipt-icon" aria-hidden="true">📎</div>
+                      <div>
+                        <p className="payment-detail__receipt-name">
+                          {payment?.receipt_file_name || mergedStrings.attachments.missingFileName}
+                        </p>
+                        <p className="payment-detail__receipt-path">{payment?.receipt_path}</p>
+                      </div>
+                    </div>
+                    <div className="payment-detail__receipt-actions">
+                      <ActionButton variant="secondary" onClick={handleOpenReceipt}>
+                        {mergedStrings.attachments.viewLabel}
+                      </ActionButton>
+                      <ActionButton variant="outline" onClick={handleDownloadReceipt}>
+                        {mergedStrings.attachments.downloadLabel}
+                      </ActionButton>
                     </div>
                   </div>
-                  {editError ? (
-                    <p className="payment-detail__form-error" role="alert">
-                      {editError}
+                ) : (
+                  <div className="payment-detail__upload">
+                    <p>{mergedStrings.attachments.emptyDescription}</p>
+                  </div>
+                )}
+
+                <div className="payment-detail__upload payment-detail__upload--form">
+                  <label className="payment-detail__upload-label">
+                    {hasReceipt ? mergedStrings.attachments.replaceLabel : mergedStrings.attachments.uploadLabel}
+                    <input
+                      key={fileInputKey}
+                      type="file"
+                      className="payment-detail__upload-input"
+                      onChange={handleFileSelect}
+                    />
+                  </label>
+                  {selectedFile ? (
+                    <p className="payment-detail__selected-file">
+                      {mergedStrings.attachments.selectedFile}{' '}
+                      <strong>{selectedFile.name}</strong>
                     </p>
                   ) : null}
-                  <div className="payment-detail__form-actions">
-                    <ActionButton type="submit" disabled={isSavingDetails}>
-                      {isSavingDetails
-                        ? mergedStrings.editing.savingButton
-                        : mergedStrings.editing.saveButton}
-                    </ActionButton>
-                    <ActionButton
-                      type="button"
-                      variant="ghost"
-                      onClick={handleToggleEdit}
-                      disabled={isSavingDetails}
-                    >
-                      {mergedStrings.editing.cancelButton}
-                    </ActionButton>
-                  </div>
-                </form>
-              ) : (
-                <dl className="payment-detail__details-grid">
-                  {formattedPaymentDetails.map((item) => (
-                    <div key={item.label} className="payment-detail__details-item">
-                      <dt>{item.label}</dt>
-                      <dd>
-                        {item.variant ? (
-                          <span className={`payment-detail__status payment-detail__status--${item.variant}`}>
-                            {item.value && String(item.value).trim() !== '' ? item.value : '--'}
-                          </span>
-                        ) : item.value && String(item.value).trim() !== '' ? (
-                          item.value
-                        ) : (
-                          <span className="payment-detail__placeholder">--</span>
-                        )}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-            </section>
-          </>
-        ) : (
-          <p className="payment-detail__status-text" role="status">
-            {mergedStrings.error}
-          </p>
-        )}
-      </UiCard>
-
-      <UiCard className="payment-detail__card">
-        <div className="payment-detail__section-header">
-          <h2 className="payment-detail__section-title">{mergedStrings.attachments.title}</h2>
-        </div>
-
-        {hasReceipt ? (
-          <div className="payment-detail__receipt">
-            <div className="payment-detail__receipt-meta">
-              <div className="payment-detail__receipt-icon" aria-hidden="true">📎</div>
-              <div>
-                <p className="payment-detail__receipt-name">
-                  {payment?.receipt_file_name || mergedStrings.attachments.missingFileName}
-                </p>
-                <p className="payment-detail__receipt-path">{payment?.receipt_path}</p>
-              </div>
-            </div>
-          <div className="payment-detail__receipt-actions">
-            <ActionButton variant="secondary" onClick={handleOpenReceipt}>
-              {mergedStrings.attachments.viewLabel}
-            </ActionButton>
-            <ActionButton variant="outline" onClick={handleDownloadReceipt}>
-              {mergedStrings.attachments.downloadLabel}
-            </ActionButton>
-          </div>
-          </div>
-        ) : (
-          <div className="payment-detail__upload">
-            <p>{mergedStrings.attachments.emptyDescription}</p>
-          </div>
-        )}
-
-        <div className="payment-detail__upload payment-detail__upload--form">
-          <label className="payment-detail__upload-label">
-            {hasReceipt ? mergedStrings.attachments.replaceLabel : mergedStrings.attachments.uploadLabel}
-            <input
-              key={fileInputKey}
-              type="file"
-              className="payment-detail__upload-input"
-              onChange={handleFileSelect}
-            />
-          </label>
-          {selectedFile ? (
-            <p className="payment-detail__selected-file">
-              {mergedStrings.attachments.selectedFile}{' '}
-              <strong>{selectedFile.name}</strong>
-            </p>
-          ) : null}
-          {receiptUploadError ? (
-            <p className="payment-detail__upload-error" role="alert">
-              {receiptUploadError}
-            </p>
-          ) : null}
-          <div className="payment-detail__upload-actions">
-            <ActionButton
-              variant="primary"
-              onClick={handleUploadReceipt}
-              disabled={isUploadingReceipt}
-            >
-              {isUploadingReceipt
-                ? mergedStrings.attachments.uploadingLabel
-                : mergedStrings.attachments.submitLabel}
-            </ActionButton>
-          </div>
-        </div>
-      </UiCard>
-
-      <UiCard className="payment-detail__card">
-        <div className="payment-detail__section-header">
-          <h2 className="payment-detail__section-title">{mergedStrings.logs.title}</h2>
-        </div>
-
-        {logsLoading ? (
-          <p className="payment-detail__status-text" role="status">
-            {mergedStrings.loading}
-          </p>
-        ) : logsError ? (
-          <div className="payment-detail__error" role="alert">
-            <p>{logsError}</p>
-            <ActionButton variant="secondary" onClick={fetchPaymentLogs}>
-              {mergedStrings.retry}
-            </ActionButton>
-          </div>
-        ) : formattedLogs.length === 0 ? (
-          <p className="payment-detail__status-text">{mergedStrings.logs.empty}</p>
-        ) : (
-          <ul className="payment-detail__logs">
-            {formattedLogs.map((log) => (
-              <li key={log.key} className="payment-detail__log-item">
-                <div className="payment-detail__log-header">
-                  <div>
-                    <p className="payment-detail__log-user">{log.responsable ?? <span className="payment-detail__placeholder">--</span>}</p>
-                    <p className="payment-detail__log-role">
-                      {log.role ? log.role : <span className="payment-detail__placeholder">--</span>}
+                  {receiptUploadError ? (
+                    <p className="payment-detail__upload-error" role="alert">
+                      {receiptUploadError}
                     </p>
-                  </div>
-                  <div className="payment-detail__log-meta">
-                    <span className="payment-detail__log-type">{log.type ?? '--'}</span>
-                    <span className="payment-detail__log-date">{log.updatedAt ?? '--'}</span>
+                  ) : null}
+                  <div className="payment-detail__upload-actions">
+                    <ActionButton
+                      variant="primary"
+                      onClick={handleUploadReceipt}
+                      disabled={isUploadingReceipt}
+                    >
+                      {isUploadingReceipt
+                        ? mergedStrings.attachments.uploadingLabel
+                        : mergedStrings.attachments.submitLabel}
+                    </ActionButton>
                   </div>
                 </div>
-                {log.changes.length > 0 ? (
-                  <ul className="payment-detail__log-changes">
-                    {log.changes.map((change) => (
-                      <li key={change.key}>
-                        <div className="payment-detail__change-field">
-                          <strong>{change.field ?? '—'}</strong>
-                        </div>
-                        <div className="payment-detail__change-values">
-                          <span>
-                            <span className="payment-detail__change-label">De:</span>{' '}
-                            {change.from ?? <span className="payment-detail__placeholder">--</span>}
-                          </span>
-                          <span>
-                            <span className="payment-detail__change-label">A:</span>{' '}
-                            {change.to ?? <span className="payment-detail__placeholder">--</span>}
-                          </span>
-                        </div>
-                        {change.comments ? (
-                          <p className="payment-detail__change-comments">{change.comments}</p>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </UiCard>
+              </UiCard>
+            ) : null}
 
-      {isReceiptModalOpen ? (
-        <div className="modal fade show payment-detail__modal" style={{ display: 'block' }} role="dialog" aria-modal="true">
-          <div className="modal-dialog modal-xl modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h2 className="modal-title h5 mb-0">{receiptFileName || mergedStrings.attachments.viewLabel}</h2>
-                <button
-                  type="button"
-                  className="btn-close"
-                  aria-label={mergedStrings.attachments.closeLabel}
-                  onClick={handleCloseReceiptModal}
-                />
+            <UiCard className="payment-detail__card">
+              <div className="payment-detail__section-header">
+                <h2 className="payment-detail__section-title">{mergedStrings.logs.title}</h2>
               </div>
-              <div className="modal-body payment-detail__modal-body">
-                {receiptLoading ? (
-                  <p className="payment-detail__status-text" role="status">
-                    {mergedStrings.attachments.previewLoading}
-                  </p>
-                ) : receiptError ? (
-                  <div className="payment-detail__error" role="alert">
-                    <p>{receiptError}</p>
-                  </div>
-                ) : receiptPreviewUrl ? (
-                  <iframe
-                    src={receiptPreviewUrl}
-                    title={receiptFileName || 'Comprobante'}
-                    className="payment-detail__modal-preview"
+
+              {logsLoading ? (
+                <p className="payment-detail__status-text" role="status">
+                  {mergedStrings.loading}
+                </p>
+              ) : logsError ? (
+                <div className="payment-detail__error" role="alert">
+                  <p>{logsError}</p>
+                  <ActionButton variant="secondary" onClick={fetchPaymentLogs}>
+                    {mergedStrings.retry}
+                  </ActionButton>
+                </div>
+              ) : formattedLogs.length === 0 ? (
+                <p className="payment-detail__status-text">{mergedStrings.logs.empty}</p>
+              ) : (
+                <ul className="payment-detail__logs">
+                  {formattedLogs.map((log) => (
+                    <li key={log.key} className="payment-detail__log-item">
+                      <div className="payment-detail__log-header">
+                        <div>
+                          <p className="payment-detail__log-user">
+                            {log.responsable ?? <span className="payment-detail__placeholder">--</span>}
+                          </p>
+                          <p className="payment-detail__log-role">
+                            {log.role ? log.role : <span className="payment-detail__placeholder">--</span>}
+                          </p>
+                        </div>
+                        <div className="payment-detail__log-meta">
+                          <span className="payment-detail__log-type">{log.type ?? '--'}</span>
+                          <span className="payment-detail__log-date">{log.updatedAt ?? '--'}</span>
+                        </div>
+                      </div>
+                      {log.changes.length > 0 ? (
+                        <ul className="payment-detail__log-changes">
+                          {log.changes.map((change) => (
+                            <li key={change.key}>
+                              <div className="payment-detail__change-field">
+                                <strong>{change.field ?? '—'}</strong>
+                              </div>
+                              <div className="payment-detail__change-values">
+                                <span>
+                                  <span className="payment-detail__change-label">De:</span>{' '}
+                                  {change.from ?? <span className="payment-detail__placeholder">--</span>}
+                                </span>
+                                <span>
+                                  <span className="payment-detail__change-label">A:</span>{' '}
+                                  {change.to ?? <span className="payment-detail__placeholder">--</span>}
+                                </span>
+                              </div>
+                              {change.comments ? (
+                                <p className="payment-detail__change-comments">{change.comments}</p>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </UiCard>
+          </>
+        )}
+
+        {isReceiptModalOpen ? (
+          <div className="modal fade show payment-detail__modal" style={{ display: 'block' }} role="dialog" aria-modal="true">
+            <div className="modal-dialog modal-xl modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h2 className="modal-title h5 mb-0">{receiptFileName || mergedStrings.attachments.viewLabel}</h2>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label={mergedStrings.attachments.closeLabel}
+                    onClick={handleCloseReceiptModal}
                   />
-                ) : (
-                  <p className="payment-detail__status-text" role="status">
-                    {mergedStrings.attachments.previewLoading}
-                  </p>
-                )}
-              </div>
-              <div className="modal-footer">
-                <ActionButton variant="secondary" onClick={handleDownloadReceipt}>
-                  {mergedStrings.attachments.downloadLabel}
-                </ActionButton>
-                <ActionButton variant="ghost" onClick={handleCloseReceiptModal}>
-                  {mergedStrings.attachments.closeLabel}
-                </ActionButton>
+                </div>
+                <div className="modal-body payment-detail__modal-body">
+                  {receiptLoading ? (
+                    <p className="payment-detail__status-text" role="status">
+                      {mergedStrings.attachments.previewLoading}
+                    </p>
+                  ) : receiptError ? (
+                    <div className="payment-detail__error" role="alert">
+                      <p>{receiptError}</p>
+                    </div>
+                  ) : receiptPreviewUrl ? (
+                    <iframe
+                      src={receiptPreviewUrl}
+                      title={receiptFileName || 'Comprobante'}
+                      className="payment-detail__modal-preview"
+                    />
+                  ) : (
+                    <p className="payment-detail__status-text" role="status">
+                      {mergedStrings.attachments.previewLoading}
+                    </p>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <ActionButton variant="secondary" onClick={handleDownloadReceipt}>
+                    {mergedStrings.attachments.downloadLabel}
+                  </ActionButton>
+                  <ActionButton variant="ghost" onClick={handleCloseReceiptModal}>
+                    {mergedStrings.attachments.closeLabel}
+                  </ActionButton>
+                </div>
               </div>
             </div>
+            <div className="modal-backdrop fade show" />
           </div>
-          <div className="modal-backdrop fade show" />
-        </div>
-      ) : null}
+        ) : null}
       </div>
       <GlobalToast alert={toast} onClose={() => setToast(null)} />
     </>
   );
+
 };
 
 export default PaymentDetailPage;
