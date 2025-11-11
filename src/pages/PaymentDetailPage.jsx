@@ -417,6 +417,42 @@ const PaymentDetailPage = ({
   const [isLoadingConcepts, setIsLoadingConcepts] = useState(false);
   const [isLoadingThrough, setIsLoadingThrough] = useState(false);
 
+  const isPaymentApproved = useMemo(() => {
+    if (!payment) {
+      return false;
+    }
+
+    const statusIdCandidates = [
+      payment.payment_status_id,
+      payment.paymentStatusId,
+      payment.status_id,
+      payment.statusId,
+    ];
+
+    for (const candidate of statusIdCandidates) {
+      if (candidate != null && candidate !== '') {
+        const numericValue = Number(candidate);
+        if (!Number.isNaN(numericValue)) {
+          return numericValue === 3;
+        }
+      }
+    }
+
+    const statusName =
+      payment.payment_status_name ||
+      payment.status_name ||
+      payment.status ||
+      payment.statusName ||
+      '';
+
+    if (typeof statusName !== 'string') {
+      return false;
+    }
+
+    const normalizedStatus = statusName.toLowerCase();
+    return normalizedStatus.includes('aprob') || normalizedStatus.includes('valid');
+  }, [payment]);
+
   useEffect(() => {
     setIsReceiptModalOpen(false);
     setReceiptError(null);
@@ -1171,6 +1207,10 @@ const PaymentDetailPage = ({
   }, [isEditing, loadPaymentConcepts, loadPaymentThrough]);
 
   const handleToggleEdit = useCallback(async () => {
+    if (!isEditing && isPaymentApproved) {
+      return;
+    }
+
     if (isEditing) {
       if (isEditDirty) {
         const warning =
@@ -1206,7 +1246,22 @@ const PaymentDetailPage = ({
 
     setEditError('');
     setIsEditing(true);
-  }, [defaultEditValues, isEditDirty, isEditing, mergedStrings.confirmations, mergedStrings.editing]);
+  }, [
+    defaultEditValues,
+    isEditDirty,
+    isEditing,
+    isPaymentApproved,
+    mergedStrings.confirmations,
+    mergedStrings.editing,
+  ]);
+
+  useEffect(() => {
+    if (isPaymentApproved && isEditing) {
+      setIsEditing(false);
+      setEditError('');
+      setEditValues(defaultEditValues);
+    }
+  }, [defaultEditValues, isEditing, isPaymentApproved]);
 
   const validateEditValues = useCallback(() => {
     if (!mergedStrings.editing?.validation) {
@@ -1523,14 +1578,16 @@ const PaymentDetailPage = ({
             <p className="payment-detail__subtitle">{mergedStrings.generalTitle}</p>
           </div>
           <div className="payment-detail__header-actions">
-            <ActionButton
-              variant={isEditing ? 'outline' : 'primary'}
-              onClick={handleToggleEdit}
-              disabled={loading || !payment || isSavingDetails}
-              aria-pressed={isEditing ? 'true' : 'false'}
-            >
-              {isEditing ? mergedStrings.editing.cancelButton : mergedStrings.editing.editButton}
-            </ActionButton>
+            {!isPaymentApproved ? (
+              <ActionButton
+                variant={isEditing ? 'outline' : 'primary'}
+                onClick={handleToggleEdit}
+                disabled={loading || !payment || isSavingDetails}
+                aria-pressed={isEditing ? 'true' : 'false'}
+              >
+                {isEditing ? mergedStrings.editing.cancelButton : mergedStrings.editing.editButton}
+              </ActionButton>
+            ) : null}
             <ActionButton
               variant="secondary"
               onClick={handlePrint}
@@ -1539,23 +1596,27 @@ const PaymentDetailPage = ({
             >
               {mergedStrings.actions.print}
             </ActionButton>
-            <ActionButton
-              variant="success"
-              className="payment-detail__approve-button"
-              onClick={() => handleUpdateStatus(3)}
-              disabled={isUpdatingStatus}
-              aria-busy={isUpdatingStatus ? 'true' : undefined}
-            >
-              {mergedStrings.actions.approve}
-            </ActionButton>
-            <ActionButton
-              variant="danger"
-              onClick={() => handleUpdateStatus(4)}
-              disabled={isUpdatingStatus}
-              aria-busy={isUpdatingStatus ? 'true' : undefined}
-            >
-              {mergedStrings.actions.reject}
-            </ActionButton>
+            {!isPaymentApproved ? (
+              <>
+                <ActionButton
+                  variant="success"
+                  className="payment-detail__approve-button"
+                  onClick={() => handleUpdateStatus(3)}
+                  disabled={isUpdatingStatus}
+                  aria-busy={isUpdatingStatus ? 'true' : undefined}
+                >
+                  {mergedStrings.actions.approve}
+                </ActionButton>
+                <ActionButton
+                  variant="danger"
+                  onClick={() => handleUpdateStatus(4)}
+                  disabled={isUpdatingStatus}
+                  aria-busy={isUpdatingStatus ? 'true' : undefined}
+                >
+                  {mergedStrings.actions.reject}
+                </ActionButton>
+              </>
+            ) : null}
           </div>
         </div>
 
