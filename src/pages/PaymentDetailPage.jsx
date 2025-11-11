@@ -594,14 +594,13 @@ const PaymentDetailPage = ({
       setIsUpdatingStatus(true);
       try {
         const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
-        const formData = new FormData();
-        formData.append('request', JSON.stringify({ payment_status_id: statusId }));
         const response = await fetch(url, {
           method: 'PUT',
           headers: {
+            'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: formData,
+          body: JSON.stringify({ payment_status_id: statusId }),
         });
 
         let payload = null;
@@ -1257,15 +1256,13 @@ const PaymentDetailPage = ({
 
       try {
         const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
-        const formData = new FormData();
-        formData.append('request', JSON.stringify(requestPayload));
-
         const response = await fetch(url, {
           method: 'PUT',
           headers: {
+            'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: formData,
+          body: JSON.stringify(requestPayload),
         });
 
         let payload = null;
@@ -1339,7 +1336,6 @@ const PaymentDetailPage = ({
     try {
       const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
       const formData = new FormData();
-      formData.append('request', JSON.stringify({}));
       formData.append('receipt', selectedFile);
 
       const response = await fetch(url, {
