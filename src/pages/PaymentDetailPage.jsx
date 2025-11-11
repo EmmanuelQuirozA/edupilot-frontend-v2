@@ -27,6 +27,22 @@ const DEFAULT_STRINGS = {
     printError: 'No fue posible preparar la impresión del pago.',
     printWindowError: 'Habilita las ventanas emergentes para imprimir el pago.',
   },
+  confirmations: {
+    confirmButtonText: 'Sí, continuar',
+    cancelButtonText: 'Cancelar',
+    approve: {
+      title: '¿Aprobar pago?',
+      message: 'Confirma que deseas aprobar el pago seleccionado.',
+      confirmButtonText: 'Sí, aprobar',
+      cancelButtonText: 'Cancelar',
+    },
+    reject: {
+      title: '¿Rechazar pago?',
+      message: 'Confirma que deseas rechazar el pago seleccionado.',
+      confirmButtonText: 'Sí, rechazar',
+      cancelButtonText: 'Cancelar',
+    },
+  },
   studentSection: {
     title: 'Información del estudiante',
     fields: {
@@ -168,6 +184,19 @@ const buildProtectedFilePath = (path) => {
   return `${API_BASE_URL}/protectedfiles/${segments}`;
 };
 
+const getSwalInstance = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const { Swal } = window;
+  if (Swal && typeof Swal.fire === 'function') {
+    return Swal;
+  }
+
+  return null;
+};
+
 const PaymentDetailPage = ({
   paymentId,
   language = 'es',
@@ -179,6 +208,18 @@ const PaymentDetailPage = ({
     ...DEFAULT_STRINGS,
     ...strings,
     actions: { ...DEFAULT_STRINGS.actions, ...(strings.actions ?? {}) },
+    confirmations: {
+      ...DEFAULT_STRINGS.confirmations,
+      ...(strings.confirmations ?? {}),
+      approve: {
+        ...DEFAULT_STRINGS.confirmations.approve,
+        ...((strings.confirmations && strings.confirmations.approve) || {}),
+      },
+      reject: {
+        ...DEFAULT_STRINGS.confirmations.reject,
+        ...((strings.confirmations && strings.confirmations.reject) || {}),
+      },
+    },
     studentSection: {
       ...DEFAULT_STRINGS.studentSection,
       ...(strings.studentSection ?? {}),
@@ -366,9 +407,46 @@ const PaymentDetailPage = ({
         return;
       }
 
+      const swalInstance = getSwalInstance();
+      const actionKey = statusId === 3 ? 'approve' : statusId === 4 ? 'reject' : 'update';
+      const confirmationConfig =
+        (mergedStrings.confirmations && mergedStrings.confirmations[actionKey]) || {};
+      const confirmButtonText =
+        confirmationConfig.confirmButtonText || mergedStrings.confirmations?.confirmButtonText;
+      const cancelButtonText =
+        confirmationConfig.cancelButtonText || mergedStrings.confirmations?.cancelButtonText;
+      const confirmTitle =
+        confirmationConfig.title ||
+        mergedStrings.actions?.[actionKey] ||
+        mergedStrings.actionFeedback.updateSuccess;
+      const confirmMessage = confirmationConfig.message || '';
+
+      if (swalInstance) {
+        const confirmation = await swalInstance.fire({
+          title: confirmTitle,
+          text: confirmMessage,
+          icon: confirmationConfig.icon || 'question',
+          showCancelButton: true,
+          confirmButtonText: confirmButtonText || mergedStrings.actions?.[actionKey] || 'OK',
+          cancelButtonText: cancelButtonText || mergedStrings.confirmations?.cancelButtonText || 'Cancelar',
+          reverseButtons: true,
+          focusCancel: true,
+        });
+
+        if (!confirmation.isConfirmed) {
+          return;
+        }
+      } else if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+        const fallbackMessage = [confirmTitle, confirmMessage].filter(Boolean).join('\n\n');
+        const confirmed = window.confirm(fallbackMessage || '');
+        if (!confirmed) {
+          return;
+        }
+      }
+
       setIsUpdatingStatus(true);
       try {
-        const url = `${API_BASE_URL}/api/payments/update/${paymentId}?lang=${normalizedLanguage}`;
+        const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
         const response = await fetch(url, {
           method: 'PUT',
           headers: {
@@ -392,18 +470,50 @@ const PaymentDetailPage = ({
           throw new Error(message);
         }
 
-        const successMessage =
-          (payload && [payload.title, payload.message].filter(Boolean).join('. ')) ||
-          mergedStrings.actionFeedback.updateSuccess;
-        setToast({ type: 'success', message: successMessage });
-        await fetchPaymentDetail();
+        const isSuccessful = payload?.success ?? true;
+        const alertTitle =
+          payload?.title ||
+          (isSuccessful ? mergedStrings.actionFeedback.updateSuccess : mergedStrings.actionFeedback.updateError);
+        const alertText = payload?.message && payload?.message !== payload?.title ? payload.message : '';
+
+        if (isSuccessful) {
+          await fetchPaymentDetail();
+        }
+
+        if (swalInstance) {
+          await swalInstance.fire({
+            title: alertTitle,
+            text: alertText,
+            icon: isSuccessful ? 'success' : 'error',
+          });
+        } else if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          const alertMessage = [alertTitle, alertText].filter(Boolean).join('\n\n');
+          window.alert(alertMessage);
+        }
+
+        if (!isSuccessful) {
+          return;
+        }
       } catch (updateError) {
         console.error('Failed to update payment status', updateError);
         const fallbackMessage =
           updateError instanceof Error && updateError.message
             ? updateError.message
             : mergedStrings.actionFeedback.updateError;
-        setToast({ type: 'error', message: fallbackMessage });
+
+        if (swalInstance) {
+          await swalInstance.fire({
+            title: mergedStrings.actionFeedback.updateError,
+            text:
+              fallbackMessage !== mergedStrings.actionFeedback.updateError ? fallbackMessage : undefined,
+            icon: 'error',
+          });
+        } else if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          const alertMessage = [mergedStrings.actionFeedback.updateError, fallbackMessage]
+            .filter(Boolean)
+            .join('\n\n');
+          window.alert(alertMessage);
+        }
       } finally {
         setIsUpdatingStatus(false);
       }
@@ -411,7 +521,7 @@ const PaymentDetailPage = ({
     [
       fetchPaymentDetail,
       logout,
-      mergedStrings.actionFeedback,
+      mergedStrings,
       normalizedLanguage,
       paymentId,
       token,
