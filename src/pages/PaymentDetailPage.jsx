@@ -594,13 +594,20 @@ const PaymentDetailPage = ({
       setIsUpdatingStatus(true);
       try {
         const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
+        const formData = new FormData();
+        formData.append(
+          'request',
+          new Blob([JSON.stringify({ payment_status_id: statusId })], {
+            type: 'application/json',
+          }),
+        );
+
         const response = await fetch(url, {
           method: 'PUT',
           headers: {
-            'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ payment_status_id: statusId }),
+          body: formData,
         });
 
         let payload = null;
@@ -621,7 +628,8 @@ const PaymentDetailPage = ({
         const alertTitle =
           payload?.title ||
           (isSuccessful ? mergedStrings.actionFeedback.updateSuccess : mergedStrings.actionFeedback.updateError);
-        const alertText = payload?.message && payload?.message !== payload?.title ? payload.message : '';
+        const alertText = payload?.message ?? '';
+        const alertIcon = payload?.type || (isSuccessful ? 'success' : 'error');
 
         if (isSuccessful) {
           await fetchPaymentDetail();
@@ -631,7 +639,7 @@ const PaymentDetailPage = ({
           await swalInstance.fire({
             title: alertTitle,
             text: alertText,
-            icon: isSuccessful ? 'success' : 'error',
+            icon: alertIcon,
           });
         } else if (typeof window !== 'undefined' && typeof window.alert === 'function') {
           const alertMessage = [alertTitle, alertText].filter(Boolean).join('\n\n');
