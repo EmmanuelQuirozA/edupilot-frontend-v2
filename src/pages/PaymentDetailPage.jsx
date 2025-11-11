@@ -274,11 +274,26 @@ const buildMonthPayload = (value) => {
 const mergeCatalogOptions = (current = [], next = []) => {
   const map = new Map();
   [...current, ...next].forEach((option) => {
-    if (!option || !option.id) {
+    if (!option) {
       return;
     }
-    if (!map.has(option.id)) {
-      map.set(option.id, option);
+    const rawKey = option.id ?? option.value;
+    if (rawKey == null || rawKey === '') {
+      return;
+    }
+
+    const key = String(rawKey);
+    if (!map.has(key)) {
+      map.set(key, {
+        ...option,
+        id: option.id != null && option.id !== '' ? String(option.id) : key,
+        value:
+          option.value != null && option.value !== ''
+            ? String(option.value)
+            : option.id != null && option.id !== ''
+              ? String(option.id)
+              : key,
+      });
     }
   });
   return Array.from(map.values());
@@ -1064,6 +1079,7 @@ const PaymentDetailPage = ({
         mergeCatalogOptions(previous, [
           {
             id: String(payment.payment_concept_id),
+            value: String(payment.payment_concept_id),
             name: payment.pt_name || mergedStrings.paymentSection.fields.paymentConcept,
           },
         ]),
@@ -1075,6 +1091,7 @@ const PaymentDetailPage = ({
         mergeCatalogOptions(previous, [
           {
             id: String(payment.payment_through_id),
+            value: String(payment.payment_through_id),
             name: payment.payt_name || mergedStrings.paymentSection.fields.paymentType,
           },
         ]),
@@ -1131,23 +1148,26 @@ const PaymentDetailPage = ({
 
       const payload = await response.json();
       const list = extractCatalogItems(payload);
-      const options = list.map((item, index) => ({
-        id:
-          String(
-            item?.id ??
-              item?.value ??
-              item?.catalog_id ??
-              item?.payment_concept_id ??
-              index,
-          ),
-        name:
-          item?.name ??
-          item?.label ??
-          item?.title ??
-          item?.description ??
-          item?.concept ??
-          `Concepto ${index + 1}`,
-      }));
+      const options = list.map((item, index) => {
+        const rawId =
+          item?.id ??
+          item?.value ??
+          item?.catalog_id ??
+          item?.payment_concept_id ??
+          index;
+
+        return {
+          id: String(rawId),
+          value: String(rawId),
+          name:
+            item?.name ??
+            item?.label ??
+            item?.title ??
+            item?.description ??
+            item?.concept ??
+            `Concepto ${index + 1}`,
+        };
+      });
       setConceptOptions((previous) => mergeCatalogOptions(previous, options));
     } catch (error) {
       console.error('Payment concepts fetch error', error);
@@ -1177,23 +1197,26 @@ const PaymentDetailPage = ({
 
       const payload = await response.json();
       const list = extractCatalogItems(payload);
-      const options = list.map((item, index) => ({
-        id:
-          String(
-            item?.id ??
-              item?.value ??
-              item?.catalog_id ??
-              item?.payment_through_id ??
-              index,
-          ),
-        name:
-          item?.name ??
-          item?.label ??
-          item?.title ??
-          item?.description ??
-          item?.through ??
-          `Método ${index + 1}`,
-      }));
+      const options = list.map((item, index) => {
+        const rawId =
+          item?.id ??
+          item?.value ??
+          item?.catalog_id ??
+          item?.payment_through_id ??
+          index;
+
+        return {
+          id: String(rawId),
+          value: String(rawId),
+          name:
+            item?.name ??
+            item?.label ??
+            item?.title ??
+            item?.description ??
+            item?.through ??
+            `Método ${index + 1}`,
+        };
+      });
       setThroughOptions((previous) => mergeCatalogOptions(previous, options));
     } catch (error) {
       console.error('Payment through fetch error', error);
@@ -1874,11 +1897,23 @@ const PaymentDetailPage = ({
                                 required
                               >
                                 <option value="">--</option>
-                                {throughOptions.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
+                                {throughOptions
+                                  .filter((option) => option?.id != null || option?.value != null)
+                                  .map((option) => {
+                                    const optionValue = String(option?.id ?? option?.value ?? '');
+                                    const optionLabel =
+                                      option?.name ??
+                                      option?.label ??
+                                      option?.title ??
+                                      option?.description ??
+                                      optionValue;
+
+                                    return (
+                                      <option key={optionValue} value={optionValue}>
+                                        {optionLabel}
+                                      </option>
+                                    );
+                                  })}
                               </select>
                             </dd>
                           </div>
@@ -1897,11 +1932,23 @@ const PaymentDetailPage = ({
                                 required
                               >
                                 <option value="">--</option>
-                                {conceptOptions.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
+                                {conceptOptions
+                                  .filter((option) => option?.id != null || option?.value != null)
+                                  .map((option) => {
+                                    const optionValue = String(option?.id ?? option?.value ?? '');
+                                    const optionLabel =
+                                      option?.name ??
+                                      option?.label ??
+                                      option?.title ??
+                                      option?.description ??
+                                      optionValue;
+
+                                    return (
+                                      <option key={optionValue} value={optionValue}>
+                                        {optionLabel}
+                                      </option>
+                                    );
+                                  })}
                               </select>
                             </dd>
                           </div>
