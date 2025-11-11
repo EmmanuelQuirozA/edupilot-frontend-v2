@@ -450,22 +450,8 @@ const PaymentDetailPage = ({
       }
     }
 
-    const statusName =
-      payment.payment_status_name ||
-      payment.status_name ||
-      payment.status ||
-      payment.statusName ||
-      '';
-
-    const normalizedStatus =
-      typeof statusName === 'string' ? statusName.toLowerCase() : '';
-
-    const isApproved =
-      numericStatusId === 3 ||
-      normalizedStatus.includes('aprob') ||
-      normalizedStatus.includes('valid');
-    const isRejected =
-      numericStatusId === 4 || normalizedStatus.includes('rech');
+    const isApproved = numericStatusId === 3;
+    const isRejected = numericStatusId === 4;
 
     return { isApproved, isRejected };
   }, [payment]);
