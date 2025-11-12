@@ -1,0 +1,41 @@
+.payment-request-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.payment-request-detail__card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.payment-request-detail__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.payment-request-detail__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.payment-request-detail__list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.payment-request-detail__list-item dt {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.payment-request-detail__list-item dd {
+  margin: 0;
+  font-weight: 600;
+  color: #0f172a;
+}

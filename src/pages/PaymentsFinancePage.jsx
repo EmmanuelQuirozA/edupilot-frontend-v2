@@ -10,16 +10,48 @@ import GlobalTable from '../components/ui/GlobalTable.jsx';
 import SidebarModal from '../components/ui/SidebarModal.jsx';
 import StudentInfo from '../components/ui/StudentInfo.jsx';
 import AddPaymentModal from '../components/payments/AddPaymentModal.jsx';
+import AddPaymentRequestModal from '../components/payments/AddPaymentRequestModal.jsx';
 import { useModal } from '../components/modal/useModal';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { handleExpiredToken } from '../utils/auth';
 import PaymentDetailPage from './PaymentDetailPage.jsx';
+import PaymentRequestDetailPage from './PaymentRequestDetailPage.jsx';
+import PaymentRequestResultPage, {
+  PAYMENT_REQUEST_RESULT_STORAGE_KEY,
+} from './PaymentRequestResultPage.jsx';
 import './PaymentsFinancePage.css';
 
 const DEFAULT_LIMIT = 10;
 const MONTH_KEY_REGEX = /^[A-Za-z]{3}-\d{2}$/;
 const DEFAULT_PAYMENTS_TAB_KEY = 'tuition';
+
+const getSwalInstance = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const { Swal } = window;
+
+  if (Swal && typeof Swal.fire === 'function') {
+    return Swal;
+  }
+
+  return null;
+};
+
+const summarizePaymentRequestResult = (result) => {
+  if (!result || typeof result !== 'object') {
+    return { created: 0, duplicates: 0, total: 0 };
+  }
+
+  const created = Number(result.created_count ?? (Array.isArray(result.created) ? result.created.length : 0)) || 0;
+  const duplicates =
+    Number(result.duplicate_count ?? (Array.isArray(result.duplicates) ? result.duplicates.length : 0)) || 0;
+  const total = Number(result.mass_upload ?? created + duplicates) || created + duplicates;
+
+  return { created, duplicates, total };
+};
 
 const parseTuitionCellValue = (value) => {
   if (value == null || value === '') {
@@ -204,6 +236,15 @@ const DEFAULT_PAYMENTS_FILTERS = {
   payment_month: '',
 };
 
+const DEFAULT_PAYMENT_REQUEST_FILTERS = {
+  payment_request_id: '',
+  pt_name: '',
+  payment_reference: '',
+  student_full_name: '',
+  grade_group: '',
+  ps_pr_name: '',
+};
+
 const DEFAULT_PAYMENTS_STRINGS = {
   placeholder: 'Muy pronto podrás gestionar tus pagos desde aquí.',
   tabs: {
@@ -216,6 +257,11 @@ const DEFAULT_PAYMENTS_STRINGS = {
     debtActive: 'Mostrando morosos',
     debtInactive: 'Alumnos con deuda',
     add: 'Agregar pago',
+    addRequest: 'Agregar solicitud',
+    viewScheduled: 'Solicitudes programadas',
+    scheduledActive: 'Mostrando programadas',
+    scheduledInactive: 'Ver programadas',
+    viewRequestResult: 'Ver detalle',
     bulkUpload: 'Carga masiva',
     bulkUploadTooltip: 'Muy pronto podrás gestionar tus pagos desde aquí.',
     export: 'Exportar CSV',
@@ -227,6 +273,22 @@ const DEFAULT_PAYMENTS_STRINGS = {
   dateRange: {
     start: 'Fecha inicio',
     end: 'Fecha fin',
+  },
+  requestsTable: {
+    columns: {
+      id: 'ID',
+      student: 'Alumno',
+      gradeGroup: 'Grado y grupo',
+      scholarLevel: 'Nivel académico',
+      concept: 'Concepto',
+      amount: 'Monto solicitado',
+      status: 'Estatus',
+      dueDate: 'Fecha límite',
+      actions: 'Acciones',
+    },
+    loading: 'Cargando solicitudes de pago...',
+    empty: 'No se encontraron solicitudes registradas.',
+    error: 'No fue posible cargar las solicitudes de pago.',
   },
   table: {
     columns: {
@@ -279,6 +341,19 @@ const DEFAULT_PAYMENTS_STRINGS = {
     toggles: {
       activeGroups: 'Sólo grupos activos',
       activeStudents: 'Sólo alumnos activos',
+    },
+  },
+  requestsFilters: {
+    title: 'Filtros de solicitudes',
+    reset: 'Borrar filtros',
+    closeAria: 'Cerrar filtros',
+    fields: {
+      paymentRequestId: { label: 'ID de solicitud', placeholder: 'Ej. 257' },
+      student: { label: 'Nombre del alumno', placeholder: 'Ej. EMMA PONCE' },
+      reference: { label: 'Matrícula', placeholder: 'Ej. 1376' },
+      gradeGroup: { label: 'Grado y grupo', placeholder: 'Ej. 4-A' },
+      concept: { label: 'Concepto', placeholder: 'Ej. Colegiatura' },
+      status: { label: 'Estatus', placeholder: 'Ej. Programado' },
     },
   },
   paymentsFilters: {
@@ -349,6 +424,46 @@ const DEFAULT_PAYMENTS_STRINGS = {
     error: 'No fue posible crear el pago.',
     requiredField: 'Completa los campos obligatorios.',
   },
+  addPaymentRequest: {
+    title: 'Agregar solicitud de pago',
+    description: 'Crea solicitudes de pago para tus estudiantes.',
+    scopeLabel: 'Aplicar a',
+    scopeOptions: {
+      school: 'Toda la escuela',
+      group: 'Grupo',
+      student: 'Alumno',
+    },
+    schoolLabel: 'Escuela',
+    schoolPlaceholder: 'Selecciona una escuela',
+    groupLabel: 'Grupo',
+    groupPlaceholder: 'Selecciona un grupo',
+    studentLabel: 'Alumno',
+    studentPlaceholder: 'Selecciona un alumno',
+    conceptLabel: 'Concepto de pago',
+    conceptPlaceholder: 'Selecciona un concepto',
+    amountLabel: 'Monto solicitado',
+    dueDateLabel: 'Fecha límite de pago',
+    commentsLabel: 'Comentarios',
+    lateFeeLabel: 'Recargo',
+    feeTypeLabel: 'Tipo de recargo',
+    feeTypeOptions: {
+      currency: '$',
+      percentage: '%',
+    },
+    frequencyLabel: 'Frecuencia de recargo',
+    paymentMonthLabel: 'Mes de pago',
+    partialPaymentLabel: 'Permitir pago parcial',
+    partialPaymentOptions: {
+      true: 'Sí',
+      false: 'No',
+    },
+    cancel: 'Cancelar',
+    submit: 'Crear solicitudes',
+    submitting: 'Creando…',
+    success: 'Solicitudes de pago creadas correctamente.',
+    error: 'No fue posible crear las solicitudes de pago.',
+    requiredField: 'Completa los campos obligatorios.',
+  },
   tuitionModal: {
     title: 'Detalle de pagos de colegiatura',
     summary: {
@@ -374,6 +489,55 @@ const DEFAULT_PAYMENTS_STRINGS = {
     requestButton: 'Ver solicitud de pago',
     close: 'Cerrar',
   },
+  requestsDetail: {
+    breadcrumbFallback: 'Detalle de solicitud',
+    back: 'Volver a solicitudes',
+    loading: 'Cargando solicitud de pago...',
+    error: 'No fue posible cargar la solicitud de pago.',
+    retry: 'Reintentar',
+    generalTitle: 'Información de la solicitud',
+    studentTitle: 'Información del alumno',
+    fields: {
+      id: 'ID de solicitud',
+      concept: 'Concepto',
+      amount: 'Monto solicitado',
+      status: 'Estatus',
+      dueDate: 'Fecha límite de pago',
+      createdAt: 'Fecha de creación',
+      level: 'Nivel académico',
+      generation: 'Generación',
+      gradeGroup: 'Grado y grupo',
+      lateFee: 'Recargo',
+      frequency: 'Frecuencia de recargo',
+      feeType: 'Tipo de recargo',
+      paymentMonth: 'Mes de pago',
+    },
+    open: 'Abrir detalle de la solicitud',
+    viewStudent: 'Ver detalle del alumno',
+  },
+  requestsResult: {
+    title: 'Resultado de creación de solicitudes',
+    description: 'Consulta el detalle de las solicitudes creadas y las duplicadas.',
+    empty: 'No hay información disponible para mostrar.',
+    back: 'Volver a solicitudes',
+    download: 'Descargar CSV',
+    createdTitle: 'Solicitudes creadas',
+    duplicatesTitle: 'Solicitudes duplicadas',
+    summary: {
+      total: 'Total de seleccionados',
+      created: 'Creadas',
+      duplicates: 'Duplicadas',
+    },
+    table: {
+      columns: {
+        type: 'Tipo',
+        fullName: 'Nombre del alumno',
+        studentId: 'ID del alumno',
+      },
+      createdLabel: 'Creado',
+      duplicateLabel: 'Duplicado',
+    },
+  },
 };
 
 const SUPPORTED_LANGUAGES = ['es', 'en'];
@@ -387,6 +551,8 @@ const PaymentsFinancePage = ({
   onStudentDetail,
   onPaymentDetail,
   onPaymentBreadcrumbChange,
+  onPaymentRequestDetail,
+  onPaymentRequestResult,
   activeSectionKey = DEFAULT_PAYMENTS_TAB_KEY,
   onSectionChange,
   routeSegments = [],
@@ -404,9 +570,19 @@ const PaymentsFinancePage = ({
     () => `/${normalizedLanguage}/payments/requests/detail`,
     [normalizedLanguage],
   );
+  const paymentRequestsBasePath = useMemo(
+    () => `/${normalizedLanguage}/payments/requests`,
+    [normalizedLanguage],
+  );
 
   const detailRouteSegments = Array.isArray(routeSegments) ? routeSegments : [];
-  const isPaymentDetailRoute = detailRouteSegments[0] === 'detail';
+  const primaryRouteSegment = detailRouteSegments[0] ?? null;
+  const secondaryRouteSegment = detailRouteSegments[1] ?? null;
+  const tertiaryRouteSegment = detailRouteSegments[2] ?? null;
+  const isPaymentDetailRoute = primaryRouteSegment === 'detail';
+  const isPaymentRequestRoute = primaryRouteSegment === 'requests';
+  const isPaymentRequestDetailRoute = isPaymentRequestRoute && secondaryRouteSegment === 'detail';
+  const isPaymentRequestResultRoute = isPaymentRequestRoute && secondaryRouteSegment === 'result';
   const paymentDetailId = (() => {
     if (!isPaymentDetailRoute) {
       return null;
@@ -426,6 +602,28 @@ const PaymentsFinancePage = ({
       return decodeURIComponent(candidate);
     } catch (decodeError) {
       console.warn('Unable to decode payment id from route', decodeError);
+      return candidate;
+    }
+  })();
+  const paymentRequestDetailId = (() => {
+    if (!isPaymentRequestDetailRoute) {
+      return null;
+    }
+
+    const candidate = tertiaryRouteSegment;
+
+    if (candidate == null) {
+      return null;
+    }
+
+    if (typeof candidate !== 'string') {
+      return candidate;
+    }
+
+    try {
+      return decodeURIComponent(candidate);
+    } catch (decodeError) {
+      console.warn('Unable to decode payment request id from route', decodeError);
       return candidate;
     }
   })();
@@ -476,6 +674,19 @@ const PaymentsFinancePage = ({
         DEFAULT_PAYMENTS_STRINGS.paymentsTable.actionsPlaceholder,
     };
   }, [strings.paymentsTable]);
+  const requestsTableStrings = useMemo(() => {
+    const requestsOverrides = strings.requestsTable ?? {};
+    const columns = {
+      ...DEFAULT_PAYMENTS_STRINGS.requestsTable.columns,
+      ...(requestsOverrides.columns ?? {}),
+    };
+
+    return {
+      ...DEFAULT_PAYMENTS_STRINGS.requestsTable,
+      ...requestsOverrides,
+      columns,
+    };
+  }, [strings.requestsTable]);
   const paymentDetailButtonLabel = paymentsTableStrings.paymentLinkLabel ?? 'Abrir detalle del pago';
   const tuitionModalStrings = useMemo(() => {
     const modalOverrides = strings.tuitionModal ?? {};
@@ -526,6 +737,27 @@ const PaymentsFinancePage = ({
       },
     };
   }, [strings.filters]);
+  const requestsFilterStrings = useMemo(() => {
+    const filterOverrides = strings.requestsFilters ?? {};
+    const fieldDefaults = DEFAULT_PAYMENTS_STRINGS.requestsFilters.fields;
+    const fieldOverrides = filterOverrides.fields ?? {};
+
+    return {
+      ...DEFAULT_PAYMENTS_STRINGS.requestsFilters,
+      ...filterOverrides,
+      fields: {
+        paymentRequestId: {
+          ...fieldDefaults.paymentRequestId,
+          ...(fieldOverrides.paymentRequestId ?? {}),
+        },
+        student: { ...fieldDefaults.student, ...(fieldOverrides.student ?? {}) },
+        reference: { ...fieldDefaults.reference, ...(fieldOverrides.reference ?? {}) },
+        gradeGroup: { ...fieldDefaults.gradeGroup, ...(fieldOverrides.gradeGroup ?? {}) },
+        concept: { ...fieldDefaults.concept, ...(fieldOverrides.concept ?? {}) },
+        status: { ...fieldDefaults.status, ...(fieldOverrides.status ?? {}) },
+      },
+    };
+  }, [strings.requestsFilters]);
   const paymentsFilterStrings = useMemo(() => {
     const overrides = strings.paymentsFilters ?? {};
     const fieldDefaults = DEFAULT_PAYMENTS_STRINGS.paymentsFilters.fields;
@@ -582,6 +814,27 @@ const PaymentsFinancePage = ({
     () => ({ ...DEFAULT_PAYMENTS_STRINGS.addPayment, ...(strings.addPayment ?? {}) }),
     [strings.addPayment],
   );
+  const addPaymentRequestStrings = useMemo(
+    () => ({
+      ...DEFAULT_PAYMENTS_STRINGS.addPaymentRequest,
+      ...(strings.addPaymentRequest ?? {}),
+    }),
+    [strings.addPaymentRequest],
+  );
+  const requestsDetailStrings = useMemo(
+    () => ({
+      ...DEFAULT_PAYMENTS_STRINGS.requestsDetail,
+      ...(strings.requestsDetail ?? {}),
+    }),
+    [strings.requestsDetail],
+  );
+  const requestsResultStrings = useMemo(
+    () => ({
+      ...DEFAULT_PAYMENTS_STRINGS.requestsResult,
+      ...(strings.requestsResult ?? {}),
+    }),
+    [strings.requestsResult],
+  );
   const placeholderMessage = strings.placeholder ?? DEFAULT_PAYMENTS_STRINGS.placeholder;
   const paymentsComingSoonLabel =
     actionStrings.bulkUploadTooltip ?? placeholderMessage;
@@ -597,8 +850,15 @@ const PaymentsFinancePage = ({
   const [paymentsFiltersDraft, setPaymentsFiltersDraft] = useState(
     () => ({ ...DEFAULT_PAYMENTS_FILTERS }),
   );
+  const [requestsFilters, setRequestsFilters] = useState(
+    () => ({ ...DEFAULT_PAYMENT_REQUEST_FILTERS }),
+  );
+  const [requestsFiltersDraft, setRequestsFiltersDraft] = useState(
+    () => ({ ...DEFAULT_PAYMENT_REQUEST_FILTERS }),
+  );
   const [showTuitionFilters, setShowTuitionFilters] = useState(false);
   const [showPaymentsFilters, setShowPaymentsFilters] = useState(false);
+  const [showRequestsFilters, setShowRequestsFilters] = useState(false);
   const [schoolOptions, setSchoolOptions] = useState([]);
   const [isLoadingSchools, setIsLoadingSchools] = useState(false);
 
@@ -624,10 +884,20 @@ const PaymentsFinancePage = ({
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [paymentsError, setPaymentsError] = useState(null);
 
+  const [requestsOffset, setRequestsOffset] = useState(0);
+  const [requestsLimit] = useState(DEFAULT_LIMIT);
+  const [requestsRows, setRequestsRows] = useState([]);
+  const [requestsTotalElements, setRequestsTotalElements] = useState(0);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsError, setRequestsError] = useState(null);
+
   const [toast, setToast] = useState(null);
   const [isTuitionExporting, setIsTuitionExporting] = useState(false);
   const [isPaymentsExporting, setIsPaymentsExporting] = useState(false);
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
+  const [isRequestsExporting, setIsRequestsExporting] = useState(false);
+  const [isAddPaymentRequestOpen, setIsAddPaymentRequestOpen] = useState(false);
+  const [showScheduledRequestsOnly, setShowScheduledRequestsOnly] = useState(false);
 
   const tabs = useMemo(
     () => [
@@ -662,10 +932,20 @@ const PaymentsFinancePage = ({
 
   const isTuitionTab = activeTab === 'tuition';
   const isPaymentsTab = activeTab === 'payments';
+  const isRequestsTab = activeTab === 'requests';
 
   const columnLabels = tableStrings.columns;
   const currencyFormatter = useMemo(
     () => new Intl.NumberFormat(locale, { style: 'currency', currency: 'MXN' }),
+    [locale],
+  );
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }),
     [locale],
   );
   const displayedColumns = useMemo(
@@ -776,6 +1056,20 @@ const PaymentsFinancePage = ({
     ],
     [paymentsTableStrings.columns],
   );
+  const paymentRequestsColumns = useMemo(
+    () => [
+      { key: 'payment_request_id', header: requestsTableStrings.columns.id },
+      { key: 'student', header: requestsTableStrings.columns.student },
+      { key: 'grade_group', header: requestsTableStrings.columns.gradeGroup },
+      { key: 'scholar_level_name', header: requestsTableStrings.columns.scholarLevel },
+      { key: 'pt_name', header: requestsTableStrings.columns.concept },
+      { key: 'pr_amount', header: requestsTableStrings.columns.amount, align: 'end' },
+      { key: 'ps_pr_name', header: requestsTableStrings.columns.status },
+      { key: 'pr_pay_by', header: requestsTableStrings.columns.dueDate },
+      { key: 'actions', header: requestsTableStrings.columns.actions, align: 'end' },
+    ],
+    [requestsTableStrings.columns],
+  );
 
   const paymentSummary = useCallback(
     ({ from, to, total }) => {
@@ -817,6 +1111,8 @@ const PaymentsFinancePage = ({
   const tuitionCurrentPage = Math.floor(tuitionOffset / tuitionLimit) + 1;
   const paymentsTotalPages = Math.max(1, Math.ceil(paymentsTotalElements / paymentsLimit));
   const paymentsCurrentPage = Math.floor(paymentsOffset / paymentsLimit) + 1;
+  const requestsTotalPages = Math.max(1, Math.ceil(requestsTotalElements / requestsLimit));
+  const requestsCurrentPage = Math.floor(requestsOffset / requestsLimit) + 1;
 
   const appliedFilters = useMemo(() => {
     const params = new URLSearchParams();
@@ -899,6 +1195,41 @@ const PaymentsFinancePage = ({
 
     return params;
   }, [normalizedLanguage, paymentsFilters, paymentsLimit, paymentsOffset]);
+
+  const requestsQueryParams = useMemo(() => {
+    const params = new URLSearchParams();
+
+    params.set('lang', normalizedLanguage);
+    params.set('offset', String(requestsOffset));
+    params.set('limit', String(requestsLimit));
+    params.set('export_all', 'false');
+
+    if (showScheduledRequestsOnly) {
+      params.set('scheduled', 'true');
+    }
+
+    for (const [key, value] of Object.entries(requestsFilters)) {
+      if (value === null || value === undefined) {
+        continue;
+      }
+
+      const trimmed = typeof value === 'string' ? value.trim() : value;
+
+      if (trimmed === '' || trimmed === false) {
+        continue;
+      }
+
+      params.set(key, String(trimmed));
+    }
+
+    return params;
+  }, [
+    normalizedLanguage,
+    requestsFilters,
+    requestsLimit,
+    requestsOffset,
+    showScheduledRequestsOnly,
+  ]);
 
   const fetchTuitionPayments = useCallback(async () => {
     if (activeTab !== 'tuition') {
@@ -991,6 +1322,55 @@ const PaymentsFinancePage = ({
     fetchPaymentsList();
   }, [fetchPaymentsList]);
 
+  const fetchPaymentRequests = useCallback(async () => {
+    if (activeTab !== 'requests') {
+      return;
+    }
+
+    setRequestsLoading(true);
+    setRequestsError(null);
+
+    try {
+      const url = `${API_BASE_URL}/reports/paymentrequests?${requestsQueryParams.toString()}`;
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+        throw new Error(requestsTableStrings.error);
+      }
+
+      const payload = await response.json();
+      const content = Array.isArray(payload?.content) ? payload.content : [];
+      setRequestsRows(content);
+      setRequestsTotalElements(Number(payload?.totalElements) || content.length || 0);
+    } catch (requestError) {
+      console.error('Payment requests fetch error', requestError);
+      const fallbackMessage =
+        requestError instanceof Error && requestError.message
+          ? requestError.message
+          : requestsTableStrings.error ?? tableStrings.unknownError;
+      setRequestsError(fallbackMessage);
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, [
+    activeTab,
+    logout,
+    requestsQueryParams,
+    requestsTableStrings.error,
+    tableStrings.unknownError,
+    token,
+  ]);
+
+  useEffect(() => {
+    fetchPaymentRequests();
+  }, [fetchPaymentRequests]);
+
   useEffect(() => {
     if (showTuitionFilters) {
       setTuitionFiltersDraft(tuitionFilters);
@@ -1002,6 +1382,12 @@ const PaymentsFinancePage = ({
       setPaymentsFiltersDraft(paymentsFilters);
     }
   }, [paymentsFilters, showPaymentsFilters]);
+
+  useEffect(() => {
+    if (showRequestsFilters) {
+      setRequestsFiltersDraft(requestsFilters);
+    }
+  }, [requestsFilters, showRequestsFilters]);
 
   const fetchSchools = useCallback(async () => {
     setIsLoadingSchools(true);
@@ -1078,12 +1464,24 @@ const PaymentsFinancePage = ({
     setShowPaymentsFilters((previous) => !previous);
   }, []);
 
+  const handleToggleRequestsFilters = useCallback(() => {
+    setShowRequestsFilters((previous) => !previous);
+  }, []);
+
   const handleOpenAddPayment = useCallback(() => {
     setIsAddPaymentOpen(true);
   }, []);
 
   const handleCloseAddPayment = useCallback(() => {
     setIsAddPaymentOpen(false);
+  }, []);
+
+  const handleOpenAddPaymentRequest = useCallback(() => {
+    setIsAddPaymentRequestOpen(true);
+  }, []);
+
+  const handleCloseAddPaymentRequest = useCallback(() => {
+    setIsAddPaymentRequestOpen(false);
   }, []);
 
   const handlePaymentsFilterChange = useCallback((key, value) => {
@@ -1093,6 +1491,69 @@ const PaymentsFinancePage = ({
   const handlePaymentsMonthChange = useCallback((value) => {
     setPaymentsFiltersDraft((previous) => ({ ...previous, payment_month: value }));
   }, []);
+
+  const handleRequestsFilterChange = useCallback((key, value) => {
+    setRequestsFiltersDraft((previous) => ({ ...previous, [key]: value }));
+  }, []);
+
+  const handleToggleScheduledRequests = useCallback(() => {
+    setShowScheduledRequestsOnly((previous) => !previous);
+    setRequestsOffset(0);
+  }, []);
+
+  const handlePaymentRequestDetailNavigation = useCallback(
+    (requestId) => {
+      if (requestId == null || requestId === '') {
+        return;
+      }
+
+      const idValue = String(requestId);
+
+      if (onPaymentRequestDetail) {
+        onPaymentRequestDetail(idValue);
+        return;
+      }
+
+      if (typeof window !== 'undefined') {
+        const fallbackUrl = `${paymentRequestDetailBasePath}/${encodeURIComponent(idValue)}`;
+        window.location.assign(fallbackUrl);
+      }
+    },
+    [onPaymentRequestDetail, paymentRequestDetailBasePath],
+  );
+
+  const handlePaymentRequestListNavigation = useCallback(
+    (options = {}) => {
+      setActiveTab('requests');
+
+      if (onSectionChange) {
+        onSectionChange('requests', options);
+        return;
+      }
+
+      if (typeof window !== 'undefined') {
+        window.location.assign(paymentRequestsBasePath);
+      }
+    },
+    [onSectionChange, paymentRequestsBasePath, setActiveTab],
+  );
+
+  const handlePaymentRequestResultNavigation = useCallback(
+    (options = {}) => {
+      setActiveTab('requests');
+
+      if (onPaymentRequestResult) {
+        onPaymentRequestResult(options);
+        return;
+      }
+
+      if (typeof window !== 'undefined') {
+        const fallbackUrl = `${paymentRequestsBasePath}/result`;
+        window.location.assign(fallbackUrl);
+      }
+    },
+    [onPaymentRequestResult, paymentRequestsBasePath, setActiveTab],
+  );
 
   const handlePaymentCreated = useCallback(
     (message) => {
@@ -1106,6 +1567,76 @@ const PaymentsFinancePage = ({
       }
     },
     [addPaymentStrings.success, fetchPaymentsList, paymentsOffset],
+  );
+
+  const handlePaymentRequestCreated = useCallback(
+    (result) => {
+      const summary = summarizePaymentRequestResult(result);
+      const fallbackMessage =
+        result?.message ?? addPaymentRequestStrings.success ?? actionStrings.addRequest;
+      const swalInstance = getSwalInstance();
+
+      if (typeof window !== 'undefined') {
+        try {
+          window.sessionStorage.setItem(
+            PAYMENT_REQUEST_RESULT_STORAGE_KEY,
+            JSON.stringify(result ?? {}),
+          );
+        } catch (storageError) {
+          console.error('Unable to store payment request result', storageError);
+        }
+      }
+
+      if (swalInstance) {
+        const summaryHtml = [
+          `${requestsResultStrings.summary.total}: <strong>${summary.total}</strong>`,
+          `${requestsResultStrings.summary.created}: <strong>${summary.created}</strong>`,
+          `${requestsResultStrings.summary.duplicates}: <strong>${summary.duplicates}</strong>`,
+        ]
+          .map((item) => `<li>${item}</li>`)
+          .join('');
+        const messageParts = [];
+
+        if (result?.message) {
+          messageParts.push(`<p>${result.message}</p>`);
+        }
+
+        messageParts.push(`<ul style="text-align:left">${summaryHtml}</ul>`);
+
+        swalInstance
+          .fire({
+            icon: result?.success ? 'success' : result?.type ?? 'info',
+            title: result?.title ?? addPaymentRequestStrings.title,
+            html: messageParts.join(''),
+            confirmButtonText: actionStrings.viewRequestResult ?? 'Ver detalle',
+            showCancelButton: true,
+            cancelButtonText: addPaymentRequestStrings.cancel ?? 'Cerrar',
+          })
+          .then((dialogResult) => {
+            if (dialogResult.isConfirmed) {
+              handlePaymentRequestResultNavigation();
+            }
+          });
+      } else {
+        setToast({ type: result?.success ? 'success' : 'info', message: fallbackMessage });
+      }
+
+      if (requestsOffset !== 0) {
+        setRequestsOffset(0);
+      } else {
+        fetchPaymentRequests();
+      }
+    },
+    [
+      actionStrings.viewRequestResult,
+      addPaymentRequestStrings.cancel,
+      addPaymentRequestStrings.success,
+      addPaymentRequestStrings.title,
+      fetchPaymentRequests,
+      handlePaymentRequestResultNavigation,
+      requestsOffset,
+      requestsResultStrings,
+    ],
   );
 
   const handleClearTuitionFilters = useCallback(() => {
@@ -1129,6 +1660,14 @@ const PaymentsFinancePage = ({
     setShowPaymentsFilters(false);
   }, []);
 
+  const handleClearRequestsFilters = useCallback(() => {
+    const reset = { ...DEFAULT_PAYMENT_REQUEST_FILTERS };
+    setRequestsFilters(reset);
+    setRequestsFiltersDraft(reset);
+    setRequestsOffset(0);
+    setShowRequestsFilters(false);
+  }, []);
+
   const handleApplyTuitionFilters = useCallback(
     (event) => {
       event?.preventDefault?.();
@@ -1147,6 +1686,16 @@ const PaymentsFinancePage = ({
       setShowPaymentsFilters(false);
     },
     [paymentsFiltersDraft],
+  );
+
+  const handleApplyRequestsFilters = useCallback(
+    (event) => {
+      event?.preventDefault?.();
+      setRequestsFilters({ ...requestsFiltersDraft });
+      setRequestsOffset(0);
+      setShowRequestsFilters(false);
+    },
+    [requestsFiltersDraft],
   );
 
   const handleStudentDetailClick = useCallback(
@@ -1225,6 +1774,14 @@ const PaymentsFinancePage = ({
       setPaymentsOffset((safePage - 1) * paymentsLimit);
     },
     [paymentsLimit, paymentsTotalPages],
+  );
+
+  const handleRequestsPageChange = useCallback(
+    (nextPage) => {
+      const safePage = Math.min(Math.max(nextPage, 1), requestsTotalPages);
+      setRequestsOffset((safePage - 1) * requestsLimit);
+    },
+    [requestsLimit, requestsTotalPages],
   );
 
   const buildCsvRow = useCallback(
@@ -1432,6 +1989,106 @@ const PaymentsFinancePage = ({
     token,
   ]);
 
+  const handleRequestsExport = useCallback(async () => {
+    setIsRequestsExporting(true);
+
+    try {
+      const params = new URLSearchParams(requestsQueryParams.toString());
+      params.set('offset', '0');
+      params.set('export_all', 'true');
+
+      const url = `${API_BASE_URL}/reports/paymentrequests?${params.toString()}`;
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+        throw new Error(errorStrings.export);
+      }
+
+      const payload = await response.json();
+      const content = Array.isArray(payload?.content) ? payload.content : [];
+
+      if (content.length === 0) {
+        setToast({ type: 'warning', message: toastStrings.exportEmpty });
+        return;
+      }
+
+      const escapeValue = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+      const headerLabels = [
+        requestsTableStrings.columns.id,
+        requestsTableStrings.columns.student,
+        tableStrings.studentIdLabel,
+        requestsTableStrings.columns.gradeGroup,
+        requestsTableStrings.columns.scholarLevel,
+        requestsTableStrings.columns.concept,
+        requestsTableStrings.columns.amount,
+        requestsTableStrings.columns.status,
+        requestsTableStrings.columns.dueDate,
+      ];
+      const headerRow = headerLabels.map(escapeValue).join(',');
+      const csvRows = content.map((row) => {
+        const amountValue =
+          typeof row?.pr_amount === 'number'
+            ? currencyFormatter.format(row.pr_amount)
+            : row?.pr_amount ?? '';
+        const dueDateValue = row?.pr_pay_by
+          ? new Date(row.pr_pay_by).toISOString().slice(0, 10)
+          : '';
+
+        return [
+          escapeValue(row?.payment_request_id),
+          escapeValue(row?.student_full_name ?? row?.student),
+          escapeValue(row?.payment_reference),
+          escapeValue(row?.grade_group),
+          escapeValue(row?.scholar_level_name),
+          escapeValue(row?.pt_name),
+          escapeValue(amountValue),
+          escapeValue(row?.ps_pr_name ?? row?.status),
+          escapeValue(dueDateValue),
+        ].join(',');
+      });
+
+      const csvContent = [headerRow, ...csvRows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${csvStrings.fileNamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      setToast({ type: 'success', message: toastStrings.exportSuccess });
+    } catch (exportError) {
+      console.error('Payment requests export error', exportError);
+      const errorMessage =
+        exportError instanceof Error && exportError.message
+          ? exportError.message
+          : toastStrings.exportError;
+      setToast({ type: 'error', message: errorMessage });
+    } finally {
+      setIsRequestsExporting(false);
+    }
+  }, [
+    currencyFormatter,
+    csvStrings.fileNamePrefix,
+    errorStrings.export,
+    logout,
+    requestsQueryParams,
+    requestsTableStrings.columns,
+    tableStrings.studentIdLabel,
+    toastStrings.exportEmpty,
+    toastStrings.exportError,
+    toastStrings.exportSuccess,
+    token,
+  ]);
+
   useEffect(() => {
     if (!isTuitionTab && showTuitionFilters) {
       setShowTuitionFilters(false);
@@ -1449,6 +2106,29 @@ const PaymentsFinancePage = ({
       setIsAddPaymentOpen(false);
     }
   }, [activeTab, isAddPaymentOpen]);
+
+  useEffect(() => {
+    if (activeTab !== 'requests' && showRequestsFilters) {
+      setShowRequestsFilters(false);
+    }
+  }, [activeTab, showRequestsFilters]);
+
+  useEffect(() => {
+    if (activeTab !== 'requests' && isAddPaymentRequestOpen) {
+      setIsAddPaymentRequestOpen(false);
+    }
+  }, [activeTab, isAddPaymentRequestOpen]);
+
+  useEffect(() => {
+    if (isPaymentRequestResultRoute) {
+      const breadcrumbLabel = requestsResultStrings.title ?? DEFAULT_PAYMENTS_STRINGS.requestsResult.title;
+      onPaymentBreadcrumbChange?.(breadcrumbLabel);
+    }
+  }, [
+    isPaymentRequestResultRoute,
+    onPaymentBreadcrumbChange,
+    requestsResultStrings.title,
+  ]);
 
   const DebtIcon = (
     <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
@@ -1509,6 +2189,22 @@ const PaymentsFinancePage = ({
     }, 0);
   }, [paymentsFilters]);
 
+  const requestsFiltersCount = useMemo(() => {
+    return Object.entries(requestsFilters).reduce((count, [, value]) => {
+      if (value === null || value === undefined) {
+        return count;
+      }
+
+      const normalized = typeof value === 'string' ? value.trim() : value;
+
+      if (normalized === '' || normalized === false) {
+        return count;
+      }
+
+      return count + 1;
+    }, 0);
+  }, [requestsFilters]);
+
   return (
     <div className="page">
       <GlobalToast alert={toast} onClose={() => setToast(null)} />
@@ -1527,6 +2223,29 @@ const PaymentsFinancePage = ({
               language={normalizedLanguage}
               strings={strings.detail ?? {}}
               onBreadcrumbChange={onPaymentBreadcrumbChange}
+            />
+          </section>
+        </div>
+      ) : isPaymentRequestDetailRoute ? (
+        <div className="page__layout">
+          <section className="page__content">
+            <PaymentRequestDetailPage
+              requestId={paymentRequestDetailId}
+              language={normalizedLanguage}
+              strings={strings.requestsDetail ?? {}}
+              onBreadcrumbChange={onPaymentBreadcrumbChange}
+              onNavigateBack={() => handlePaymentRequestListNavigation({ replace: true })}
+              onStudentDetail={onStudentDetail}
+            />
+          </section>
+        </div>
+      ) : isPaymentRequestResultRoute ? (
+        <div className="page__layout">
+          <section className="page__content">
+            <PaymentRequestResultPage
+              language={normalizedLanguage}
+              strings={strings.requestsResult ?? {}}
+              onNavigateBack={() => handlePaymentRequestListNavigation({ replace: true })}
             />
           </section>
         </div>
@@ -1564,6 +2283,43 @@ const PaymentsFinancePage = ({
                 </ActionButton>
                 <ExportButton type="button" onClick={handleTuitionExport} disabled={isTuitionExporting}>
                   {isTuitionExporting ? actionStrings.exporting : actionStrings.export}
+                </ExportButton>
+            </>
+          ) : activeKey === 'requests' ? (
+            <>
+                <ActionButton type="button" onClick={handleOpenAddPaymentRequest}>
+                  {actionStrings.addRequest}
+                </ActionButton>
+                <FilterButton
+                  type="button"
+                  onClick={handleToggleRequestsFilters}
+                  aria-expanded={showRequestsFilters}
+                  aria-controls="payment-requests-filters"
+                  className="rounded-pill d-inline-flex align-items-center gap-2"
+                >
+                  <span className="fw-semibold">{actionStrings.filter}</span>
+                  {requestsFiltersCount > 0 && (
+                    <span className="badge text-bg-primary rounded-pill">{requestsFiltersCount}</span>
+                  )}
+                </FilterButton>
+                <ActionButton
+                  type="button"
+                  variant="ghost"
+                  className={`payments-page__scheduled-button ${
+                    showScheduledRequestsOnly ? 'is-active' : ''
+                  }`}
+                  onClick={handleToggleScheduledRequests}
+                >
+                  {showScheduledRequestsOnly
+                    ? actionStrings.scheduledActive
+                    : actionStrings.scheduledInactive}
+                </ActionButton>
+                <ExportButton
+                  type="button"
+                  onClick={handleRequestsExport}
+                  disabled={isRequestsExporting}
+                >
+                  {isRequestsExporting ? actionStrings.exporting : actionStrings.export}
                 </ExportButton>
             </>
           ) : activeKey === 'payments' ? (
@@ -1738,6 +2494,137 @@ const PaymentsFinancePage = ({
                 }}
               />
             </UiCard>
+          ) : isRequestsTab ? (
+            <UiCard className="page__table-card">
+              <GlobalTable
+                className="page__table-wrapper"
+                tableClassName="page__table mb-0"
+                columns={paymentRequestsColumns}
+                data={requestsRows}
+                getRowId={(row, index) =>
+                  row?.payment_request_id ??
+                  row?.paymentRequestId ??
+                  row?.payment_reference ??
+                  `payment-request-${index}`
+                }
+                renderRow={(row, index) => {
+                  const rowKey =
+                    row?.payment_request_id ??
+                    row?.paymentRequestId ??
+                    row?.payment_reference ??
+                    `payment-request-${index}`;
+                  const studentName = row?.student_full_name ?? row?.student ?? '';
+                  const studentMeta = row?.payment_reference ?? '';
+                  const amountRaw = row?.pr_amount ?? row?.amount;
+                  const formattedAmount =
+                    typeof amountRaw === 'number'
+                      ? currencyFormatter.format(amountRaw)
+                      : amountRaw != null && amountRaw !== ''
+                      ? String(amountRaw)
+                      : '';
+                  const dueDateRaw = row?.pr_pay_by ?? row?.due_date;
+                  const dueDateLabel = (() => {
+                    if (!dueDateRaw) {
+                      return '';
+                    }
+
+                    const parsed = new Date(dueDateRaw);
+                    return Number.isNaN(parsed.getTime())
+                      ? String(dueDateRaw)
+                      : dateFormatter.format(parsed);
+                  })();
+                  const requestIdValue = row?.payment_request_id ?? row?.paymentRequestId ?? null;
+                  const requestIdLabel = requestIdValue != null ? String(requestIdValue) : null;
+                  const hasValidRequestId = !(
+                    requestIdLabel == null ||
+                    requestIdLabel.trim() === '' ||
+                    requestIdLabel === 'null' ||
+                    requestIdLabel === 'undefined'
+                  );
+                  const detailButtonLabel = hasValidRequestId
+                    ? `${requestsDetailStrings.open} ${requestIdLabel}`
+                    : requestsDetailStrings.open;
+
+                  return (
+                    <tr key={rowKey}>
+                      <td data-title={requestsTableStrings.columns.id} className="text-center">
+                        {row?.payment_request_id ?? '--'}
+                      </td>
+                      <td data-title={requestsTableStrings.columns.student}>
+                        <StudentInfo
+                          name={studentName}
+                          fallbackName={tableStrings.studentFallback}
+                          metaLabel={studentMeta ? tableStrings.studentIdLabel : undefined}
+                          metaValue={studentMeta}
+                          onClick={() =>
+                            handleStudentDetailClick({
+                              ...row,
+                              student: studentName,
+                            })
+                          }
+                          nameButtonProps={{
+                            'aria-label': studentMeta
+                              ? `${studentName} (${tableStrings.studentIdLabel}: ${studentMeta})`
+                              : studentName,
+                          }}
+                        />
+                      </td>
+                      <td data-title={requestsTableStrings.columns.gradeGroup}>
+                        {row?.grade_group ?? '--'}
+                      </td>
+                      <td data-title={requestsTableStrings.columns.scholarLevel}>
+                        {row?.scholar_level_name ?? '--'}
+                      </td>
+                      <td data-title={requestsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
+                      <td data-title={requestsTableStrings.columns.amount} className="text-end">
+                        {formattedAmount ? (
+                          formattedAmount
+                        ) : (
+                          <span className="ui-table__empty-indicator">--</span>
+                        )}
+                      </td>
+                      <td data-title={requestsTableStrings.columns.status}>
+                        {row?.ps_pr_name ?? row?.status ?? '--'}
+                      </td>
+                      <td data-title={requestsTableStrings.columns.dueDate}>
+                        {dueDateLabel ? (
+                          dueDateLabel
+                        ) : (
+                          <span className="ui-table__empty-indicator">--</span>
+                        )}
+                      </td>
+                      <td data-title={requestsTableStrings.columns.actions} className="text-end">
+                        <ActionButton
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handlePaymentRequestDetailNavigation(requestIdValue)}
+                          disabled={!hasValidRequestId}
+                          aria-label={detailButtonLabel}
+                          title={detailButtonLabel}
+                        >
+                          {requestsDetailStrings.open}
+                        </ActionButton>
+                      </td>
+                    </tr>
+                  );
+                }}
+                loading={requestsLoading}
+                loadingMessage={requestsTableStrings.loading}
+                error={requestsError || null}
+                emptyMessage={requestsTableStrings.empty}
+                pagination={{
+                  currentPage: requestsCurrentPage,
+                  pageSize: requestsLimit,
+                  totalItems: requestsTotalElements,
+                  onPageChange: handleRequestsPageChange,
+                  previousLabel: tableStrings.pagination.previous ?? '←',
+                  nextLabel: tableStrings.pagination.next ?? '→',
+                  summary: paymentSummary,
+                  pageLabel: paymentPageLabel,
+                }}
+              />
+            </UiCard>
           ) : isPaymentsTab ? (
             <UiCard className="page__table-card">
               <GlobalTable
@@ -1848,6 +2735,16 @@ const PaymentsFinancePage = ({
         language={normalizedLanguage}
         onSuccess={handlePaymentCreated}
         strings={addPaymentStrings}
+      />
+
+      <AddPaymentRequestModal
+        isOpen={isAddPaymentRequestOpen}
+        onClose={handleCloseAddPaymentRequest}
+        token={token}
+        logout={logout}
+        language={normalizedLanguage}
+        onSuccess={handlePaymentRequestCreated}
+        strings={addPaymentRequestStrings}
       />
 
       <SidebarModal
@@ -1979,6 +2876,115 @@ const PaymentsFinancePage = ({
                 {tuitionFilterStrings.toggles.activeStudents}
               </label>
             </div>
+          </div>
+        </form>
+      </SidebarModal>
+
+      <SidebarModal
+        isOpen={showRequestsFilters}
+        onClose={() => setShowRequestsFilters(false)}
+        title={requestsFilterStrings.title}
+        description={requestsFilterStrings.subtitle}
+        id="payment-requests-filters"
+        footer={
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <ActionButton variant="text" onClick={handleClearRequestsFilters} type="button">
+              {requestsFilterStrings.reset}
+            </ActionButton>
+            <ActionButton type="submit" form="payment-requests-filters-form">
+              {actionStrings.filter}
+            </ActionButton>
+          </div>
+        }
+      >
+        <form
+          id="payment-requests-filters-form"
+          className="row g-3"
+          onSubmit={handleApplyRequestsFilters}
+        >
+          <div className="col-sm-12">
+            <label htmlFor="requests-filter-id" className="form-label">
+              {requestsFilterStrings.fields.paymentRequestId.label}
+            </label>
+            <input
+              id="requests-filter-id"
+              type="text"
+              className="form-control"
+              value={requestsFiltersDraft.payment_request_id}
+              onChange={(event) =>
+                handleRequestsFilterChange('payment_request_id', event.target.value)
+              }
+              placeholder={requestsFilterStrings.fields.paymentRequestId.placeholder}
+            />
+          </div>
+          <div className="col-sm-12">
+            <label htmlFor="requests-filter-student" className="form-label">
+              {requestsFilterStrings.fields.student.label}
+            </label>
+            <input
+              id="requests-filter-student"
+              type="text"
+              className="form-control"
+              value={requestsFiltersDraft.student_full_name}
+              onChange={(event) =>
+                handleRequestsFilterChange('student_full_name', event.target.value)
+              }
+              placeholder={requestsFilterStrings.fields.student.placeholder}
+            />
+          </div>
+          <div className="col-sm-12">
+            <label htmlFor="requests-filter-reference" className="form-label">
+              {requestsFilterStrings.fields.reference.label}
+            </label>
+            <input
+              id="requests-filter-reference"
+              type="text"
+              className="form-control"
+              value={requestsFiltersDraft.payment_reference}
+              onChange={(event) =>
+                handleRequestsFilterChange('payment_reference', event.target.value)
+              }
+              placeholder={requestsFilterStrings.fields.reference.placeholder}
+            />
+          </div>
+          <div className="col-sm-12">
+            <label htmlFor="requests-filter-grade" className="form-label">
+              {requestsFilterStrings.fields.gradeGroup.label}
+            </label>
+            <input
+              id="requests-filter-grade"
+              type="text"
+              className="form-control"
+              value={requestsFiltersDraft.grade_group}
+              onChange={(event) => handleRequestsFilterChange('grade_group', event.target.value)}
+              placeholder={requestsFilterStrings.fields.gradeGroup.placeholder}
+            />
+          </div>
+          <div className="col-sm-12">
+            <label htmlFor="requests-filter-concept" className="form-label">
+              {requestsFilterStrings.fields.concept.label}
+            </label>
+            <input
+              id="requests-filter-concept"
+              type="text"
+              className="form-control"
+              value={requestsFiltersDraft.pt_name}
+              onChange={(event) => handleRequestsFilterChange('pt_name', event.target.value)}
+              placeholder={requestsFilterStrings.fields.concept.placeholder}
+            />
+          </div>
+          <div className="col-sm-12">
+            <label htmlFor="requests-filter-status" className="form-label">
+              {requestsFilterStrings.fields.status.label}
+            </label>
+            <input
+              id="requests-filter-status"
+              type="text"
+              className="form-control"
+              value={requestsFiltersDraft.ps_pr_name}
+              onChange={(event) => handleRequestsFilterChange('ps_pr_name', event.target.value)}
+              placeholder={requestsFilterStrings.fields.status.placeholder}
+            />
           </div>
         </form>
       </SidebarModal>

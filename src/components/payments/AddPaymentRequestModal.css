@@ -1,0 +1,31 @@
+.add-payment-request__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.add-payment-request__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.add-payment-request__error {
+  color: #b91c1c;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.add-payment-request__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 576px) {
+  .add-payment-request__footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}

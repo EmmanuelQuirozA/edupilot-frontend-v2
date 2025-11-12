@@ -38,6 +38,18 @@
   --ui-button-border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
+.payments-page__scheduled-button {
+  --ui-button-bg: rgba(99, 102, 241, 0.12);
+  --ui-button-color: #4338ca;
+  --ui-button-border: 1px solid rgba(99, 102, 241, 0.18);
+}
+
+.payments-page__scheduled-button.is-active {
+  --ui-button-bg: rgba(16, 185, 129, 0.12);
+  --ui-button-color: #047857;
+  --ui-button-border: 1px solid rgba(16, 185, 129, 0.18);
+}
+
 .payments-page__toolbar {
   display: flex;
   flex-wrap: wrap;
