@@ -29,6 +29,8 @@ const HomePage = ({
   onPaymentsSectionChange,
   onStudentsSectionChange,
   onNavigateToPaymentDetail,
+  onNavigateToPaymentRequestDetail,
+  onNavigateToPaymentRequestResult,
 }) => {
   const { user, logout } = useAuth();
   const t = getTranslation(language);
@@ -45,11 +47,28 @@ const HomePage = ({
 
   const paymentsRouteSegments = activePage === 'payments' ? routeSegments : [];
   const paymentsPrimarySegment = paymentsRouteSegments[0] ?? '';
-  const isPaymentDetailActive = activePage === 'payments' && paymentsPrimarySegment === 'detail';
-  const paymentsSectionKey =
-    !isPaymentDetailActive && paymentsPrimarySegment
-      ? paymentsPrimarySegment
-      : 'tuition';
+  const paymentsSecondarySegment = paymentsRouteSegments[1] ?? '';
+  const isPaymentRequestRoute = activePage === 'payments' && paymentsPrimarySegment === 'requests';
+  const isPaymentDetailRoute = activePage === 'payments' && paymentsPrimarySegment === 'detail';
+  const isPaymentRequestDetailRoute = isPaymentRequestRoute && paymentsSecondarySegment === 'detail';
+  const isPaymentRequestResultRoute = isPaymentRequestRoute && paymentsSecondarySegment === 'result';
+  const isPaymentDetailActive =
+    isPaymentDetailRoute || isPaymentRequestDetailRoute || isPaymentRequestResultRoute;
+  const paymentsSectionKey = (() => {
+    if (activePage !== 'payments') {
+      return 'tuition';
+    }
+
+    if (isPaymentRequestDetailRoute || isPaymentRequestResultRoute) {
+      return 'requests';
+    }
+
+    if (isPaymentDetailRoute) {
+      return 'tuition';
+    }
+
+    return paymentsPrimarySegment || 'tuition';
+  })();
 
   const studentsRouteSegments = activePage === 'students' ? routeSegments : [];
   const studentsPrimarySegment = studentsRouteSegments[0] ?? '';
@@ -259,6 +278,24 @@ const HomePage = ({
     [onNavigateToPaymentDetail],
   );
 
+  const handlePaymentRequestDetailNavigate = useCallback(
+    (requestId, options) => {
+      if (!requestId) {
+        return;
+      }
+
+      onNavigateToPaymentRequestDetail?.(requestId, options);
+    },
+    [onNavigateToPaymentRequestDetail],
+  );
+
+  const handlePaymentRequestResultNavigate = useCallback(
+    (options) => {
+      onNavigateToPaymentRequestResult?.(options);
+    },
+    [onNavigateToPaymentRequestResult],
+  );
+
   const paymentsContent = (
     <PaymentsFinancePage
       title={t.home.pages.payments.title}
@@ -267,6 +304,8 @@ const HomePage = ({
       strings={t.home.paymentsPage}
       onStudentDetail={handleStudentDetailNavigate}
       onPaymentDetail={handlePaymentDetailNavigate}
+      onPaymentRequestDetail={handlePaymentRequestDetailNavigate}
+      onPaymentRequestResult={handlePaymentRequestResultNavigate}
       onPaymentBreadcrumbChange={setPaymentDetailBreadcrumbLabel}
       activeSectionKey={paymentsSectionKey}
       onSectionChange={handlePaymentsSectionChange}

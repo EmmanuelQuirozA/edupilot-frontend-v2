@@ -193,6 +193,27 @@ const App = () => {
     [language, navigate],
   );
 
+  const handlePaymentRequestDetailNavigation = useCallback(
+    (requestId, { replace = false } = {}) => {
+      if (requestId == null || requestId === '') {
+        return;
+      }
+
+      const basePath = buildPath(language, 'payments');
+      const safeId = encodeURIComponent(String(requestId));
+      navigate(`${basePath}/requests/detail/${safeId}`, { replace });
+    },
+    [language, navigate],
+  );
+
+  const handlePaymentRequestResultNavigation = useCallback(
+    ({ replace = false } = {}) => {
+      const basePath = buildPath(language, 'payments');
+      navigate(`${basePath}/requests/result`, { replace });
+    },
+    [language, navigate],
+  );
+
   const handleStudentsSectionNavigation = useCallback(
     (sectionKey, { replace = false } = {}) => {
       const basePath = buildPath(language, 'students');
@@ -225,6 +246,8 @@ const App = () => {
         onPaymentsSectionChange={handlePaymentsSectionNavigation}
         onStudentsSectionChange={handleStudentsSectionNavigation}
         onNavigateToPaymentDetail={handlePaymentDetailNavigation}
+        onNavigateToPaymentRequestDetail={handlePaymentRequestDetailNavigation}
+        onNavigateToPaymentRequestResult={handlePaymentRequestResultNavigation}
       />
     );
   }

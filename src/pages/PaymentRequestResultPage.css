@@ -1,0 +1,35 @@
+.payment-request-result {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.payment-request-result__summary {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.payment-request-result__summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 140px;
+}
+
+.payment-request-result__summary-label {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.payment-request-result__section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .payment-request-result__summary {
+    gap: 1rem;
+  }
+}
