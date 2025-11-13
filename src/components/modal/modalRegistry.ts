@@ -18,13 +18,18 @@ export interface StudentFormValues {
   grade: string;
 }
 
+export interface CreateStudentFormValues extends StudentFormValues {
+  username: string;
+  password: string;
+}
+
 export interface CreateStudentModalProps {
-  initialValues?: Partial<StudentFormValues>;
+  initialValues?: Partial<CreateStudentFormValues>;
 }
 
 export interface CreateStudentModalResult {
   action: 'create';
-  data: StudentFormValues;
+  data: CreateStudentFormValues;
 }
 
 export interface EditStudentModalProps {
