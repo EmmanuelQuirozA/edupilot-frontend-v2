@@ -1014,9 +1014,21 @@ const StudentsGroupsPage = ({
 
     const { student_id: studentId, user_id: userId, ...restForm } = studentForm;
 
-    const sanitizedForm = Object.fromEntries(
-      Object.entries(restForm).map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value]),
-    );
+    const sanitizedEntries = Object.entries(restForm).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? value.trim() : value,
+    ]);
+
+    const sanitizedForm = Object.fromEntries(sanitizedEntries);
+
+    if (modalMode === 'edit') {
+      if (sanitizedForm.password === '') {
+        delete sanitizedForm.password;
+      }
+      if (sanitizedForm.username === '') {
+        delete sanitizedForm.username;
+      }
+    }
 
     try {
       if (modalMode === 'edit' && editingStudentUserId) {
@@ -2528,6 +2540,43 @@ const StudentsGroupsPage = ({
                           name="state"
                           value={studentForm.state}
                           onChange={handleStudentFormChange}
+                          className="form-control"
+                        />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="mb-4">
+                    <h4 className="h6 text-primary fw-semibold mb-3">
+                      {strings.form.sections.credentials ?? 'Credenciales de acceso'}
+                    </h4>
+                    <div className="row g-3">
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('username')}>
+                          {strings.form.fields.username ?? 'Usuario'}
+                        </label>
+                        <input
+                          id={getStudentFieldId('username')}
+                          name="username"
+                          value={studentForm.username}
+                          onChange={handleStudentFormChange}
+                          required={modalMode !== 'edit'}
+                          autoComplete="username"
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-4">
+                        <label className="form-label" htmlFor={getStudentFieldId('password')}>
+                          {strings.form.fields.password ?? 'Contraseña'}
+                        </label>
+                        <input
+                          id={getStudentFieldId('password')}
+                          type="password"
+                          name="password"
+                          value={studentForm.password}
+                          onChange={handleStudentFormChange}
+                          required={modalMode !== 'edit'}
+                          autoComplete="new-password"
                           className="form-control"
                         />
                       </div>
