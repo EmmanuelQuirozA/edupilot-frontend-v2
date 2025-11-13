@@ -19,6 +19,7 @@ import PaymentDetailPage from './PaymentDetailPage.jsx';
 import PaymentRequestDetailPage from './PaymentRequestDetailPage.jsx';
 import PaymentRequestResultPage, {
   PAYMENT_REQUEST_RESULT_STORAGE_KEY,
+  extractPaymentRequestResultPayload,
 } from './PaymentRequestResultPage.jsx';
 import './PaymentsFinancePage.css';
 
@@ -77,16 +78,18 @@ const normalizeResultEntries = (entries) => {
 };
 
 const summarizePaymentRequestResult = (result) => {
-  if (!result || typeof result !== 'object') {
+  const payload = extractPaymentRequestResultPayload(result);
+
+  if (!payload || typeof payload !== 'object') {
     return { created: 0, duplicates: 0, massUpload: '' };
   }
 
-  const createdEntries = normalizeResultEntries(result.created);
-  const duplicateEntries = normalizeResultEntries(result.duplicates);
+  const createdEntries = normalizeResultEntries(payload.created);
+  const duplicateEntries = normalizeResultEntries(payload.duplicates);
 
-  const createdCount = parseResultCount(result.created_count);
-  const duplicateCount = parseResultCount(result.duplicate_count);
-  const massUploadValue = result.mass_upload;
+  const createdCount = parseResultCount(payload.created_count);
+  const duplicateCount = parseResultCount(payload.duplicate_count);
+  const massUploadValue = payload.mass_upload;
 
   return {
     created: createdCount ?? createdEntries.length ?? 0,
