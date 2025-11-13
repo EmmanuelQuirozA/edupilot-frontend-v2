@@ -7,6 +7,28 @@ import './PaymentRequestResultPage.css';
 
 export const PAYMENT_REQUEST_RESULT_STORAGE_KEY = 'paymentRequests:lastResult';
 
+export const extractPaymentRequestResultPayload = (result) => {
+  if (!result || typeof result !== 'object') {
+    return null;
+  }
+
+  if (Array.isArray(result)) {
+    return result.length > 0 ? result[0] : null;
+  }
+
+  const data = result.data;
+
+  if (Array.isArray(data)) {
+    return data.length > 0 ? data[0] : null;
+  }
+
+  if (data && typeof data === 'object') {
+    return data;
+  }
+
+  return result;
+};
+
 const DEFAULT_STRINGS = {
   title: 'Resultado de solicitudes de pago',
   description: 'Consulta el detalle de las solicitudes creadas y duplicadas.',
@@ -97,13 +119,15 @@ const normalizeEntry = (entry) => {
 };
 
 const buildSummary = (result, createdLength = 0, duplicateLength = 0) => {
-  if (!result || typeof result !== 'object') {
+  const payload = extractPaymentRequestResultPayload(result);
+
+  if (!payload || typeof payload !== 'object') {
     return { massUpload: '', created: 0, duplicates: 0 };
   }
 
-  const createdCount = parseCount(result.created_count);
-  const duplicateCount = parseCount(result.duplicate_count);
-  const massUploadValue = result.mass_upload;
+  const createdCount = parseCount(payload.created_count);
+  const duplicateCount = parseCount(payload.duplicate_count);
+  const massUploadValue = payload.mass_upload;
 
   return {
     massUpload:
@@ -166,7 +190,8 @@ const PaymentRequestResultPage = ({
   }, [loadResult]);
 
   const createdEntries = useMemo(() => {
-    const rawEntries = normalizeRawEntries(result?.created);
+    const payload = extractPaymentRequestResultPayload(result);
+    const rawEntries = normalizeRawEntries(payload?.created);
 
     return rawEntries.map((entry, index) => ({
       ...normalizeEntry(entry),
@@ -176,7 +201,8 @@ const PaymentRequestResultPage = ({
   }, [result]);
 
   const duplicateEntries = useMemo(() => {
-    const rawEntries = normalizeRawEntries(result?.duplicates);
+    const payload = extractPaymentRequestResultPayload(result);
+    const rawEntries = normalizeRawEntries(payload?.duplicates);
 
     return rawEntries.map((entry, index) => ({
       ...normalizeEntry(entry),
