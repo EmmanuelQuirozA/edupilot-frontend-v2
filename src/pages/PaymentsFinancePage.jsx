@@ -40,17 +40,62 @@ const getSwalInstance = () => {
   return null;
 };
 
-const summarizePaymentRequestResult = (result) => {
-  if (!result || typeof result !== 'object') {
-    return { created: 0, duplicates: 0, total: 0 };
+const parseResultCount = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
   }
 
-  const created = Number(result.created_count ?? (Array.isArray(result.created) ? result.created.length : 0)) || 0;
-  const duplicates =
-    Number(result.duplicate_count ?? (Array.isArray(result.duplicates) ? result.duplicates.length : 0)) || 0;
-  const total = Number(result.mass_upload ?? created + duplicates) || created + duplicates;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      return null;
+    }
 
-  return { created, duplicates, total };
+    const parsed = Number(trimmed);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+};
+
+const normalizeResultEntries = (entries) => {
+  if (!entries) {
+    return [];
+  }
+
+  if (Array.isArray(entries)) {
+    return entries;
+  }
+
+  if (typeof entries === 'object') {
+    return Object.values(entries);
+  }
+
+  return [];
+};
+
+const summarizePaymentRequestResult = (result) => {
+  if (!result || typeof result !== 'object') {
+    return { created: 0, duplicates: 0, massUpload: '' };
+  }
+
+  const createdEntries = normalizeResultEntries(result.created);
+  const duplicateEntries = normalizeResultEntries(result.duplicates);
+
+  const createdCount = parseResultCount(result.created_count);
+  const duplicateCount = parseResultCount(result.duplicate_count);
+  const massUploadValue = result.mass_upload;
+
+  return {
+    created: createdCount ?? createdEntries.length ?? 0,
+    duplicates: duplicateCount ?? duplicateEntries.length ?? 0,
+    massUpload:
+      massUploadValue !== undefined && massUploadValue !== null && String(massUploadValue).trim() !== ''
+        ? String(massUploadValue).trim()
+        : '',
+  };
 };
 
 const parseTuitionCellValue = (value) => {
@@ -524,18 +569,25 @@ const DEFAULT_PAYMENTS_STRINGS = {
     createdTitle: 'Solicitudes creadas',
     duplicatesTitle: 'Solicitudes duplicadas',
     summary: {
-      total: 'Total de seleccionados',
+      massUpload: 'Carga masiva',
       created: 'Creadas',
       duplicates: 'Duplicadas',
     },
     table: {
       columns: {
-        type: 'Tipo',
-        fullName: 'Nombre del alumno',
-        studentId: 'ID del alumno',
+        status: 'Resultado',
+        student: 'Alumno',
+        request: 'Solicitud',
       },
       createdLabel: 'Creado',
       duplicateLabel: 'Duplicado',
+      studentFallback: 'Sin nombre',
+      studentMetaLabel: 'Matrícula',
+      studentLinkAria: 'Ver detalle del alumno',
+      viewRequest: 'Ver solicitud',
+      requestIdFallback: '—',
+      studentIdLabel: 'ID del alumno',
+      requestIdLabel: 'ID de solicitud',
     },
   },
 };
@@ -828,13 +880,30 @@ const PaymentsFinancePage = ({
     }),
     [strings.requestsDetail],
   );
-  const requestsResultStrings = useMemo(
-    () => ({
+  const requestsResultStrings = useMemo(() => {
+    const overrides = strings.requestsResult ?? {};
+    const summary = {
+      ...DEFAULT_PAYMENTS_STRINGS.requestsResult.summary,
+      ...(overrides.summary ?? {}),
+    };
+    const tableOverrides = overrides.table ?? {};
+    const tableColumns = {
+      ...DEFAULT_PAYMENTS_STRINGS.requestsResult.table.columns,
+      ...(tableOverrides.columns ?? {}),
+    };
+    const table = {
+      ...DEFAULT_PAYMENTS_STRINGS.requestsResult.table,
+      ...tableOverrides,
+      columns: tableColumns,
+    };
+
+    return {
       ...DEFAULT_PAYMENTS_STRINGS.requestsResult,
-      ...(strings.requestsResult ?? {}),
-    }),
-    [strings.requestsResult],
-  );
+      ...overrides,
+      summary,
+      table,
+    };
+  }, [strings.requestsResult]);
   const placeholderMessage = strings.placeholder ?? DEFAULT_PAYMENTS_STRINGS.placeholder;
   const paymentsComingSoonLabel =
     actionStrings.bulkUploadTooltip ?? placeholderMessage;
@@ -1589,7 +1658,7 @@ const PaymentsFinancePage = ({
 
       if (swalInstance) {
         const summaryHtml = [
-          `${requestsResultStrings.summary.total}: <strong>${summary.total}</strong>`,
+          `${requestsResultStrings.summary.massUpload}: <strong>${summary.massUpload || '—'}</strong>`,
           `${requestsResultStrings.summary.created}: <strong>${summary.created}</strong>`,
           `${requestsResultStrings.summary.duplicates}: <strong>${summary.duplicates}</strong>`,
         ]
@@ -2246,6 +2315,8 @@ const PaymentsFinancePage = ({
               language={normalizedLanguage}
               strings={strings.requestsResult ?? {}}
               onNavigateBack={() => handlePaymentRequestListNavigation({ replace: true })}
+              onStudentDetail={onStudentDetail}
+              onPaymentRequestDetail={handlePaymentRequestDetailNavigation}
             />
           </section>
         </div>
