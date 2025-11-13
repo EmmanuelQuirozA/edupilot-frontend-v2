@@ -518,6 +518,7 @@ export const translations = {
             personal: 'Datos personales',
             contact: 'Información de contacto',
             academic: 'Información escolar',
+            credentials: 'Credenciales de acceso',
           },
           fields: {
             firstName: 'Nombre',
@@ -1270,6 +1271,7 @@ export const translations = {
             personal: 'Personal information',
             contact: 'Contact information',
             academic: 'Academic information',
+            credentials: 'Access credentials',
           },
           fields: {
             firstName: 'First name',
