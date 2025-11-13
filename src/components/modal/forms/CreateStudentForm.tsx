@@ -1,32 +1,29 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import type { CreateStudentFormValues, ModalComponentProps } from '../modalRegistry';
+import type { ModalComponentProps } from '../modalRegistry';
+import type { StudentFormValues } from '../modalRegistry';
 
-const EMPTY_FORM: CreateStudentFormValues = {
+const EMPTY_FORM: StudentFormValues = {
   firstName: '',
   lastName: '',
   email: '',
   grade: '',
-  username: '',
-  password: '',
 };
 
 const CreateStudentForm = ({ instanceId, initialValues, close, submit }: ModalComponentProps<'CreateStudent'>) => {
-  const [values, setValues] = useState<CreateStudentFormValues>({
+  const [values, setValues] = useState<StudentFormValues>({
     ...EMPTY_FORM,
     ...initialValues,
   });
-  const [touched, setTouched] = useState<Record<keyof CreateStudentFormValues, boolean>>({
+  const [touched, setTouched] = useState<Record<keyof StudentFormValues, boolean>>({
     firstName: false,
     lastName: false,
     email: false,
     grade: false,
-    username: false,
-    password: false,
   });
 
-  const validate = useCallback((candidate: CreateStudentFormValues) => {
-    const nextErrors: Partial<Record<keyof CreateStudentFormValues, string>> = {};
+  const validate = useCallback((candidate: StudentFormValues) => {
+    const nextErrors: Partial<Record<keyof StudentFormValues, string>> = {};
 
     if (!candidate.firstName.trim()) {
       nextErrors.firstName = 'El nombre es obligatorio';
@@ -46,20 +43,12 @@ const CreateStudentForm = ({ instanceId, initialValues, close, submit }: ModalCo
       nextErrors.grade = 'El grado es obligatorio';
     }
 
-    if (!candidate.username.trim()) {
-      nextErrors.username = 'El nombre de usuario es obligatorio';
-    }
-
-    if (!candidate.password.trim()) {
-      nextErrors.password = 'La contraseña es obligatoria';
-    }
-
     return nextErrors;
   }, []);
 
   const errors = useMemo(() => validate(values), [validate, values]);
 
-  const handleChange = useCallback((field: keyof CreateStudentFormValues) => {
+  const handleChange = useCallback((field: keyof StudentFormValues) => {
     return (event: ChangeEvent<HTMLInputElement>) => {
       const nextValue = event.target.value;
       setValues((current) => ({ ...current, [field]: nextValue }));
@@ -78,8 +67,6 @@ const CreateStudentForm = ({ instanceId, initialValues, close, submit }: ModalCo
         lastName: true,
         email: true,
         grade: true,
-        username: true,
-        password: true,
       });
 
       if (hasErrors) {
@@ -167,38 +154,6 @@ const CreateStudentForm = ({ instanceId, initialValues, close, submit }: ModalCo
           {touched.grade && errors.grade ? (
             <p className="modal__error" id="create-student-grade-error">
               {errors.grade}
-            </p>
-          ) : null}
-        </div>
-        <div className="modal__field">
-          <label htmlFor="create-student-username">Nombre de usuario</label>
-          <input
-            id="create-student-username"
-            type="text"
-            value={values.username}
-            onChange={handleChange('username')}
-            aria-invalid={touched.username && Boolean(errors.username)}
-            aria-describedby={errors.username ? 'create-student-username-error' : undefined}
-          />
-          {touched.username && errors.username ? (
-            <p className="modal__error" id="create-student-username-error">
-              {errors.username}
-            </p>
-          ) : null}
-        </div>
-        <div className="modal__field">
-          <label htmlFor="create-student-password">Contraseña</label>
-          <input
-            id="create-student-password"
-            type="password"
-            value={values.password}
-            onChange={handleChange('password')}
-            aria-invalid={touched.password && Boolean(errors.password)}
-            aria-describedby={errors.password ? 'create-student-password-error' : undefined}
-          />
-          {touched.password && errors.password ? (
-            <p className="modal__error" id="create-student-password-error">
-              {errors.password}
             </p>
           ) : null}
         </div>
