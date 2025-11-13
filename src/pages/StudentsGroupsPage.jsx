@@ -2305,6 +2305,7 @@ const StudentsGroupsPage = ({
                           name="last_name_mother"
                           value={studentForm.last_name_mother}
                           onChange={handleStudentFormChange}
+                          required
                           className="form-control"
                         />
                       </div>
@@ -2382,7 +2383,7 @@ const StudentsGroupsPage = ({
                           value={studentForm.group_id}
                           onChange={handleStudentFormChange}
                           disabled={!classOptions.length}
-                          required={classOptions.length > 0}
+                          required
                         >
                           {classOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -2432,6 +2433,7 @@ const StudentsGroupsPage = ({
                           name="email"
                           value={studentForm.email}
                           onChange={handleStudentFormChange}
+                          required
                           className="form-control"
                         />
                       </div>
