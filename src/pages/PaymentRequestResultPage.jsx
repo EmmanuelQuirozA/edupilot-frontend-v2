@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import ActionButton from '../components/ui/ActionButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
+import StudentInfo from '../components/ui/StudentInfo.jsx';
 import './PaymentRequestResultPage.css';
 
 export const PAYMENT_REQUEST_RESULT_STORAGE_KEY = 'paymentRequests:lastResult';
@@ -15,50 +16,128 @@ const DEFAULT_STRINGS = {
   createdTitle: 'Solicitudes creadas',
   duplicatesTitle: 'Solicitudes duplicadas',
   summary: {
-    total: 'Total de seleccionados',
+    massUpload: 'Carga masiva',
     created: 'Creadas',
     duplicates: 'Duplicadas',
   },
   table: {
     columns: {
-      type: 'Tipo',
-      fullName: 'Nombre del alumno',
-      studentId: 'ID del alumno',
+      status: 'Resultado',
+      student: 'Alumno',
+      request: 'Solicitud',
     },
     createdLabel: 'Creado',
     duplicateLabel: 'Duplicado',
+    studentFallback: 'Sin nombre',
+    studentMetaLabel: 'Matrícula',
+    studentLinkAria: 'Ver detalle del alumno',
+    viewRequest: 'Ver solicitud',
+    requestIdFallback: '—',
+    studentIdLabel: 'ID del alumno',
+    requestIdLabel: 'ID de solicitud',
   },
 };
 
-const buildSummary = (result) => {
-  if (!result || typeof result !== 'object') {
-    return { total: 0, created: 0, duplicates: 0 };
+const parseCount = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
   }
 
-  const createdCount = Number(result.created_count ?? result.created?.length ?? 0) || 0;
-  const duplicateCount = Number(result.duplicate_count ?? result.duplicates?.length ?? 0) || 0;
-  const total = Number(result.mass_upload ?? createdCount + duplicateCount) || createdCount + duplicateCount;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      return null;
+    }
 
-  return { total, created: createdCount, duplicates: duplicateCount };
+    const parsed = Number(trimmed);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+};
+
+const normalizeRawEntries = (entries) => {
+  if (!entries) {
+    return [];
+  }
+
+  if (Array.isArray(entries)) {
+    return entries;
+  }
+
+  if (typeof entries === 'object') {
+    return Object.values(entries);
+  }
+
+  return [];
 };
 
 const normalizeEntry = (entry) => {
-  if (!entry) {
-    return { fullName: '', studentId: '' };
+  if (!entry || typeof entry !== 'object') {
+    if (typeof entry === 'string') {
+      return { fullName: entry, studentId: '', registerId: '', paymentRequestId: '' };
+    }
+
+    return { fullName: '', studentId: '', registerId: '', paymentRequestId: '' };
   }
 
-  if (typeof entry === 'string') {
-    return { fullName: entry, studentId: '' };
-  }
+  const fullName = entry.full_name ?? entry.name ?? entry.fullName ?? '';
+  const studentId = entry.student_id ?? entry.studentId ?? entry.student_uuid ?? '';
+  const registerId = entry.register_id ?? entry.registerId ?? entry.payment_reference ?? '';
+  const paymentRequestId = entry.payment_request_id ?? entry.paymentRequestId ?? entry.id ?? '';
 
   return {
-    fullName: entry.full_name ?? entry.name ?? '',
-    studentId: entry.student_id ?? entry.studentId ?? '',
+    fullName,
+    studentId,
+    registerId,
+    paymentRequestId,
   };
 };
 
-const PaymentRequestResultPage = ({ language = 'es', strings = {}, onNavigateBack }) => {
-  const mergedStrings = useMemo(() => ({ ...DEFAULT_STRINGS, ...strings }), [strings]);
+const buildSummary = (result, createdLength = 0, duplicateLength = 0) => {
+  if (!result || typeof result !== 'object') {
+    return { massUpload: '', created: 0, duplicates: 0 };
+  }
+
+  const createdCount = parseCount(result.created_count);
+  const duplicateCount = parseCount(result.duplicate_count);
+  const massUploadValue = result.mass_upload;
+
+  return {
+    massUpload:
+      massUploadValue !== undefined && massUploadValue !== null && String(massUploadValue).trim() !== ''
+        ? String(massUploadValue).trim()
+        : '',
+    created: createdCount ?? createdLength ?? 0,
+    duplicates: duplicateCount ?? duplicateLength ?? 0,
+  };
+};
+
+const PaymentRequestResultPage = ({
+  strings = {},
+  onNavigateBack,
+  onStudentDetail,
+  onPaymentRequestDetail,
+}) => {
+  const mergedStrings = useMemo(() => {
+    const summary = { ...DEFAULT_STRINGS.summary, ...(strings.summary ?? {}) };
+    const tableOverrides = strings.table ?? {};
+    const tableColumns = { ...DEFAULT_STRINGS.table.columns, ...(tableOverrides.columns ?? {}) };
+    const table = {
+      ...DEFAULT_STRINGS.table,
+      ...tableOverrides,
+      columns: tableColumns,
+    };
+
+    return {
+      ...DEFAULT_STRINGS,
+      ...strings,
+      summary,
+      table,
+    };
+  }, [strings]);
   const [result, setResult] = useState(null);
 
   const loadResult = useCallback(() => {
@@ -86,31 +165,30 @@ const PaymentRequestResultPage = ({ language = 'es', strings = {}, onNavigateBac
     loadResult();
   }, [loadResult]);
 
-  const summary = useMemo(() => buildSummary(result), [result]);
-
   const createdEntries = useMemo(() => {
-    if (!Array.isArray(result?.created)) {
-      return [];
-    }
+    const rawEntries = normalizeRawEntries(result?.created);
 
-    return result.created.map((entry, index) => ({
+    return rawEntries.map((entry, index) => ({
       ...normalizeEntry(entry),
       _key: `created-${index}`,
       _type: 'created',
     }));
-  }, [result?.created]);
+  }, [result]);
 
   const duplicateEntries = useMemo(() => {
-    if (!Array.isArray(result?.duplicates)) {
-      return [];
-    }
+    const rawEntries = normalizeRawEntries(result?.duplicates);
 
-    return result.duplicates.map((entry, index) => ({
+    return rawEntries.map((entry, index) => ({
       ...normalizeEntry(entry),
       _key: `duplicate-${index}`,
       _type: 'duplicate',
     }));
-  }, [result?.duplicates]);
+  }, [result]);
+
+  const summary = useMemo(
+    () => buildSummary(result, createdEntries.length, duplicateEntries.length),
+    [createdEntries.length, duplicateEntries.length, result],
+  );
 
   const hasContent = createdEntries.length > 0 || duplicateEntries.length > 0;
 
@@ -122,9 +200,11 @@ const PaymentRequestResultPage = ({ language = 'es', strings = {}, onNavigateBac
     }
 
     const header = [
-      mergedStrings.table.columns.type,
-      mergedStrings.table.columns.fullName,
-      mergedStrings.table.columns.studentId,
+      mergedStrings.table.columns.status,
+      mergedStrings.table.columns.student,
+      mergedStrings.table.studentMetaLabel,
+      mergedStrings.table.requestIdLabel ?? mergedStrings.table.columns.request,
+      mergedStrings.table.studentIdLabel,
     ];
 
     const rows = allEntries.map((entry) => {
@@ -132,7 +212,13 @@ const PaymentRequestResultPage = ({ language = 'es', strings = {}, onNavigateBac
         entry._type === 'created'
           ? mergedStrings.table.createdLabel
           : mergedStrings.table.duplicateLabel;
-      return [typeLabel, entry.fullName ?? '', entry.studentId ?? ''];
+      return [
+        typeLabel,
+        entry.fullName ?? '',
+        entry.registerId ?? '',
+        entry.paymentRequestId ?? '',
+        entry.studentId ?? '',
+      ];
     });
 
     const csvContent = [header, ...rows]
@@ -151,7 +237,115 @@ const PaymentRequestResultPage = ({ language = 'es', strings = {}, onNavigateBac
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [createdEntries, duplicateEntries, mergedStrings.table.columns, mergedStrings.table.createdLabel, mergedStrings.table.duplicateLabel]);
+  }, [
+    createdEntries,
+    duplicateEntries,
+    mergedStrings.table.columns,
+    mergedStrings.table.createdLabel,
+    mergedStrings.table.duplicateLabel,
+    mergedStrings.table.requestIdLabel,
+    mergedStrings.table.studentIdLabel,
+    mergedStrings.table.studentMetaLabel,
+  ]);
+
+  const handleStudentDetailEntry = useCallback(
+    (entry) => {
+      if (!onStudentDetail) {
+        return;
+      }
+
+      const studentId = entry?.studentId;
+      if (!studentId) {
+        return;
+      }
+
+      onStudentDetail({
+        id: studentId,
+        name: entry?.fullName ?? '',
+        registerId: entry?.registerId ?? '',
+      });
+    },
+    [onStudentDetail],
+  );
+
+  const handleRequestDetailEntry = useCallback(
+    (entry) => {
+      const requestId = entry?.paymentRequestId;
+      if (!requestId) {
+        return;
+      }
+
+      onPaymentRequestDetail?.(String(requestId));
+    },
+    [onPaymentRequestDetail],
+  );
+
+  const renderEntryRow = useCallback(
+    (row) => {
+      const statusLabel =
+        row._type === 'created'
+          ? mergedStrings.table.createdLabel
+          : mergedStrings.table.duplicateLabel;
+      const studentFallback = mergedStrings.table.studentFallback ?? '—';
+      const studentMetaLabel = row.registerId ? mergedStrings.table.studentMetaLabel : undefined;
+      const studentName = row.fullName && row.fullName.trim() !== '' ? row.fullName : studentFallback;
+      const baseStudentAria = mergedStrings.table.studentLinkAria ?? 'Ver detalle del alumno';
+      const studentAriaLabel = studentName
+        ? `${baseStudentAria} ${studentName}`.trim()
+        : baseStudentAria;
+      const requestId = row.paymentRequestId != null && row.paymentRequestId !== ''
+        ? String(row.paymentRequestId)
+        : '';
+      const canOpenRequest = Boolean(onPaymentRequestDetail && requestId);
+      const canOpenStudent = Boolean(onStudentDetail && row.studentId);
+      const requestIdDisplay = requestId || mergedStrings.table.requestIdFallback;
+
+      return (
+        <tr key={row._key}>
+          <td data-title={mergedStrings.table.columns.status}>{statusLabel}</td>
+          <td data-title={mergedStrings.table.columns.student}>
+            <StudentInfo
+              name={row.fullName}
+              fallbackName={studentFallback}
+              metaLabel={studentMetaLabel}
+              metaValue={row.registerId}
+              onClick={canOpenStudent ? () => handleStudentDetailEntry(row) : undefined}
+              disabled={!canOpenStudent}
+              nameButtonProps={{ 'aria-label': studentAriaLabel }}
+            />
+          </td>
+          <td data-title={mergedStrings.table.columns.request}>
+            <div className="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+              <span>{requestIdDisplay}</span>
+              <ActionButton
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => handleRequestDetailEntry(row)}
+                disabled={!canOpenRequest}
+              >
+                {mergedStrings.table.viewRequest}
+              </ActionButton>
+            </div>
+          </td>
+        </tr>
+      );
+    },
+    [
+      handleRequestDetailEntry,
+      handleStudentDetailEntry,
+      mergedStrings.table.columns.request,
+      mergedStrings.table.columns.status,
+      mergedStrings.table.columns.student,
+      mergedStrings.table.requestIdFallback,
+      mergedStrings.table.studentFallback,
+      mergedStrings.table.studentLinkAria,
+      mergedStrings.table.studentMetaLabel,
+      mergedStrings.table.viewRequest,
+      onPaymentRequestDetail,
+      onStudentDetail,
+    ],
+  );
 
   return (
     <div className="page">
@@ -179,9 +373,9 @@ const PaymentRequestResultPage = ({ language = 'es', strings = {}, onNavigateBac
               <div className="payment-request-result__summary">
                 <div>
                   <span className="payment-request-result__summary-label">
-                    {mergedStrings.summary.total}
+                    {mergedStrings.summary.massUpload}
                   </span>
-                  <strong>{summary.total}</strong>
+                  <strong>{summary.massUpload !== '' ? summary.massUpload : '—'}</strong>
                 </div>
                 <div>
                   <span className="payment-request-result__summary-label">
@@ -206,19 +400,13 @@ const PaymentRequestResultPage = ({ language = 'es', strings = {}, onNavigateBac
                 <GlobalTable
                   tableClassName="table mb-0"
                   columns={[
-                    { key: 'type', header: mergedStrings.table.columns.type },
-                    { key: 'fullName', header: mergedStrings.table.columns.fullName },
-                    { key: 'studentId', header: mergedStrings.table.columns.studentId },
+                    { key: 'status', header: mergedStrings.table.columns.status },
+                    { key: 'student', header: mergedStrings.table.columns.student },
+                    { key: 'request', header: mergedStrings.table.columns.request },
                   ]}
                   data={createdEntries}
                   getRowId={(row) => row._key}
-                  renderRow={(row) => (
-                    <tr key={row._key}>
-                      <td data-title={mergedStrings.table.columns.type}>{mergedStrings.table.createdLabel}</td>
-                      <td data-title={mergedStrings.table.columns.fullName}>{row.fullName || '—'}</td>
-                      <td data-title={mergedStrings.table.columns.studentId}>{row.studentId || '—'}</td>
-                    </tr>
-                  )}
+                  renderRow={renderEntryRow}
                   pagination={null}
                 />
               </UiCard>
@@ -232,19 +420,13 @@ const PaymentRequestResultPage = ({ language = 'es', strings = {}, onNavigateBac
                 <GlobalTable
                   tableClassName="table mb-0"
                   columns={[
-                    { key: 'type', header: mergedStrings.table.columns.type },
-                    { key: 'fullName', header: mergedStrings.table.columns.fullName },
-                    { key: 'studentId', header: mergedStrings.table.columns.studentId },
+                    { key: 'status', header: mergedStrings.table.columns.status },
+                    { key: 'student', header: mergedStrings.table.columns.student },
+                    { key: 'request', header: mergedStrings.table.columns.request },
                   ]}
                   data={duplicateEntries}
                   getRowId={(row) => row._key}
-                  renderRow={(row) => (
-                    <tr key={row._key}>
-                      <td data-title={mergedStrings.table.columns.type}>{mergedStrings.table.duplicateLabel}</td>
-                      <td data-title={mergedStrings.table.columns.fullName}>{row.fullName || '—'}</td>
-                      <td data-title={mergedStrings.table.columns.studentId}>{row.studentId || '—'}</td>
-                    </tr>
-                  )}
+                  renderRow={renderEntryRow}
                   pagination={null}
                 />
               </UiCard>
