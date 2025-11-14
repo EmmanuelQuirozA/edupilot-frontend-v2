@@ -293,6 +293,15 @@ const DEFAULT_PAYMENT_REQUEST_FILTERS = {
   ps_pr_name: '',
 };
 
+const DEFAULT_PAYMENT_RECURRENCE_FILTERS = {
+  payment_reference: '',
+  student_full_name: '',
+  grade_group: '',
+  pt_name: '',
+  payment_month: '',
+  active: '',
+};
+
 const DEFAULT_PAYMENTS_STRINGS = {
   placeholder: 'Muy pronto podrás gestionar tus pagos desde aquí.',
   tabs: {
@@ -306,6 +315,10 @@ const DEFAULT_PAYMENTS_STRINGS = {
     debtInactive: 'Alumnos con deuda',
     add: 'Agregar pago',
     addRequest: 'Agregar solicitud',
+    scheduleRecurrence: 'Programar recurrencia',
+    scheduleRecurrenceComingSoon: 'Muy pronto podrás programar recurrencias.',
+    filterRecurrences: 'Filtrar recurrencias',
+    exportRecurrences: 'Exportar recurrencias',
     viewScheduled: 'Solicitudes programadas',
     scheduledActive: 'Mostrando programadas',
     scheduledInactive: 'Ver programadas',
@@ -337,6 +350,27 @@ const DEFAULT_PAYMENTS_STRINGS = {
     loading: 'Cargando solicitudes de pago...',
     empty: 'No se encontraron solicitudes registradas.',
     error: 'No fue posible cargar las solicitudes de pago.',
+  },
+  requestsRecurrencesTable: {
+    columns: {
+      id: 'ID',
+      student: 'Alumno',
+      reference: 'Matrícula',
+      gradeGroup: 'Grado y grupo',
+      scholarLevel: 'Nivel académico',
+      generation: 'Generación',
+      amount: 'Monto solicitado',
+      lateFee: 'Recargo',
+      period: 'Periodo',
+      interval: 'Intervalo',
+      nextDueDate: 'Próximo vencimiento',
+      active: 'Activa',
+    },
+    loading: 'Cargando recurrencias...',
+    empty: 'No se encontraron recurrencias registradas.',
+    error: 'No fue posible cargar las recurrencias de solicitudes.',
+    activeYes: 'Sí',
+    activeNo: 'No',
   },
   table: {
     columns: {
@@ -402,6 +436,24 @@ const DEFAULT_PAYMENTS_STRINGS = {
       gradeGroup: { label: 'Grado y grupo', placeholder: 'Ej. 4-A' },
       concept: { label: 'Concepto', placeholder: 'Ej. Colegiatura' },
       status: { label: 'Estatus', placeholder: 'Ej. Programado' },
+    },
+  },
+  requestsRecurrencesFilters: {
+    title: 'Filtros de recurrencias',
+    reset: 'Borrar filtros',
+    closeAria: 'Cerrar filtros',
+    fields: {
+      reference: { label: 'Matrícula', placeholder: 'Ej. 1318' },
+      student: { label: 'Nombre del alumno', placeholder: 'Ej. ANDREA DANNAE' },
+      gradeGroup: { label: 'Grado y grupo', placeholder: 'Ej. 6-A' },
+      concept: { label: 'Concepto', placeholder: 'Ej. Colegiatura' },
+      paymentMonth: { label: 'Mes de pago' },
+      active: { label: 'Activa' },
+    },
+    activeOptions: {
+      all: 'Todas',
+      active: 'Activas',
+      inactive: 'Inactivas',
     },
   },
   paymentsFilters: {
@@ -742,6 +794,19 @@ const PaymentsFinancePage = ({
       columns,
     };
   }, [strings.requestsTable]);
+  const requestsRecurrencesTableStrings = useMemo(() => {
+    const overrides = strings.requestsRecurrencesTable ?? {};
+    const columns = {
+      ...DEFAULT_PAYMENTS_STRINGS.requestsRecurrencesTable.columns,
+      ...(overrides.columns ?? {}),
+    };
+
+    return {
+      ...DEFAULT_PAYMENTS_STRINGS.requestsRecurrencesTable,
+      ...overrides,
+      columns,
+    };
+  }, [strings.requestsRecurrencesTable]);
   const paymentDetailButtonLabel = paymentsTableStrings.paymentLinkLabel ?? 'Abrir detalle del pago';
   const tuitionModalStrings = useMemo(() => {
     const modalOverrides = strings.tuitionModal ?? {};
@@ -813,6 +878,31 @@ const PaymentsFinancePage = ({
       },
     };
   }, [strings.requestsFilters]);
+  const requestsRecurrenceFilterStrings = useMemo(() => {
+    const overrides = strings.requestsRecurrencesFilters ?? {};
+    const fieldDefaults = DEFAULT_PAYMENTS_STRINGS.requestsRecurrencesFilters.fields;
+    const fieldOverrides = overrides.fields ?? {};
+    const fields = {
+      reference: { ...fieldDefaults.reference, ...(fieldOverrides.reference ?? {}) },
+      student: { ...fieldDefaults.student, ...(fieldOverrides.student ?? {}) },
+      gradeGroup: { ...fieldDefaults.gradeGroup, ...(fieldOverrides.gradeGroup ?? {}) },
+      concept: { ...fieldDefaults.concept, ...(fieldOverrides.concept ?? {}) },
+      paymentMonth: { ...fieldDefaults.paymentMonth, ...(fieldOverrides.paymentMonth ?? {}) },
+      active: { ...fieldDefaults.active, ...(fieldOverrides.active ?? {}) },
+    };
+
+    const activeOptions = {
+      ...DEFAULT_PAYMENTS_STRINGS.requestsRecurrencesFilters.activeOptions,
+      ...(overrides.activeOptions ?? {}),
+    };
+
+    return {
+      ...DEFAULT_PAYMENTS_STRINGS.requestsRecurrencesFilters,
+      ...overrides,
+      fields,
+      activeOptions,
+    };
+  }, [strings.requestsRecurrencesFilters]);
   const paymentsFilterStrings = useMemo(() => {
     const overrides = strings.paymentsFilters ?? {};
     const fieldDefaults = DEFAULT_PAYMENTS_STRINGS.paymentsFilters.fields;
@@ -928,9 +1018,16 @@ const PaymentsFinancePage = ({
   const [requestsFiltersDraft, setRequestsFiltersDraft] = useState(
     () => ({ ...DEFAULT_PAYMENT_REQUEST_FILTERS }),
   );
+  const [recurrenceFilters, setRecurrenceFilters] = useState(
+    () => ({ ...DEFAULT_PAYMENT_RECURRENCE_FILTERS }),
+  );
+  const [recurrenceFiltersDraft, setRecurrenceFiltersDraft] = useState(
+    () => ({ ...DEFAULT_PAYMENT_RECURRENCE_FILTERS }),
+  );
   const [showTuitionFilters, setShowTuitionFilters] = useState(false);
   const [showPaymentsFilters, setShowPaymentsFilters] = useState(false);
   const [showRequestsFilters, setShowRequestsFilters] = useState(false);
+  const [showRecurrenceFilters, setShowRecurrenceFilters] = useState(false);
   const [schoolOptions, setSchoolOptions] = useState([]);
   const [isLoadingSchools, setIsLoadingSchools] = useState(false);
 
@@ -962,6 +1059,12 @@ const PaymentsFinancePage = ({
   const [requestsTotalElements, setRequestsTotalElements] = useState(0);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState(null);
+  const [recurrenceOffset, setRecurrenceOffset] = useState(0);
+  const [recurrenceLimit] = useState(DEFAULT_LIMIT);
+  const [recurrenceRows, setRecurrenceRows] = useState([]);
+  const [recurrenceTotalElements, setRecurrenceTotalElements] = useState(0);
+  const [recurrenceLoading, setRecurrenceLoading] = useState(false);
+  const [recurrenceError, setRecurrenceError] = useState(null);
 
   const [toast, setToast] = useState(null);
   const [isTuitionExporting, setIsTuitionExporting] = useState(false);
@@ -970,6 +1073,7 @@ const PaymentsFinancePage = ({
   const [isRequestsExporting, setIsRequestsExporting] = useState(false);
   const [isAddPaymentRequestOpen, setIsAddPaymentRequestOpen] = useState(false);
   const [showScheduledRequestsOnly, setShowScheduledRequestsOnly] = useState(false);
+  const [isRecurrenceExporting, setIsRecurrenceExporting] = useState(false);
 
   const tabs = useMemo(
     () => [
@@ -1009,6 +1113,10 @@ const PaymentsFinancePage = ({
   const columnLabels = tableStrings.columns;
   const currencyFormatter = useMemo(
     () => new Intl.NumberFormat(locale, { style: 'currency', currency: 'MXN' }),
+    [locale],
+  );
+  const numberFormatter = useMemo(
+    () => new Intl.NumberFormat(locale, { maximumFractionDigits: 2, minimumFractionDigits: 0 }),
     [locale],
   );
   const dateFormatter = useMemo(
@@ -1142,6 +1250,23 @@ const PaymentsFinancePage = ({
     ],
     [requestsTableStrings.columns],
   );
+  const paymentRecurrencesColumns = useMemo(
+    () => [
+      { key: 'recurrence_id', header: requestsRecurrencesTableStrings.columns.id },
+      { key: 'student', header: requestsRecurrencesTableStrings.columns.student },
+      { key: 'payment_reference', header: requestsRecurrencesTableStrings.columns.reference },
+      { key: 'grade_group', header: requestsRecurrencesTableStrings.columns.gradeGroup },
+      { key: 'scholar_level_name', header: requestsRecurrencesTableStrings.columns.scholarLevel },
+      { key: 'generation', header: requestsRecurrencesTableStrings.columns.generation },
+      { key: 'amount', header: requestsRecurrencesTableStrings.columns.amount, align: 'end' },
+      { key: 'late_fee', header: requestsRecurrencesTableStrings.columns.lateFee, align: 'end' },
+      { key: 'period', header: requestsRecurrencesTableStrings.columns.period },
+      { key: 'interval_count', header: requestsRecurrencesTableStrings.columns.interval },
+      { key: 'next_due_date', header: requestsRecurrencesTableStrings.columns.nextDueDate },
+      { key: 'active', header: requestsRecurrencesTableStrings.columns.active },
+    ],
+    [requestsRecurrencesTableStrings.columns],
+  );
 
   const paymentSummary = useCallback(
     ({ from, to, total }) => {
@@ -1185,6 +1310,8 @@ const PaymentsFinancePage = ({
   const paymentsCurrentPage = Math.floor(paymentsOffset / paymentsLimit) + 1;
   const requestsTotalPages = Math.max(1, Math.ceil(requestsTotalElements / requestsLimit));
   const requestsCurrentPage = Math.floor(requestsOffset / requestsLimit) + 1;
+  const recurrenceTotalPages = Math.max(1, Math.ceil(recurrenceTotalElements / recurrenceLimit));
+  const recurrenceCurrentPage = Math.floor(recurrenceOffset / recurrenceLimit) + 1;
 
   const appliedFilters = useMemo(() => {
     const params = new URLSearchParams();
@@ -1276,10 +1403,6 @@ const PaymentsFinancePage = ({
     params.set('limit', String(requestsLimit));
     params.set('export_all', 'false');
 
-    if (showScheduledRequestsOnly) {
-      params.set('scheduled', 'true');
-    }
-
     for (const [key, value] of Object.entries(requestsFilters)) {
       if (value === null || value === undefined) {
         continue;
@@ -1300,7 +1423,40 @@ const PaymentsFinancePage = ({
     requestsFilters,
     requestsLimit,
     requestsOffset,
-    showScheduledRequestsOnly,
+  ]);
+  const recurrenceQueryParams = useMemo(() => {
+    const params = new URLSearchParams();
+
+    params.set('lang', normalizedLanguage);
+    params.set('offset', String(recurrenceOffset));
+    params.set('limit', String(recurrenceLimit));
+    params.set('export_all', 'false');
+
+    for (const [key, value] of Object.entries(recurrenceFilters)) {
+      if (value === null || value === undefined) {
+        continue;
+      }
+
+      const trimmed = typeof value === 'string' ? value.trim() : value;
+
+      if (trimmed === '' || trimmed === false) {
+        continue;
+      }
+
+      if (key === 'payment_month' && typeof trimmed === 'string') {
+        params.set(key, `${trimmed}-01`);
+        continue;
+      }
+
+      params.set(key, String(trimmed));
+    }
+
+    return params;
+  }, [
+    normalizedLanguage,
+    recurrenceFilters,
+    recurrenceLimit,
+    recurrenceOffset,
   ]);
 
   const fetchTuitionPayments = useCallback(async () => {
@@ -1395,7 +1551,7 @@ const PaymentsFinancePage = ({
   }, [fetchPaymentsList]);
 
   const fetchPaymentRequests = useCallback(async () => {
-    if (activeTab !== 'requests') {
+    if (activeTab !== 'requests' || showScheduledRequestsOnly) {
       return;
     }
 
@@ -1435,6 +1591,55 @@ const PaymentsFinancePage = ({
     logout,
     requestsQueryParams,
     requestsTableStrings.error,
+    showScheduledRequestsOnly,
+    tableStrings.unknownError,
+    token,
+  ]);
+
+  const fetchPaymentRecurrences = useCallback(async () => {
+    if (activeTab !== 'requests' || !showScheduledRequestsOnly) {
+      return;
+    }
+
+    setRecurrenceLoading(true);
+    setRecurrenceError(null);
+
+    try {
+      const url = `${API_BASE_URL}/reports/payment-request-recurrences?${recurrenceQueryParams.toString()}`;
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+        throw new Error(
+          requestsRecurrencesTableStrings.error ?? tableStrings.unknownError,
+        );
+      }
+
+      const payload = await response.json();
+      const content = Array.isArray(payload?.content) ? payload.content : [];
+      setRecurrenceRows(content);
+      setRecurrenceTotalElements(Number(payload?.totalElements) || content.length || 0);
+    } catch (requestError) {
+      console.error('Payment recurrences fetch error', requestError);
+      const fallbackMessage =
+        requestError instanceof Error && requestError.message
+          ? requestError.message
+          : requestsRecurrencesTableStrings.error ?? tableStrings.unknownError;
+      setRecurrenceError(fallbackMessage);
+    } finally {
+      setRecurrenceLoading(false);
+    }
+  }, [
+    activeTab,
+    logout,
+    recurrenceQueryParams,
+    requestsRecurrencesTableStrings.error,
+    showScheduledRequestsOnly,
     tableStrings.unknownError,
     token,
   ]);
@@ -1442,6 +1647,10 @@ const PaymentsFinancePage = ({
   useEffect(() => {
     fetchPaymentRequests();
   }, [fetchPaymentRequests]);
+
+  useEffect(() => {
+    fetchPaymentRecurrences();
+  }, [fetchPaymentRecurrences]);
 
   useEffect(() => {
     if (showTuitionFilters) {
@@ -1460,6 +1669,12 @@ const PaymentsFinancePage = ({
       setRequestsFiltersDraft(requestsFilters);
     }
   }, [requestsFilters, showRequestsFilters]);
+
+  useEffect(() => {
+    if (showRecurrenceFilters) {
+      setRecurrenceFiltersDraft(recurrenceFilters);
+    }
+  }, [recurrenceFilters, showRecurrenceFilters]);
 
   const fetchSchools = useCallback(async () => {
     setIsLoadingSchools(true);
@@ -1540,6 +1755,10 @@ const PaymentsFinancePage = ({
     setShowRequestsFilters((previous) => !previous);
   }, []);
 
+  const handleToggleRecurrenceFilters = useCallback(() => {
+    setShowRecurrenceFilters((previous) => !previous);
+  }, []);
+
   const handleOpenAddPayment = useCallback(() => {
     setIsAddPaymentOpen(true);
   }, []);
@@ -1556,6 +1775,10 @@ const PaymentsFinancePage = ({
     setIsAddPaymentRequestOpen(false);
   }, []);
 
+  const handleOpenSchedulePaymentRecurrence = useCallback(() => {
+    setToast({ type: 'info', message: actionStrings.scheduleRecurrenceComingSoon });
+  }, [actionStrings.scheduleRecurrenceComingSoon]);
+
   const handlePaymentsFilterChange = useCallback((key, value) => {
     setPaymentsFiltersDraft((previous) => ({ ...previous, [key]: value }));
   }, []);
@@ -1568,9 +1791,20 @@ const PaymentsFinancePage = ({
     setRequestsFiltersDraft((previous) => ({ ...previous, [key]: value }));
   }, []);
 
+  const handleRecurrenceFilterChange = useCallback((key, value) => {
+    setRecurrenceFiltersDraft((previous) => ({ ...previous, [key]: value }));
+  }, []);
+
+  const handleRecurrenceMonthChange = useCallback((value) => {
+    setRecurrenceFiltersDraft((previous) => ({ ...previous, payment_month: value }));
+  }, []);
+
   const handleToggleScheduledRequests = useCallback(() => {
     setShowScheduledRequestsOnly((previous) => !previous);
     setRequestsOffset(0);
+    setRecurrenceOffset(0);
+    setShowRequestsFilters(false);
+    setShowRecurrenceFilters(false);
   }, []);
 
   const handlePaymentRequestDetailNavigation = useCallback(
@@ -1740,6 +1974,14 @@ const PaymentsFinancePage = ({
     setShowRequestsFilters(false);
   }, []);
 
+  const handleClearRecurrenceFilters = useCallback(() => {
+    const reset = { ...DEFAULT_PAYMENT_RECURRENCE_FILTERS };
+    setRecurrenceFilters(reset);
+    setRecurrenceFiltersDraft(reset);
+    setRecurrenceOffset(0);
+    setShowRecurrenceFilters(false);
+  }, []);
+
   const handleApplyTuitionFilters = useCallback(
     (event) => {
       event?.preventDefault?.();
@@ -1768,6 +2010,16 @@ const PaymentsFinancePage = ({
       setShowRequestsFilters(false);
     },
     [requestsFiltersDraft],
+  );
+
+  const handleApplyRecurrenceFilters = useCallback(
+    (event) => {
+      event?.preventDefault?.();
+      setRecurrenceFilters({ ...recurrenceFiltersDraft });
+      setRecurrenceOffset(0);
+      setShowRecurrenceFilters(false);
+    },
+    [recurrenceFiltersDraft],
   );
 
   const handleStudentDetailClick = useCallback(
@@ -1854,6 +2106,14 @@ const PaymentsFinancePage = ({
       setRequestsOffset((safePage - 1) * requestsLimit);
     },
     [requestsLimit, requestsTotalPages],
+  );
+
+  const handleRecurrencePageChange = useCallback(
+    (nextPage) => {
+      const safePage = Math.min(Math.max(nextPage, 1), recurrenceTotalPages);
+      setRecurrenceOffset((safePage - 1) * recurrenceLimit);
+    },
+    [recurrenceLimit, recurrenceTotalPages],
   );
 
   const buildCsvRow = useCallback(
@@ -2161,6 +2421,133 @@ const PaymentsFinancePage = ({
     token,
   ]);
 
+  const handleRecurrenceExport = useCallback(async () => {
+    setIsRecurrenceExporting(true);
+
+    try {
+      const params = new URLSearchParams(recurrenceQueryParams.toString());
+      params.set('offset', '0');
+      params.set('export_all', 'true');
+
+      const url = `${API_BASE_URL}/reports/payment-request-recurrences?${params.toString()}`;
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
+        throw new Error(errorStrings.export);
+      }
+
+      const payload = await response.json();
+      const content = Array.isArray(payload?.content) ? payload.content : [];
+
+      if (content.length === 0) {
+        setToast({ type: 'warning', message: toastStrings.exportEmpty });
+        return;
+      }
+
+      const escapeValue = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+      const headerLabels = [
+        requestsRecurrencesTableStrings.columns.id,
+        requestsRecurrencesTableStrings.columns.student,
+        requestsRecurrencesTableStrings.columns.reference,
+        requestsRecurrencesTableStrings.columns.gradeGroup,
+        requestsRecurrencesTableStrings.columns.scholarLevel,
+        requestsRecurrencesTableStrings.columns.generation,
+        requestsRecurrencesTableStrings.columns.amount,
+        requestsRecurrencesTableStrings.columns.lateFee,
+        requestsRecurrencesTableStrings.columns.period,
+        requestsRecurrencesTableStrings.columns.interval,
+        requestsRecurrencesTableStrings.columns.nextDueDate,
+        requestsRecurrencesTableStrings.columns.active,
+      ];
+      const headerRow = headerLabels.map(escapeValue).join(',');
+      const csvRows = content.map((row) => {
+        const amountValue =
+          typeof row?.amount === 'number'
+            ? currencyFormatter.format(row.amount)
+            : row?.amount ?? '';
+        const lateFeeValue = (() => {
+          if (row?.late_fee == null || row?.late_fee === '') {
+            return '';
+          }
+
+          if (row?.fee_type === '%') {
+            const numericValue = Number(row.late_fee);
+            return Number.isFinite(numericValue)
+              ? `${numberFormatter.format(numericValue)}%`
+              : `${row.late_fee}%`;
+          }
+
+          return typeof row?.late_fee === 'number'
+            ? currencyFormatter.format(row.late_fee)
+            : String(row.late_fee);
+        })();
+        const nextDueDateValue = row?.next_due_date
+          ? new Date(row.next_due_date).toISOString().slice(0, 10)
+          : '';
+        const activeLabel = row?.active
+          ? requestsRecurrencesTableStrings.activeYes
+          : requestsRecurrencesTableStrings.activeNo;
+
+        return [
+          escapeValue(row?.recurrence_id),
+          escapeValue(row?.student_full_name ?? row?.student),
+          escapeValue(row?.payment_reference),
+          escapeValue(row?.grade_group),
+          escapeValue(row?.scholar_level_name),
+          escapeValue(row?.generation),
+          escapeValue(amountValue),
+          escapeValue(lateFeeValue),
+          escapeValue(row?.period),
+          escapeValue(row?.interval_count),
+          escapeValue(nextDueDateValue),
+          escapeValue(activeLabel),
+        ].join(',');
+      });
+
+      const csvContent = [headerRow, ...csvRows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${csvStrings.fileNamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      setToast({ type: 'success', message: toastStrings.exportSuccess });
+    } catch (exportError) {
+      console.error('Payment recurrences export error', exportError);
+      const errorMessage =
+        exportError instanceof Error && exportError.message
+          ? exportError.message
+          : toastStrings.exportError;
+      setToast({ type: 'error', message: errorMessage });
+    } finally {
+      setIsRecurrenceExporting(false);
+    }
+  }, [
+    currencyFormatter,
+    csvStrings.fileNamePrefix,
+    errorStrings.export,
+    logout,
+    numberFormatter,
+    recurrenceQueryParams,
+    requestsRecurrencesTableStrings.activeNo,
+    requestsRecurrencesTableStrings.activeYes,
+    requestsRecurrencesTableStrings.columns,
+    toastStrings.exportEmpty,
+    toastStrings.exportError,
+    toastStrings.exportSuccess,
+    token,
+  ]);
+
   useEffect(() => {
     if (!isTuitionTab && showTuitionFilters) {
       setShowTuitionFilters(false);
@@ -2184,6 +2571,12 @@ const PaymentsFinancePage = ({
       setShowRequestsFilters(false);
     }
   }, [activeTab, showRequestsFilters]);
+
+  useEffect(() => {
+    if ((activeTab !== 'requests' || !showScheduledRequestsOnly) && showRecurrenceFilters) {
+      setShowRecurrenceFilters(false);
+    }
+  }, [activeTab, showRecurrenceFilters, showScheduledRequestsOnly]);
 
   useEffect(() => {
     if (activeTab !== 'requests' && isAddPaymentRequestOpen) {
@@ -2276,6 +2669,21 @@ const PaymentsFinancePage = ({
       return count + 1;
     }, 0);
   }, [requestsFilters]);
+  const recurrenceFiltersCount = useMemo(() => {
+    return Object.entries(recurrenceFilters).reduce((count, [, value]) => {
+      if (value === null || value === undefined) {
+        return count;
+      }
+
+      const normalized = typeof value === 'string' ? value.trim() : value;
+
+      if (normalized === '' || normalized === false) {
+        return count;
+      }
+
+      return count + 1;
+    }, 0);
+  }, [recurrenceFilters]);
 
   return (
     <div className="page">
@@ -2361,40 +2769,86 @@ const PaymentsFinancePage = ({
             </>
           ) : activeKey === 'requests' ? (
             <>
-                <ActionButton type="button" onClick={handleOpenAddPaymentRequest}>
-                  {actionStrings.addRequest}
-                </ActionButton>
-                <FilterButton
-                  type="button"
-                  onClick={handleToggleRequestsFilters}
-                  aria-expanded={showRequestsFilters}
-                  aria-controls="payment-requests-filters"
-                  className="rounded-pill d-inline-flex align-items-center gap-2"
-                >
-                  <span className="fw-semibold">{actionStrings.filter}</span>
-                  {requestsFiltersCount > 0 && (
-                    <span className="badge text-bg-primary rounded-pill">{requestsFiltersCount}</span>
-                  )}
-                </FilterButton>
-                <ActionButton
-                  type="button"
-                  variant="ghost"
-                  className={`payments-page__scheduled-button ${
-                    showScheduledRequestsOnly ? 'is-active' : ''
-                  }`}
-                  onClick={handleToggleScheduledRequests}
-                >
-                  {showScheduledRequestsOnly
-                    ? actionStrings.scheduledActive
-                    : actionStrings.scheduledInactive}
-                </ActionButton>
-                <ExportButton
-                  type="button"
-                  onClick={handleRequestsExport}
-                  disabled={isRequestsExporting}
-                >
-                  {isRequestsExporting ? actionStrings.exporting : actionStrings.export}
-                </ExportButton>
+              {showScheduledRequestsOnly ? (
+                <>
+                  <ActionButton
+                    type="button"
+                    onClick={handleOpenSchedulePaymentRecurrence}
+                  >
+                    {actionStrings.scheduleRecurrence}
+                  </ActionButton>
+                  <FilterButton
+                    type="button"
+                    onClick={handleToggleRecurrenceFilters}
+                    aria-expanded={showRecurrenceFilters}
+                    aria-controls="payment-recurrences-filters"
+                    className="rounded-pill d-inline-flex align-items-center gap-2"
+                  >
+                    <span className="fw-semibold">{actionStrings.filterRecurrences}</span>
+                    {recurrenceFiltersCount > 0 && (
+                      <span className="badge text-bg-primary rounded-pill">{recurrenceFiltersCount}</span>
+                    )}
+                  </FilterButton>
+                  <ActionButton
+                    type="button"
+                    variant="ghost"
+                    className={`payments-page__scheduled-button ${
+                      showScheduledRequestsOnly ? 'is-active' : ''
+                    }`}
+                    onClick={handleToggleScheduledRequests}
+                  >
+                    {showScheduledRequestsOnly
+                      ? actionStrings.scheduledActive
+                      : actionStrings.scheduledInactive}
+                  </ActionButton>
+                  <ExportButton
+                    type="button"
+                    onClick={handleRecurrenceExport}
+                    disabled={isRecurrenceExporting}
+                  >
+                    {isRecurrenceExporting
+                      ? actionStrings.exporting
+                      : actionStrings.exportRecurrences}
+                  </ExportButton>
+                </>
+              ) : (
+                <>
+                  <ActionButton type="button" onClick={handleOpenAddPaymentRequest}>
+                    {actionStrings.addRequest}
+                  </ActionButton>
+                  <FilterButton
+                    type="button"
+                    onClick={handleToggleRequestsFilters}
+                    aria-expanded={showRequestsFilters}
+                    aria-controls="payment-requests-filters"
+                    className="rounded-pill d-inline-flex align-items-center gap-2"
+                  >
+                    <span className="fw-semibold">{actionStrings.filter}</span>
+                    {requestsFiltersCount > 0 && (
+                      <span className="badge text-bg-primary rounded-pill">{requestsFiltersCount}</span>
+                    )}
+                  </FilterButton>
+                  <ActionButton
+                    type="button"
+                    variant="ghost"
+                    className={`payments-page__scheduled-button ${
+                      showScheduledRequestsOnly ? 'is-active' : ''
+                    }`}
+                    onClick={handleToggleScheduledRequests}
+                  >
+                    {showScheduledRequestsOnly
+                      ? actionStrings.scheduledActive
+                      : actionStrings.scheduledInactive}
+                  </ActionButton>
+                  <ExportButton
+                    type="button"
+                    onClick={handleRequestsExport}
+                    disabled={isRequestsExporting}
+                  >
+                    {isRequestsExporting ? actionStrings.exporting : actionStrings.export}
+                  </ExportButton>
+                </>
+              )}
             </>
           ) : activeKey === 'payments' ? (
             <>
@@ -2570,134 +3024,273 @@ const PaymentsFinancePage = ({
             </UiCard>
           ) : isRequestsTab ? (
             <UiCard className="page__table-card">
-              <GlobalTable
-                className="page__table-wrapper"
-                tableClassName="page__table mb-0"
-                columns={paymentRequestsColumns}
-                data={requestsRows}
-                getRowId={(row, index) =>
-                  row?.payment_request_id ??
-                  row?.paymentRequestId ??
-                  row?.payment_reference ??
-                  `payment-request-${index}`
-                }
-                renderRow={(row, index) => {
-                  const rowKey =
+              {showScheduledRequestsOnly ? (
+                <GlobalTable
+                  className="page__table-wrapper"
+                  tableClassName="page__table mb-0"
+                  columns={paymentRecurrencesColumns}
+                  data={recurrenceRows}
+                  getRowId={(row, index) =>
+                    row?.recurrence_id ??
+                    row?.payment_reference ??
+                    row?.student_full_name ??
+                    `payment-recurrence-${index}`
+                  }
+                  renderRow={(row, index) => {
+                    const rowKey =
+                      row?.recurrence_id ??
+                      row?.payment_reference ??
+                      row?.student_full_name ??
+                      `payment-recurrence-${index}`;
+                    const studentName = row?.student_full_name ?? row?.student ?? '';
+                    const paymentReference = row?.payment_reference ?? '';
+                    const amountRaw = row?.amount;
+                    const formattedAmount =
+                      typeof amountRaw === 'number'
+                        ? currencyFormatter.format(amountRaw)
+                        : amountRaw != null && amountRaw !== ''
+                        ? String(amountRaw)
+                        : '';
+                    const lateFeeLabel = (() => {
+                      if (row?.late_fee == null || row?.late_fee === '') {
+                        return '';
+                      }
+
+                      if (row?.fee_type === '%') {
+                        const numericValue = Number(row.late_fee);
+                        return Number.isFinite(numericValue)
+                          ? `${numberFormatter.format(numericValue)}%`
+                          : `${row.late_fee}%`;
+                      }
+
+                      return typeof row?.late_fee === 'number'
+                        ? currencyFormatter.format(row.late_fee)
+                        : String(row.late_fee);
+                    })();
+                    const nextDueDateLabel = (() => {
+                      if (!row?.next_due_date) {
+                        return '';
+                      }
+
+                      const parsed = new Date(row.next_due_date);
+                      return Number.isNaN(parsed.getTime())
+                        ? String(row.next_due_date)
+                        : dateFormatter.format(parsed);
+                    })();
+                    const activeLabel = row?.active
+                      ? requestsRecurrencesTableStrings.activeYes
+                      : requestsRecurrencesTableStrings.activeNo;
+
+                    return (
+                      <tr key={rowKey}>
+                        <td data-title={requestsRecurrencesTableStrings.columns.id} className="text-center">
+                          {row?.recurrence_id ?? '--'}
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.student}>
+                          <StudentInfo
+                            name={studentName}
+                            fallbackName={tableStrings.studentFallback}
+                            metaLabel={paymentReference ? tableStrings.studentIdLabel : undefined}
+                            metaValue={paymentReference}
+                            onClick={() =>
+                              handleStudentDetailClick({
+                                ...row,
+                                student: studentName,
+                              })
+                            }
+                            nameButtonProps={{ 'aria-label': studentName }}
+                          />
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.reference}>
+                          {paymentReference || <span className="ui-table__empty-indicator">--</span>}
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.gradeGroup}>
+                          {row?.grade_group ?? '--'}
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.scholarLevel}>
+                          {row?.scholar_level_name ?? '--'}
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.generation}>
+                          {row?.generation ?? '--'}
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.amount} className="text-end">
+                          {formattedAmount ? (
+                            formattedAmount
+                          ) : (
+                            <span className="ui-table__empty-indicator">--</span>
+                          )}
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.lateFee} className="text-end">
+                          {lateFeeLabel ? (
+                            lateFeeLabel
+                          ) : (
+                            <span className="ui-table__empty-indicator">--</span>
+                          )}
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.period}>
+                          {row?.period ?? '--'}
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.interval}>
+                          {row?.interval_count ?? '--'}
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.nextDueDate}>
+                          {nextDueDateLabel ? (
+                            nextDueDateLabel
+                          ) : (
+                            <span className="ui-table__empty-indicator">--</span>
+                          )}
+                        </td>
+                        <td data-title={requestsRecurrencesTableStrings.columns.active}>
+                          {activeLabel}
+                        </td>
+                      </tr>
+                    );
+                  }}
+                  loading={recurrenceLoading}
+                  loadingMessage={requestsRecurrencesTableStrings.loading}
+                  error={recurrenceError || null}
+                  emptyMessage={requestsRecurrencesTableStrings.empty}
+                  pagination={{
+                    currentPage: recurrenceCurrentPage,
+                    pageSize: recurrenceLimit,
+                    totalItems: recurrenceTotalElements,
+                    onPageChange: handleRecurrencePageChange,
+                    previousLabel: tableStrings.pagination.previous ?? '←',
+                    nextLabel: tableStrings.pagination.next ?? '→',
+                    summary: paymentSummary,
+                    pageLabel: paymentPageLabel,
+                  }}
+                />
+              ) : (
+                <GlobalTable
+                  className="page__table-wrapper"
+                  tableClassName="page__table mb-0"
+                  columns={paymentRequestsColumns}
+                  data={requestsRows}
+                  getRowId={(row, index) =>
                     row?.payment_request_id ??
                     row?.paymentRequestId ??
                     row?.payment_reference ??
-                    `payment-request-${index}`;
-                  const studentName = row?.student_full_name ?? row?.student ?? '';
-                  const studentMeta = row?.payment_reference ?? '';
-                  const amountRaw = row?.pr_amount ?? row?.amount;
-                  const formattedAmount =
-                    typeof amountRaw === 'number'
-                      ? currencyFormatter.format(amountRaw)
-                      : amountRaw != null && amountRaw !== ''
-                      ? String(amountRaw)
-                      : '';
-                  const dueDateRaw = row?.pr_pay_by ?? row?.due_date;
-                  const dueDateLabel = (() => {
-                    if (!dueDateRaw) {
-                      return '';
-                    }
+                    `payment-request-${index}`
+                  }
+                  renderRow={(row, index) => {
+                    const rowKey =
+                      row?.payment_request_id ??
+                      row?.paymentRequestId ??
+                      row?.payment_reference ??
+                      `payment-request-${index}`;
+                    const studentName = row?.student_full_name ?? row?.student ?? '';
+                    const studentMeta = row?.payment_reference ?? '';
+                    const amountRaw = row?.pr_amount ?? row?.amount;
+                    const formattedAmount =
+                      typeof amountRaw === 'number'
+                        ? currencyFormatter.format(amountRaw)
+                        : amountRaw != null && amountRaw !== ''
+                        ? String(amountRaw)
+                        : '';
+                    const dueDateRaw = row?.pr_pay_by ?? row?.due_date;
+                    const dueDateLabel = (() => {
+                      if (!dueDateRaw) {
+                        return '';
+                      }
 
-                    const parsed = new Date(dueDateRaw);
-                    return Number.isNaN(parsed.getTime())
-                      ? String(dueDateRaw)
-                      : dateFormatter.format(parsed);
-                  })();
-                  const requestIdValue = row?.payment_request_id ?? row?.paymentRequestId ?? null;
-                  const requestIdLabel = requestIdValue != null ? String(requestIdValue) : null;
-                  const hasValidRequestId = !(
-                    requestIdLabel == null ||
-                    requestIdLabel.trim() === '' ||
-                    requestIdLabel === 'null' ||
-                    requestIdLabel === 'undefined'
-                  );
-                  const detailButtonLabel = hasValidRequestId
-                    ? `${requestsDetailStrings.open} ${requestIdLabel}`
-                    : requestsDetailStrings.open;
+                      const parsed = new Date(dueDateRaw);
+                      return Number.isNaN(parsed.getTime())
+                        ? String(dueDateRaw)
+                        : dateFormatter.format(parsed);
+                    })();
+                    const requestIdValue = row?.payment_request_id ?? row?.paymentRequestId ?? null;
+                    const requestIdLabel = requestIdValue != null ? String(requestIdValue) : null;
+                    const hasValidRequestId = !(
+                      requestIdLabel == null ||
+                      requestIdLabel.trim() === '' ||
+                      requestIdLabel === 'null' ||
+                      requestIdLabel === 'undefined'
+                    );
+                    const detailButtonLabel = hasValidRequestId
+                      ? `${requestsDetailStrings.open} ${requestIdLabel}`
+                      : requestsDetailStrings.open;
 
-                  return (
-                    <tr key={rowKey}>
-                      <td data-title={requestsTableStrings.columns.id} className="text-center">
-                        {row?.payment_request_id ?? '--'}
-                      </td>
-                      <td data-title={requestsTableStrings.columns.student}>
-                        <StudentInfo
-                          name={studentName}
-                          fallbackName={tableStrings.studentFallback}
-                          metaLabel={studentMeta ? tableStrings.studentIdLabel : undefined}
-                          metaValue={studentMeta}
-                          onClick={() =>
-                            handleStudentDetailClick({
-                              ...row,
-                              student: studentName,
-                            })
-                          }
-                          nameButtonProps={{
-                            'aria-label': studentMeta
-                              ? `${studentName} (${tableStrings.studentIdLabel}: ${studentMeta})`
-                              : studentName,
-                          }}
-                        />
-                      </td>
-                      <td data-title={requestsTableStrings.columns.gradeGroup}>
-                        {row?.grade_group ?? '--'}
-                      </td>
-                      <td data-title={requestsTableStrings.columns.scholarLevel}>
-                        {row?.scholar_level_name ?? '--'}
-                      </td>
-                      <td data-title={requestsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
-                      <td data-title={requestsTableStrings.columns.amount} className="text-end">
-                        {formattedAmount ? (
-                          formattedAmount
-                        ) : (
-                          <span className="ui-table__empty-indicator">--</span>
-                        )}
-                      </td>
-                      <td data-title={requestsTableStrings.columns.status}>
-                        {row?.ps_pr_name ?? row?.status ?? '--'}
-                      </td>
-                      <td data-title={requestsTableStrings.columns.dueDate}>
-                        {dueDateLabel ? (
-                          dueDateLabel
-                        ) : (
-                          <span className="ui-table__empty-indicator">--</span>
-                        )}
-                      </td>
-                      <td data-title={requestsTableStrings.columns.actions} className="text-end">
-                        <ActionButton
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handlePaymentRequestDetailNavigation(requestIdValue)}
-                          disabled={!hasValidRequestId}
-                          aria-label={detailButtonLabel}
-                          title={detailButtonLabel}
-                        >
-                          {requestsDetailStrings.open}
-                        </ActionButton>
-                      </td>
-                    </tr>
-                  );
-                }}
-                loading={requestsLoading}
-                loadingMessage={requestsTableStrings.loading}
-                error={requestsError || null}
-                emptyMessage={requestsTableStrings.empty}
-                pagination={{
-                  currentPage: requestsCurrentPage,
-                  pageSize: requestsLimit,
-                  totalItems: requestsTotalElements,
-                  onPageChange: handleRequestsPageChange,
-                  previousLabel: tableStrings.pagination.previous ?? '←',
-                  nextLabel: tableStrings.pagination.next ?? '→',
-                  summary: paymentSummary,
-                  pageLabel: paymentPageLabel,
-                }}
-              />
+                    return (
+                      <tr key={rowKey}>
+                        <td data-title={requestsTableStrings.columns.id} className="text-center">
+                          {row?.payment_request_id ?? '--'}
+                        </td>
+                        <td data-title={requestsTableStrings.columns.student}>
+                          <StudentInfo
+                            name={studentName}
+                            fallbackName={tableStrings.studentFallback}
+                            metaLabel={studentMeta ? tableStrings.studentIdLabel : undefined}
+                            metaValue={studentMeta}
+                            onClick={() =>
+                              handleStudentDetailClick({
+                                ...row,
+                                student: studentName,
+                              })
+                            }
+                            nameButtonProps={{
+                              'aria-label': studentMeta
+                                ? `${studentName} (${tableStrings.studentIdLabel}: ${studentMeta})`
+                                : studentName,
+                            }}
+                          />
+                        </td>
+                        <td data-title={requestsTableStrings.columns.gradeGroup}>
+                          {row?.grade_group ?? '--'}
+                        </td>
+                        <td data-title={requestsTableStrings.columns.scholarLevel}>
+                          {row?.scholar_level_name ?? '--'}
+                        </td>
+                        <td data-title={requestsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
+                        <td data-title={requestsTableStrings.columns.amount} className="text-end">
+                          {formattedAmount ? (
+                            formattedAmount
+                          ) : (
+                            <span className="ui-table__empty-indicator">--</span>
+                          )}
+                        </td>
+                        <td data-title={requestsTableStrings.columns.status}>
+                          {row?.ps_pr_name ?? row?.status ?? '--'}
+                        </td>
+                        <td data-title={requestsTableStrings.columns.dueDate}>
+                          {dueDateLabel ? (
+                            dueDateLabel
+                          ) : (
+                            <span className="ui-table__empty-indicator">--</span>
+                          )}
+                        </td>
+                        <td data-title={requestsTableStrings.columns.actions} className="text-end">
+                          <ActionButton
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handlePaymentRequestDetailNavigation(requestIdValue)}
+                            disabled={!hasValidRequestId}
+                            aria-label={detailButtonLabel}
+                            title={detailButtonLabel}
+                          >
+                            {requestsDetailStrings.open}
+                          </ActionButton>
+                        </td>
+                      </tr>
+                    );
+                  }}
+                  loading={requestsLoading}
+                  loadingMessage={requestsTableStrings.loading}
+                  error={requestsError || null}
+                  emptyMessage={requestsTableStrings.empty}
+                  pagination={{
+                    currentPage: requestsCurrentPage,
+                    pageSize: requestsLimit,
+                    totalItems: requestsTotalElements,
+                    onPageChange: handleRequestsPageChange,
+                    previousLabel: tableStrings.pagination.previous ?? '←',
+                    nextLabel: tableStrings.pagination.next ?? '→',
+                    summary: paymentSummary,
+                    pageLabel: paymentPageLabel,
+                  }}
+                />
+              )}
             </UiCard>
           ) : isPaymentsTab ? (
             <UiCard className="page__table-card">
@@ -3059,6 +3652,122 @@ const PaymentsFinancePage = ({
               onChange={(event) => handleRequestsFilterChange('ps_pr_name', event.target.value)}
               placeholder={requestsFilterStrings.fields.status.placeholder}
             />
+          </div>
+        </form>
+      </SidebarModal>
+
+      <SidebarModal
+        isOpen={showRecurrenceFilters}
+        onClose={() => setShowRecurrenceFilters(false)}
+        title={requestsRecurrenceFilterStrings.title}
+        description={requestsRecurrenceFilterStrings.subtitle}
+        id="payment-recurrences-filters"
+        footer={
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <ActionButton variant="text" onClick={handleClearRecurrenceFilters} type="button">
+              {requestsRecurrenceFilterStrings.reset}
+            </ActionButton>
+            <ActionButton type="submit" form="payment-recurrences-filters-form">
+              {actionStrings.filterRecurrences ?? actionStrings.filter}
+            </ActionButton>
+          </div>
+        }
+      >
+        <form
+          id="payment-recurrences-filters-form"
+          className="row g-3"
+          onSubmit={handleApplyRecurrenceFilters}
+        >
+          <div className="col-sm-12">
+            <label htmlFor="recurrence-filter-reference" className="form-label">
+              {requestsRecurrenceFilterStrings.fields.reference.label}
+            </label>
+            <input
+              id="recurrence-filter-reference"
+              type="text"
+              className="form-control"
+              value={recurrenceFiltersDraft.payment_reference}
+              onChange={(event) =>
+                handleRecurrenceFilterChange('payment_reference', event.target.value)
+              }
+              placeholder={requestsRecurrenceFilterStrings.fields.reference.placeholder}
+            />
+          </div>
+          <div className="col-sm-12">
+            <label htmlFor="recurrence-filter-student" className="form-label">
+              {requestsRecurrenceFilterStrings.fields.student.label}
+            </label>
+            <input
+              id="recurrence-filter-student"
+              type="text"
+              className="form-control"
+              value={recurrenceFiltersDraft.student_full_name}
+              onChange={(event) =>
+                handleRecurrenceFilterChange('student_full_name', event.target.value)
+              }
+              placeholder={requestsRecurrenceFilterStrings.fields.student.placeholder}
+            />
+          </div>
+          <div className="col-sm-12">
+            <label htmlFor="recurrence-filter-grade" className="form-label">
+              {requestsRecurrenceFilterStrings.fields.gradeGroup.label}
+            </label>
+            <input
+              id="recurrence-filter-grade"
+              type="text"
+              className="form-control"
+              value={recurrenceFiltersDraft.grade_group}
+              onChange={(event) =>
+                handleRecurrenceFilterChange('grade_group', event.target.value)
+              }
+              placeholder={requestsRecurrenceFilterStrings.fields.gradeGroup.placeholder}
+            />
+          </div>
+          <div className="col-sm-12">
+            <label htmlFor="recurrence-filter-concept" className="form-label">
+              {requestsRecurrenceFilterStrings.fields.concept.label}
+            </label>
+            <input
+              id="recurrence-filter-concept"
+              type="text"
+              className="form-control"
+              value={recurrenceFiltersDraft.pt_name}
+              onChange={(event) => handleRecurrenceFilterChange('pt_name', event.target.value)}
+              placeholder={requestsRecurrenceFilterStrings.fields.concept.placeholder}
+            />
+          </div>
+          <div className="col-sm-12">
+            <label htmlFor="recurrence-filter-month" className="form-label">
+              {requestsRecurrenceFilterStrings.fields.paymentMonth.label}
+            </label>
+            <input
+              id="recurrence-filter-month"
+              type="month"
+              className="form-control"
+              value={recurrenceFiltersDraft.payment_month}
+              onChange={(event) => handleRecurrenceMonthChange(event.target.value)}
+            />
+          </div>
+          <div className="col-sm-12">
+            <label htmlFor="recurrence-filter-active" className="form-label">
+              {requestsRecurrenceFilterStrings.fields.active.label}
+            </label>
+            <select
+              id="recurrence-filter-active"
+              className="form-select"
+              value={recurrenceFiltersDraft.active}
+              onChange={(event) => handleRecurrenceFilterChange('active', event.target.value)}
+            >
+              <option value="">
+                {requestsRecurrenceFilterStrings.activeOptions?.all ?? 'Todas'}
+              </option>
+              <option value="true">
+                {requestsRecurrenceFilterStrings.activeOptions?.active ?? 'Activas'}
+              </option>
+              <option value="false">
+                {requestsRecurrenceFilterStrings.activeOptions?.inactive ?? 'Inactivas'}
+              </option>
+            </select>
           </div>
         </form>
       </SidebarModal>
