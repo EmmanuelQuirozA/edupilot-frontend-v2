@@ -1,0 +1,31 @@
+.schedule-payment-request__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.schedule-payment-request__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.schedule-payment-request__error {
+  color: #b91c1c;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.schedule-payment-request__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 576px) {
+  .schedule-payment-request__footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
