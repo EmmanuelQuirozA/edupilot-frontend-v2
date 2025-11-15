@@ -139,6 +139,7 @@ const SchedulePaymentRequestModal = ({
   const [scope, setScope] = useState('school');
   const [schoolOptions, setSchoolOptions] = useState([]);
   const [groupOptions, setGroupOptions] = useState([]);
+  const [groupDetailsMap, setGroupDetailsMap] = useState({});
   const [periodOptions, setPeriodOptions] = useState([]);
   const [conceptOptions, setConceptOptions] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState('');
@@ -306,11 +307,11 @@ const SchedulePaymentRequestModal = ({
       }
 
       const payload = await response.json();
-      const options = mapCatalogOptions(payload?.schools ?? payload, [
-        'school_id',
-        'id',
-        'value',
-      ]);
+      const options = mapCatalogOptions(
+        payload?.schools ?? payload,
+        ['school_id', 'id', 'value'],
+        ['commercial_name', 'name', 'label'],
+      );
       setSchoolOptions(options);
 
       if (options.length > 0) {
@@ -328,18 +329,12 @@ const SchedulePaymentRequestModal = ({
     setIsLoadingGroups(true);
 
     try {
-      const params = new URLSearchParams({
-        lang: normalizedLanguage,
-        offset: '0',
-        limit: '100',
-        export_all: 'true',
-      });
-
-      const response = await fetch(`${API_BASE_URL}/classes?${params.toString()}`, {
+      const response = await fetch(`${API_BASE_URL}/groups/catalog`, {
         method: 'GET',
         headers: {
           Accept: 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(normalizedLanguage ? { 'Accept-Language': normalizedLanguage } : {}),
         },
       });
 
@@ -349,11 +344,53 @@ const SchedulePaymentRequestModal = ({
       }
 
       const payload = await response.json();
-      const options = mapCatalogOptions(
-        payload?.content ?? payload?.groups ?? payload,
-        ['class_id', 'group_id', 'id', 'value'],
-        ['name', 'group_name', 'group', 'label'],
-      );
+      const groupsList = Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.content)
+          ? payload.content
+          : Array.isArray(payload?.groups)
+            ? payload.groups
+            : Array.isArray(payload)
+              ? payload
+              : [];
+
+      const detailsMap = {};
+      const options = groupsList
+        .map((item, index) => {
+          const rawValue =
+            item?.group_id ?? item?.class_id ?? item?.id ?? item?.value ?? '';
+          const value = rawValue !== undefined && rawValue !== null ? String(rawValue) : '';
+
+          if (!value) {
+            return null;
+          }
+
+          detailsMap[value] = item;
+
+          const gradeGroup = item?.grade_group;
+          const scholarLevel = item?.scholar_level_name;
+          const labelParts = [];
+
+          if (gradeGroup) {
+            labelParts.push(gradeGroup);
+          }
+
+          if (scholarLevel) {
+            labelParts.push(scholarLevel);
+          }
+
+          let label = labelParts.join(' - ');
+
+          if (!label) {
+            label =
+              item?.group_name || item?.group || item?.name || value || `Opción ${index + 1}`;
+          }
+
+          return { value, label };
+        })
+        .filter(Boolean);
+
+      setGroupDetailsMap(detailsMap);
       setGroupOptions(options);
 
       if (options.length > 0) {
@@ -362,6 +399,7 @@ const SchedulePaymentRequestModal = ({
     } catch (error) {
       console.error('Groups fetch error', error);
       setGroupOptions([]);
+      setGroupDetailsMap({});
     } finally {
       setIsLoadingGroups(false);
     }
@@ -407,7 +445,15 @@ const SchedulePaymentRequestModal = ({
   const handleStudentSelect = useCallback((option) => {
     setSelectedStudent(option);
   }, []);
-  
+
+  const selectedGroupDetails = useMemo(() => {
+    if (!selectedGroup) {
+      return null;
+    }
+
+    return groupDetailsMap?.[selectedGroup] ?? null;
+  }, [groupDetailsMap, selectedGroup]);
+
   const resetAndClose = useCallback(() => {
     onClose?.();
   }, [onClose]);
@@ -672,6 +718,23 @@ const SchedulePaymentRequestModal = ({
                             </option>
                           ))}
                         </select>
+                        {selectedGroupDetails && (
+                          <p className="form-text text-muted mb-0">
+                            {[
+                              selectedGroupDetails?.generation
+                                ? `Generación: ${selectedGroupDetails.generation}`
+                                : null,
+                              selectedGroupDetails?.grade_group
+                                ? `Grupo: ${selectedGroupDetails.grade_group}`
+                                : null,
+                              selectedGroupDetails?.scholar_level_name
+                                ? `Nivel: ${selectedGroupDetails.scholar_level_name}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        )}
                       </div>
                     )}
                     {scope === 'student' && (
