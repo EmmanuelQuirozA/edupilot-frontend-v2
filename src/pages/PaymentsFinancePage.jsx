@@ -11,6 +11,7 @@ import SidebarModal from '../components/ui/SidebarModal.jsx';
 import StudentInfo from '../components/ui/StudentInfo.jsx';
 import AddPaymentModal from '../components/payments/AddPaymentModal.jsx';
 import AddPaymentRequestModal from '../components/payments/AddPaymentRequestModal.jsx';
+import SchedulePaymentRequestModal from '../components/payments/SchedulePaymentRequestModal.jsx';
 import { useModal } from '../components/modal/useModal';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
@@ -332,6 +333,7 @@ const DEFAULT_PAYMENTS_STRINGS = {
     filterRecurrences: 'Filtrar recurrencias',
     exportRecurrences: 'Exportar recurrencias',
     viewRequestResult: 'Ver detalle',
+    viewScheduledRequestDetail: 'Ver solicitud programada',
     bulkUpload: 'Carga masiva',
     bulkUploadTooltip: 'Muy pronto podrás gestionar tus pagos desde aquí.',
     export: 'Exportar CSV',
@@ -578,6 +580,48 @@ const DEFAULT_PAYMENTS_STRINGS = {
     submitting: 'Creando…',
     success: 'Solicitudes de pago creadas correctamente.',
     error: 'No fue posible crear las solicitudes de pago.',
+    requiredField: 'Completa los campos obligatorios.',
+  },
+  addScheduledPaymentRequest: {
+    title: 'Programar solicitud de pago',
+    description: 'Configura un cobro recurrente para tus estudiantes.',
+    scopeLabel: 'Aplicar a',
+    scopeOptions: {
+      school: 'Toda la escuela',
+      group: 'Grupo',
+      student: 'Alumno',
+    },
+    schoolLabel: 'Escuela',
+    schoolPlaceholder: 'Selecciona una escuela',
+    groupLabel: 'Grupo',
+    groupPlaceholder: 'Selecciona un grupo',
+    studentLabel: 'Alumno',
+    studentPlaceholder: 'Selecciona un alumno',
+    ruleNameEsLabel: 'Nombre (ES)',
+    ruleNameEnLabel: 'Nombre (EN)',
+    conceptLabel: 'Concepto de pago',
+    conceptPlaceholder: 'Selecciona un concepto',
+    amountLabel: 'Monto',
+    feeTypeLabel: 'Tipo de recargo',
+    feeTypeOptions: {
+      currency: '$',
+      percentage: '%',
+    },
+    lateFeeLabel: 'Recargo',
+    lateFeeFrequencyLabel: 'Frecuencia de recargo',
+    periodLabel: 'Periodo de tiempo',
+    periodPlaceholder: 'Selecciona un periodo',
+    intervalLabel: 'Intervalo',
+    startDateLabel: 'Fecha inicial',
+    endDateLabel: 'Fecha final',
+    paymentMonthLabel: 'Mes de pago',
+    nextDueDateLabel: 'Próximo vencimiento',
+    commentsLabel: 'Comentarios',
+    cancel: 'Cancelar',
+    submit: 'Crear programación',
+    submitting: 'Creando…',
+    success: 'Solicitud programada creada correctamente.',
+    error: 'No fue posible crear la solicitud programada.',
     requiredField: 'Completa los campos obligatorios.',
   },
   tuitionModal: {
@@ -1005,6 +1049,13 @@ const PaymentsFinancePage = ({
     }),
     [strings.addPaymentRequest],
   );
+  const addScheduledPaymentRequestStrings = useMemo(
+    () => ({
+      ...DEFAULT_PAYMENTS_STRINGS.addScheduledPaymentRequest,
+      ...(strings.addScheduledPaymentRequest ?? {}),
+    }),
+    [strings.addScheduledPaymentRequest],
+  );
   const requestsDetailStrings = useMemo(
     () => ({
       ...DEFAULT_PAYMENTS_STRINGS.requestsDetail,
@@ -1113,6 +1164,7 @@ const PaymentsFinancePage = ({
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
   const [isRequestsExporting, setIsRequestsExporting] = useState(false);
   const [isAddPaymentRequestOpen, setIsAddPaymentRequestOpen] = useState(false);
+  const [isSchedulePaymentRequestOpen, setIsSchedulePaymentRequestOpen] = useState(false);
   const [requestsView, setRequestsView] = useState(REQUESTS_VIEW_KEYS.history);
   const [isRecurrenceExporting, setIsRecurrenceExporting] = useState(false);
   const [isCreateRequestMenuOpen, setIsCreateRequestMenuOpen] = useState(false);
@@ -1906,8 +1958,12 @@ const PaymentsFinancePage = ({
   }, []);
 
   const handleOpenSchedulePaymentRecurrence = useCallback(() => {
-    setToast({ type: 'info', message: actionStrings.scheduleRecurrenceComingSoon });
-  }, [actionStrings.scheduleRecurrenceComingSoon]);
+    setIsSchedulePaymentRequestOpen(true);
+  }, []);
+
+  const handleCloseSchedulePaymentRecurrence = useCallback(() => {
+    setIsSchedulePaymentRequestOpen(false);
+  }, []);
 
   const handlePaymentsFilterChange = useCallback((key, value) => {
     setPaymentsFiltersDraft((previous) => ({ ...previous, [key]: value }));
@@ -2114,6 +2170,64 @@ const PaymentsFinancePage = ({
       handlePaymentRequestResultNavigation,
       requestsOffset,
       requestsResultStrings,
+    ],
+  );
+
+  const handleScheduledPaymentRequestCreated = useCallback(
+    (result) => {
+      const scheduleId =
+        result?.data?.payment_request_scheduled_id ??
+        result?.data?.payment_request_scheduledId ??
+        null;
+      const success = result?.success !== false;
+      const message =
+        result?.message ?? addScheduledPaymentRequestStrings.success ?? actionStrings.addRequest;
+      const swalInstance = getSwalInstance();
+
+      if (swalInstance) {
+        swalInstance
+          .fire({
+            icon: result?.type ?? (success ? 'success' : 'info'),
+            title: result?.title ?? addScheduledPaymentRequestStrings.title,
+            text: message,
+            showCancelButton: true,
+            cancelButtonText: addScheduledPaymentRequestStrings.cancel ?? 'Cerrar',
+            showConfirmButton: Boolean(scheduleId),
+            confirmButtonText:
+              actionStrings.viewScheduledRequestDetail ?? requestsRecurrencesTableStrings.viewDetail,
+          })
+          .then((dialogResult) => {
+            if (dialogResult.isConfirmed && scheduleId != null) {
+              handlePaymentRequestScheduleDetailNavigation(scheduleId);
+            }
+          });
+      } else {
+        setToast({ type: success ? 'success' : 'info', message });
+        if (success && scheduleId != null) {
+          handlePaymentRequestScheduleDetailNavigation(scheduleId);
+        }
+      }
+
+      setActiveTab('requests');
+      setRequestsView(REQUESTS_VIEW_KEYS.scheduled);
+
+      if (recurrenceOffset !== 0) {
+        setRecurrenceOffset(0);
+      } else {
+        fetchPaymentRecurrences();
+      }
+    },
+    [
+      actionStrings.addRequest,
+      actionStrings.viewScheduledRequestDetail,
+      addScheduledPaymentRequestStrings.cancel,
+      addScheduledPaymentRequestStrings.success,
+      addScheduledPaymentRequestStrings.title,
+      fetchPaymentRecurrences,
+      handlePaymentRequestScheduleDetailNavigation,
+      recurrenceOffset,
+      requestsRecurrencesTableStrings.viewDetail,
+      setToast,
     ],
   );
 
@@ -3678,6 +3792,16 @@ const PaymentsFinancePage = ({
         language={normalizedLanguage}
         onSuccess={handlePaymentRequestCreated}
         strings={addPaymentRequestStrings}
+      />
+
+      <SchedulePaymentRequestModal
+        isOpen={isSchedulePaymentRequestOpen}
+        onClose={handleCloseSchedulePaymentRecurrence}
+        token={token}
+        logout={logout}
+        language={normalizedLanguage}
+        onSuccess={handleScheduledPaymentRequestCreated}
+        strings={addScheduledPaymentRequestStrings}
       />
 
       <SidebarModal
