@@ -407,6 +407,10 @@ const SchedulePaymentRequestModal = ({
   const handleStudentSelect = useCallback((option) => {
     setSelectedStudent(option);
   }, []);
+  
+  const resetAndClose = useCallback(() => {
+    onClose?.();
+  }, [onClose]);
 
   const handleSubmit = useCallback(
     async (event) => {
@@ -508,6 +512,7 @@ const SchedulePaymentRequestModal = ({
 
         const result = await response.json();
         onSuccess?.(result);
+        resetAndClose();
         onClose?.();
       } catch (error) {
         console.error('Create payment request schedule error', error);
@@ -544,316 +549,338 @@ const SchedulePaymentRequestModal = ({
       selectedSchool,
       selectedStudent,
       startDate,
+      resetAndClose,
       token,
     ],
   );
+
+  const modalTitleId = 'add-payment-modal-title';
+  const modalDescriptionId = 'add-payment-modal-description';
 
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div className="modal-backdrop show">
-      <div className="modal d-block" role="dialog" aria-modal="true">
-        <div className="modal-dialog modal-lg modal-dialog-centered">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">{mergedStrings.title}</h5>
-              <button type="button" className="btn-close" aria-label="Close" onClick={onClose} />
-            </div>
-            <div className="modal-body schedule-payment-request__body">
-              <p className="text-muted mb-3">{mergedStrings.description}</p>
-              <form className="schedule-payment-request__form" onSubmit={handleSubmit}>
-                <div className="row g-3">
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-scope" className="form-label">
-                      {mergedStrings.scopeLabel}
-                    </label>
-                    <select
-                      id="schedule-request-scope"
-                      className="form-select"
-                      value={scope}
-                      onChange={handleScopeChange}
-                    >
-                      <option value="school">{mergedStrings.scopeOptions.school}</option>
-                      <option value="group">{mergedStrings.scopeOptions.group}</option>
-                      <option value="student">{mergedStrings.scopeOptions.student}</option>
-                    </select>
-                  </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-concept" className="form-label">
-                      {mergedStrings.conceptLabel}
-                    </label>
-                    <select
-                      id="schedule-request-concept"
-                      className="form-select"
-                      value={paymentConceptId}
-                      onChange={(event) => setPaymentConceptId(event.target.value)}
-                      disabled={isLoadingConcepts}
-                    >
-                      <option value="" disabled>
-                        {mergedStrings.conceptPlaceholder}
-                      </option>
-                      {conceptOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {scope === 'school' && (
-                    <div className="col-12">
-                      <label htmlFor="schedule-request-school" className="form-label">
-                        {mergedStrings.schoolLabel}
+    <>
+      <div className="modal-backdrop fade show" />
+      <div
+        className="modal fade show d-block"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={modalTitleId}
+        aria-describedby={modalDescriptionId}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            resetAndClose();
+          }
+        }}
+      >
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <div>
+                  <h2 id={modalTitleId} className="modal-title h4 mb-1">
+                    {mergedStrings.title}
+                  </h2>
+                  <p id={modalDescriptionId} className="text-muted mb-0">
+                    {mergedStrings.description}
+                  </p>
+                </div>
+                <button type="button" className="btn-close" aria-label="Close" onClick={onClose} />
+              </div>
+              <div className="modal-body schedule-payment-request__body">
+                <form className="schedule-payment-request__form" onSubmit={handleSubmit}>
+                  <div className="row g-3">
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-scope" className="form-label">
+                        {mergedStrings.scopeLabel}
                       </label>
                       <select
-                        id="schedule-request-school"
+                        id="schedule-request-scope"
                         className="form-select"
-                        value={selectedSchool}
-                        onChange={(event) => setSelectedSchool(event.target.value)}
-                        disabled={isLoadingSchools}
+                        value={scope}
+                        onChange={handleScopeChange}
+                      >
+                        <option value="school">{mergedStrings.scopeOptions.school}</option>
+                        <option value="group">{mergedStrings.scopeOptions.group}</option>
+                        <option value="student">{mergedStrings.scopeOptions.student}</option>
+                      </select>
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-concept" className="form-label">
+                        {mergedStrings.conceptLabel}
+                      </label>
+                      <select
+                        id="schedule-request-concept"
+                        className="form-select"
+                        value={paymentConceptId}
+                        onChange={(event) => setPaymentConceptId(event.target.value)}
+                        disabled={isLoadingConcepts}
                       >
                         <option value="" disabled>
-                          {mergedStrings.schoolPlaceholder}
+                          {mergedStrings.conceptPlaceholder}
                         </option>
-                        {schoolOptions.map((option) => (
+                        {conceptOptions.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
                         ))}
                       </select>
                     </div>
-                  )}
-                  {scope === 'group' && (
-                    <div className="col-12">
-                      <label htmlFor="schedule-request-group" className="form-label">
-                        {mergedStrings.groupLabel}
-                      </label>
-                      <select
-                        id="schedule-request-group"
-                        className="form-select"
-                        value={selectedGroup}
-                        onChange={(event) => setSelectedGroup(event.target.value)}
-                        disabled={isLoadingGroups}
-                      >
-                        <option value="" disabled>
-                          {mergedStrings.groupPlaceholder}
-                        </option>
-                        {groupOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
+                    {scope === 'school' && (
+                      <div className="col-12">
+                        <label htmlFor="schedule-request-school" className="form-label">
+                          {mergedStrings.schoolLabel}
+                        </label>
+                        <select
+                          id="schedule-request-school"
+                          className="form-select"
+                          value={selectedSchool}
+                          onChange={(event) => setSelectedSchool(event.target.value)}
+                          disabled={isLoadingSchools}
+                        >
+                          <option value="" disabled>
+                            {mergedStrings.schoolPlaceholder}
                           </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  {scope === 'student' && (
-                    <div className="col-12">
-                      <label htmlFor="schedule-request-student" className="form-label">
-                        {mergedStrings.studentLabel}
+                          {schoolOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {scope === 'group' && (
+                      <div className="col-12">
+                        <label htmlFor="schedule-request-group" className="form-label">
+                          {mergedStrings.groupLabel}
+                        </label>
+                        <select
+                          id="schedule-request-group"
+                          className="form-select"
+                          value={selectedGroup}
+                          onChange={(event) => setSelectedGroup(event.target.value)}
+                          disabled={isLoadingGroups}
+                        >
+                          <option value="" disabled>
+                            {mergedStrings.groupPlaceholder}
+                          </option>
+                          {groupOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {scope === 'student' && (
+                      <div className="col-12">
+                        <label htmlFor="schedule-request-student" className="form-label">
+                          {mergedStrings.studentLabel}
+                        </label>
+                        <StudentSearchSelect
+                          id="schedule-request-student"
+                          token={token}
+                          logout={logout}
+                          language={normalizedLanguage}
+                          selectedStudent={selectedStudent}
+                          onSelect={handleStudentSelect}
+                          strings={{ togglePlaceholder: mergedStrings.studentPlaceholder }}
+                        />
+                      </div>
+                    )}
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-rule-es" className="form-label">
+                        {mergedStrings.ruleNameEsLabel}
                       </label>
-                      <StudentSearchSelect
-                        id="schedule-request-student"
-                        token={token}
-                        logout={logout}
-                        language={normalizedLanguage}
-                        selectedStudent={selectedStudent}
-                        onSelect={handleStudentSelect}
-                        strings={{ togglePlaceholder: mergedStrings.studentPlaceholder }}
+                      <input
+                        id="schedule-request-rule-es"
+                        type="text"
+                        className="form-control"
+                        value={ruleNameEs}
+                        onChange={(event) => setRuleNameEs(event.target.value)}
                       />
                     </div>
-                  )}
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-rule-es" className="form-label">
-                      {mergedStrings.ruleNameEsLabel}
-                    </label>
-                    <input
-                      id="schedule-request-rule-es"
-                      type="text"
-                      className="form-control"
-                      value={ruleNameEs}
-                      onChange={(event) => setRuleNameEs(event.target.value)}
-                    />
-                  </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-rule-en" className="form-label">
-                      {mergedStrings.ruleNameEnLabel}
-                    </label>
-                    <input
-                      id="schedule-request-rule-en"
-                      type="text"
-                      className="form-control"
-                      value={ruleNameEn}
-                      onChange={(event) => setRuleNameEn(event.target.value)}
-                    />
-                  </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-amount" className="form-label">
-                      {mergedStrings.amountLabel}
-                    </label>
-                    <input
-                      id="schedule-request-amount"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="form-control"
-                      value={amount}
-                      onChange={(event) => setAmount(event.target.value)}
-                    />
-                  </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-feetype" className="form-label">
-                      {mergedStrings.feeTypeLabel}
-                    </label>
-                    <select
-                      id="schedule-request-feetype"
-                      className="form-select"
-                      value={feeType}
-                      onChange={(event) => setFeeType(event.target.value)}
-                    >
-                      <option value="$">{mergedStrings.feeTypeOptions.currency}</option>
-                      <option value="%">{mergedStrings.feeTypeOptions.percentage}</option>
-                    </select>
-                  </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-latefee" className="form-label">
-                      {mergedStrings.lateFeeLabel}
-                    </label>
-                    <input
-                      id="schedule-request-latefee"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="form-control"
-                      value={lateFee}
-                      onChange={(event) => setLateFee(event.target.value)}
-                    />
-                  </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-frequency" className="form-label">
-                      {mergedStrings.lateFeeFrequencyLabel}
-                    </label>
-                    <input
-                      id="schedule-request-frequency"
-                      type="number"
-                      step="1"
-                      min="0"
-                      className="form-control"
-                      value={lateFeeFrequency}
-                      onChange={(event) => setLateFeeFrequency(event.target.value)}
-                    />
-                  </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-period" className="form-label">
-                      {mergedStrings.periodLabel}
-                    </label>
-                    <select
-                      id="schedule-request-period"
-                      className="form-select"
-                      value={periodId}
-                      onChange={(event) => setPeriodId(event.target.value)}
-                      disabled={isLoadingPeriods}
-                    >
-                      <option value="" disabled>
-                        {mergedStrings.periodPlaceholder}
-                      </option>
-                      {periodOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-rule-en" className="form-label">
+                        {mergedStrings.ruleNameEnLabel}
+                      </label>
+                      <input
+                        id="schedule-request-rule-en"
+                        type="text"
+                        className="form-control"
+                        value={ruleNameEn}
+                        onChange={(event) => setRuleNameEn(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-amount" className="form-label">
+                        {mergedStrings.amountLabel}
+                      </label>
+                      <input
+                        id="schedule-request-amount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="form-control"
+                        value={amount}
+                        onChange={(event) => setAmount(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-feetype" className="form-label">
+                        {mergedStrings.feeTypeLabel}
+                      </label>
+                      <select
+                        id="schedule-request-feetype"
+                        className="form-select"
+                        value={feeType}
+                        onChange={(event) => setFeeType(event.target.value)}
+                      >
+                        <option value="$">{mergedStrings.feeTypeOptions.currency}</option>
+                        <option value="%">{mergedStrings.feeTypeOptions.percentage}</option>
+                      </select>
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-latefee" className="form-label">
+                        {mergedStrings.lateFeeLabel}
+                      </label>
+                      <input
+                        id="schedule-request-latefee"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="form-control"
+                        value={lateFee}
+                        onChange={(event) => setLateFee(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-frequency" className="form-label">
+                        {mergedStrings.lateFeeFrequencyLabel}
+                      </label>
+                      <input
+                        id="schedule-request-frequency"
+                        type="number"
+                        step="1"
+                        min="0"
+                        className="form-control"
+                        value={lateFeeFrequency}
+                        onChange={(event) => setLateFeeFrequency(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-period" className="form-label">
+                        {mergedStrings.periodLabel}
+                      </label>
+                      <select
+                        id="schedule-request-period"
+                        className="form-select"
+                        value={periodId}
+                        onChange={(event) => setPeriodId(event.target.value)}
+                        disabled={isLoadingPeriods}
+                      >
+                        <option value="" disabled>
+                          {mergedStrings.periodPlaceholder}
                         </option>
-                      ))}
-                    </select>
+                        {periodOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-interval" className="form-label">
+                        {mergedStrings.intervalLabel}
+                      </label>
+                      <input
+                        id="schedule-request-interval"
+                        type="number"
+                        step="1"
+                        min="1"
+                        className="form-control"
+                        value={intervalCount}
+                        onChange={(event) => setIntervalCount(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-start-date" className="form-label">
+                        {mergedStrings.startDateLabel}
+                      </label>
+                      <input
+                        id="schedule-request-start-date"
+                        type="date"
+                        className="form-control"
+                        value={startDate}
+                        onChange={(event) => setStartDate(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-end-date" className="form-label">
+                        {mergedStrings.endDateLabel}
+                      </label>
+                      <input
+                        id="schedule-request-end-date"
+                        type="date"
+                        className="form-control"
+                        value={endDate}
+                        onChange={(event) => setEndDate(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-month" className="form-label">
+                        {mergedStrings.paymentMonthLabel}
+                      </label>
+                      <input
+                        id="schedule-request-month"
+                        type="month"
+                        className="form-control"
+                        value={paymentMonth}
+                        onChange={(event) => setPaymentMonth(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-next-due" className="form-label">
+                        {mergedStrings.nextDueDateLabel}
+                      </label>
+                      <input
+                        id="schedule-request-next-due"
+                        type="date"
+                        className="form-control"
+                        value={nextDueDate}
+                        onChange={(event) => setNextDueDate(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label htmlFor="schedule-request-comments" className="form-label">
+                        {mergedStrings.commentsLabel}
+                      </label>
+                      <textarea
+                        id="schedule-request-comments"
+                        className="form-control"
+                        rows={3}
+                        value={comments}
+                        onChange={(event) => setComments(event.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-interval" className="form-label">
-                      {mergedStrings.intervalLabel}
-                    </label>
-                    <input
-                      id="schedule-request-interval"
-                      type="number"
-                      step="1"
-                      min="1"
-                      className="form-control"
-                      value={intervalCount}
-                      onChange={(event) => setIntervalCount(event.target.value)}
-                    />
+                  {formError && <p className="schedule-payment-request__error">{formError}</p>}
+                  <div className="schedule-payment-request__footer">
+                    <ActionButton type="button" variant="text" onClick={onClose}>
+                      {mergedStrings.cancel}
+                    </ActionButton>
+                    <ActionButton type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? mergedStrings.submitting : mergedStrings.submit}
+                    </ActionButton>
                   </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-start-date" className="form-label">
-                      {mergedStrings.startDateLabel}
-                    </label>
-                    <input
-                      id="schedule-request-start-date"
-                      type="date"
-                      className="form-control"
-                      value={startDate}
-                      onChange={(event) => setStartDate(event.target.value)}
-                    />
-                  </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-end-date" className="form-label">
-                      {mergedStrings.endDateLabel}
-                    </label>
-                    <input
-                      id="schedule-request-end-date"
-                      type="date"
-                      className="form-control"
-                      value={endDate}
-                      onChange={(event) => setEndDate(event.target.value)}
-                    />
-                  </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-month" className="form-label">
-                      {mergedStrings.paymentMonthLabel}
-                    </label>
-                    <input
-                      id="schedule-request-month"
-                      type="month"
-                      className="form-control"
-                      value={paymentMonth}
-                      onChange={(event) => setPaymentMonth(event.target.value)}
-                    />
-                  </div>
-                  <div className="col-sm-6">
-                    <label htmlFor="schedule-request-next-due" className="form-label">
-                      {mergedStrings.nextDueDateLabel}
-                    </label>
-                    <input
-                      id="schedule-request-next-due"
-                      type="date"
-                      className="form-control"
-                      value={nextDueDate}
-                      onChange={(event) => setNextDueDate(event.target.value)}
-                    />
-                  </div>
-                  <div className="col-12">
-                    <label htmlFor="schedule-request-comments" className="form-label">
-                      {mergedStrings.commentsLabel}
-                    </label>
-                    <textarea
-                      id="schedule-request-comments"
-                      className="form-control"
-                      rows={3}
-                      value={comments}
-                      onChange={(event) => setComments(event.target.value)}
-                    />
-                  </div>
-                </div>
-                {formError && <p className="schedule-payment-request__error">{formError}</p>}
-                <div className="schedule-payment-request__footer">
-                  <ActionButton type="button" variant="text" onClick={onClose}>
-                    {mergedStrings.cancel}
-                  </ActionButton>
-                  <ActionButton type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? mergedStrings.submitting : mergedStrings.submit}
-                  </ActionButton>
-                </div>
-              </form>
+                </form>
+              </div>
             </div>
           </div>
-        </div>
       </div>
-    </div>
+    </>
   );
 };
 

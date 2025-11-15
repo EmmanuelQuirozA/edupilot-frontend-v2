@@ -326,6 +326,10 @@ const AddPaymentRequestModal = ({
     setSelectedStudent(option);
   }, []);
 
+  const resetAndClose = useCallback(() => {
+    onClose?.();
+  }, [onClose]);
+
   const handleSubmit = useCallback(
     async (event) => {
       event?.preventDefault?.();
@@ -409,6 +413,7 @@ const AddPaymentRequestModal = ({
 
         const result = await response.json();
         onSuccess?.(result);
+        resetAndClose();
         onClose?.();
       } catch (error) {
         console.error('Create payment request error', error);
@@ -439,25 +444,47 @@ const AddPaymentRequestModal = ({
       selectedGroup,
       selectedSchool,
       selectedStudent,
+      resetAndClose,
       token,
     ],
   );
+
+  const modalTitleId = 'add-payment-modal-title';
+  const modalDescriptionId = 'add-payment-modal-description';
 
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div className="modal-backdrop show">
-      <div className="modal d-block" role="dialog" aria-modal="true">
+    <>
+      <div className="modal-backdrop fade show" />
+      <div
+        className="modal fade show d-block"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={modalTitleId}
+        aria-describedby={modalDescriptionId}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            resetAndClose();
+          }
+        }}
+      >
         <div className="modal-dialog modal-lg modal-dialog-centered">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">{mergedStrings.title}</h5>
+              <div>
+                <h2 id={modalTitleId} className="modal-title h4 mb-1">
+                  {mergedStrings.title}
+                </h2>
+                <p id={modalDescriptionId} className="text-muted mb-0">
+                  {mergedStrings.description}
+                </p>
+              </div>
               <button type="button" className="btn-close" aria-label="Close" onClick={onClose} />
             </div>
             <div className="modal-body add-payment-request__body">
-              <p className="text-muted mb-3">{mergedStrings.description}</p>
               <form className="add-payment-request__form" onSubmit={handleSubmit}>
                 <div className="row g-3">
                   <div className="col-sm-6">
@@ -679,7 +706,7 @@ const AddPaymentRequestModal = ({
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

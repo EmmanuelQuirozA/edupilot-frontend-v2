@@ -1244,14 +1244,14 @@ const StudentsGroupsPage = ({
     }
   };
 
-  const toggleActionsMenu = (studentId) => {
-    setOpenActionsMenuId((previous) => (previous === studentId ? null : studentId));
-  };
+  // const toggleActionsMenu = (studentId) => {
+  //   setOpenActionsMenuId((previous) => (previous === studentId ? null : studentId));
+  // };
 
-  const handleMenuPlaceholder = () => {
-    setOpenActionsMenuId(null);
-    showGlobalAlert('info', strings.actions.menuPlaceholder);
-  };
+  // const handleMenuPlaceholder = () => {
+  //   setOpenActionsMenuId(null);
+  //   showGlobalAlert('info', strings.actions.menuPlaceholder);
+  // };
 
   const handleOpenEditGroup = async (group) => {
     if (!group) {
@@ -1892,7 +1892,7 @@ const StudentsGroupsPage = ({
                           <span className="table__switch-thumb" />
                         </span>
                       </label>
-                      <div className={`table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
+                      {/* <div className={`table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
                         <ActionButton
                           variant="ghost"
                           size="icon"
@@ -1929,7 +1929,7 @@ const StudentsGroupsPage = ({
                             </li>
                           </ul>
                         ) : null}
-                      </div>
+                      </div> */}
                     </div>
                   </td>
                 </tr>
@@ -2350,6 +2350,43 @@ const StudentsGroupsPage = ({
                   </section>
 
                   <section className="mb-4">
+                    <h4 className="h6 text-primary fw-semibold mb-3">
+                      {strings.form.sections.credentials ?? 'Credenciales de acceso'}
+                    </h4>
+                    <div className="row g-3">
+                      <div className="col-md-6 col-xl-6">
+                        <label className="form-label" htmlFor={getStudentFieldId('username')}>
+                          {strings.form.fields.username ?? 'Usuario'}
+                        </label>
+                        <input
+                          id={getStudentFieldId('username')}
+                          name="username"
+                          value={studentForm.username}
+                          onChange={handleStudentFormChange}
+                          required={modalMode !== 'edit'}
+                          autoComplete="username"
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="col-md-6 col-xl-6">
+                        <label className="form-label" htmlFor={getStudentFieldId('password')}>
+                          {strings.form.fields.password ?? 'Contraseña'}
+                        </label>
+                        <input
+                          id={getStudentFieldId('password')}
+                          type="password"
+                          name="password"
+                          value={studentForm.password}
+                          onChange={handleStudentFormChange}
+                          required={modalMode !== 'edit'}
+                          autoComplete="new-password"
+                          className="form-control"
+                        />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="mb-4">
                     <h4 className="h6 text-primary fw-semibold mb-3">{strings.form.sections.academic}</h4>
                     <div className="row g-3">
                       <div className="col-md-6">
@@ -2542,43 +2579,6 @@ const StudentsGroupsPage = ({
                           name="state"
                           value={studentForm.state}
                           onChange={handleStudentFormChange}
-                          className="form-control"
-                        />
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className="mb-4">
-                    <h4 className="h6 text-primary fw-semibold mb-3">
-                      {strings.form.sections.credentials ?? 'Credenciales de acceso'}
-                    </h4>
-                    <div className="row g-3">
-                      <div className="col-md-6 col-xl-4">
-                        <label className="form-label" htmlFor={getStudentFieldId('username')}>
-                          {strings.form.fields.username ?? 'Usuario'}
-                        </label>
-                        <input
-                          id={getStudentFieldId('username')}
-                          name="username"
-                          value={studentForm.username}
-                          onChange={handleStudentFormChange}
-                          required={modalMode !== 'edit'}
-                          autoComplete="username"
-                          className="form-control"
-                        />
-                      </div>
-                      <div className="col-md-6 col-xl-4">
-                        <label className="form-label" htmlFor={getStudentFieldId('password')}>
-                          {strings.form.fields.password ?? 'Contraseña'}
-                        </label>
-                        <input
-                          id={getStudentFieldId('password')}
-                          type="password"
-                          name="password"
-                          value={studentForm.password}
-                          onChange={handleStudentFormChange}
-                          required={modalMode !== 'edit'}
-                          autoComplete="new-password"
                           className="form-control"
                         />
                       </div>
