@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GlobalToast from '../components/GlobalToast.jsx';
 import ActionButton from '../components/ui/ActionButton.jsx';
 import ExportButton from '../components/ui/buttons/ExportButton.jsx';
@@ -26,6 +26,7 @@ import './PaymentsFinancePage.css';
 const DEFAULT_LIMIT = 10;
 const MONTH_KEY_REGEX = /^[A-Za-z]{3}-\d{2}$/;
 const DEFAULT_PAYMENTS_TAB_KEY = 'tuition';
+const REQUESTS_VIEW_KEYS = { history: 'history', scheduled: 'scheduled' };
 
 const getSwalInstance = () => {
   if (typeof window === 'undefined') {
@@ -314,19 +315,29 @@ const DEFAULT_PAYMENTS_STRINGS = {
     debtActive: 'Mostrando morosos',
     debtInactive: 'Alumnos con deuda',
     add: 'Agregar pago',
-    addRequest: 'Agregar solicitud',
-    scheduleRecurrence: 'Programar recurrencia',
+    addRequest: 'Crear Nueva Solicitud',
+    addRequestMenu: {
+      single: {
+        title: 'Solicitud Única',
+        description: 'Un cobro específico para uno o más alumnos',
+      },
+      scheduled: {
+        title: 'Solicitud Programada',
+        description: 'Un cobro recurrente (mes, año, etc).',
+      },
+    },
     scheduleRecurrenceComingSoon: 'Muy pronto podrás programar recurrencias.',
     filterRecurrences: 'Filtrar recurrencias',
     exportRecurrences: 'Exportar recurrencias',
-    viewScheduled: 'Solicitudes programadas',
-    scheduledActive: 'Mostrando programadas',
-    scheduledInactive: 'Ver programadas',
     viewRequestResult: 'Ver detalle',
     bulkUpload: 'Carga masiva',
     bulkUploadTooltip: 'Muy pronto podrás gestionar tus pagos desde aquí.',
     export: 'Exportar CSV',
     exporting: 'Exportando…',
+  },
+  requestsViews: {
+    history: 'Historial de solicitudes',
+    scheduled: 'Programaciones',
   },
   search: {
     placeholder: 'Buscar alumno por nombre',
@@ -743,6 +754,19 @@ const PaymentsFinancePage = ({
     () => ({ ...DEFAULT_PAYMENTS_STRINGS.actions, ...(strings.actions ?? {}) }),
     [strings.actions],
   );
+  const requestsViewStrings = useMemo(
+    () => ({ ...DEFAULT_PAYMENTS_STRINGS.requestsViews, ...(strings.requestsViews ?? {}) }),
+    [strings.requestsViews],
+  );
+  const addRequestMenuStrings = useMemo(() => {
+    const defaults = DEFAULT_PAYMENTS_STRINGS.actions.addRequestMenu;
+    const overrides = actionStrings.addRequestMenu ?? defaults;
+
+    return {
+      single: { ...defaults.single, ...(overrides?.single ?? {}) },
+      scheduled: { ...defaults.scheduled, ...(overrides?.scheduled ?? {}) },
+    };
+  }, [actionStrings.addRequestMenu]);
   const dateRangeStrings = useMemo(
     () => ({ ...DEFAULT_PAYMENTS_STRINGS.dateRange, ...(strings.dateRange ?? {}) }),
     [strings.dateRange],
@@ -1072,8 +1096,10 @@ const PaymentsFinancePage = ({
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
   const [isRequestsExporting, setIsRequestsExporting] = useState(false);
   const [isAddPaymentRequestOpen, setIsAddPaymentRequestOpen] = useState(false);
-  const [showScheduledRequestsOnly, setShowScheduledRequestsOnly] = useState(false);
+  const [requestsView, setRequestsView] = useState(REQUESTS_VIEW_KEYS.history);
   const [isRecurrenceExporting, setIsRecurrenceExporting] = useState(false);
+  const [isCreateRequestMenuOpen, setIsCreateRequestMenuOpen] = useState(false);
+  const createRequestMenuRef = useRef(null);
 
   const tabs = useMemo(
     () => [
@@ -1085,6 +1111,14 @@ const PaymentsFinancePage = ({
   );
 
   const tabKeys = useMemo(() => tabs.map((tab) => tab.key), [tabs]);
+
+  const requestsViewTabs = useMemo(
+    () => [
+      { key: REQUESTS_VIEW_KEYS.history, label: requestsViewStrings.history },
+      { key: REQUESTS_VIEW_KEYS.scheduled, label: requestsViewStrings.scheduled },
+    ],
+    [requestsViewStrings.history, requestsViewStrings.scheduled],
+  );
 
   useEffect(() => {
     if (!tabKeys.includes(activeSectionKey)) {
@@ -1109,6 +1143,8 @@ const PaymentsFinancePage = ({
   const isTuitionTab = activeTab === 'tuition';
   const isPaymentsTab = activeTab === 'payments';
   const isRequestsTab = activeTab === 'requests';
+  const isRequestsHistoryView = requestsView === REQUESTS_VIEW_KEYS.history;
+  const isRequestsScheduledView = requestsView === REQUESTS_VIEW_KEYS.scheduled;
 
   const columnLabels = tableStrings.columns;
   const currencyFormatter = useMemo(
@@ -1551,7 +1587,7 @@ const PaymentsFinancePage = ({
   }, [fetchPaymentsList]);
 
   const fetchPaymentRequests = useCallback(async () => {
-    if (activeTab !== 'requests' || showScheduledRequestsOnly) {
+    if (activeTab !== 'requests' || !isRequestsHistoryView) {
       return;
     }
 
@@ -1591,13 +1627,13 @@ const PaymentsFinancePage = ({
     logout,
     requestsQueryParams,
     requestsTableStrings.error,
-    showScheduledRequestsOnly,
+    isRequestsHistoryView,
     tableStrings.unknownError,
     token,
   ]);
 
   const fetchPaymentRecurrences = useCallback(async () => {
-    if (activeTab !== 'requests' || !showScheduledRequestsOnly) {
+    if (activeTab !== 'requests' || !isRequestsScheduledView) {
       return;
     }
 
@@ -1639,7 +1675,7 @@ const PaymentsFinancePage = ({
     logout,
     recurrenceQueryParams,
     requestsRecurrencesTableStrings.error,
-    showScheduledRequestsOnly,
+    isRequestsScheduledView,
     tableStrings.unknownError,
     token,
   ]);
@@ -1799,13 +1835,36 @@ const PaymentsFinancePage = ({
     setRecurrenceFiltersDraft((previous) => ({ ...previous, payment_month: value }));
   }, []);
 
-  const handleToggleScheduledRequests = useCallback(() => {
-    setShowScheduledRequestsOnly((previous) => !previous);
+  const handleRequestsViewSelect = useCallback((nextView) => {
+    if (!Object.values(REQUESTS_VIEW_KEYS).includes(nextView)) {
+      return;
+    }
+
+    setRequestsView((previous) => (previous === nextView ? previous : nextView));
     setRequestsOffset(0);
     setRecurrenceOffset(0);
     setShowRequestsFilters(false);
     setShowRecurrenceFilters(false);
+    setIsCreateRequestMenuOpen(false);
   }, []);
+
+  const handleToggleCreateRequestMenu = useCallback(() => {
+    setIsCreateRequestMenuOpen((previous) => !previous);
+  }, []);
+
+  const handleCloseCreateRequestMenu = useCallback(() => {
+    setIsCreateRequestMenuOpen(false);
+  }, []);
+
+  const handleCreateSingleRequest = useCallback(() => {
+    handleCloseCreateRequestMenu();
+    handleOpenAddPaymentRequest();
+  }, [handleCloseCreateRequestMenu, handleOpenAddPaymentRequest]);
+
+  const handleCreateScheduledRequest = useCallback(() => {
+    handleCloseCreateRequestMenu();
+    handleOpenSchedulePaymentRecurrence();
+  }, [handleCloseCreateRequestMenu, handleOpenSchedulePaymentRecurrence]);
 
   const handlePaymentRequestDetailNavigation = useCallback(
     (requestId) => {
@@ -2567,22 +2626,54 @@ const PaymentsFinancePage = ({
   }, [activeTab, isAddPaymentOpen]);
 
   useEffect(() => {
-    if (activeTab !== 'requests' && showRequestsFilters) {
+    if ((activeTab !== 'requests' || !isRequestsHistoryView) && showRequestsFilters) {
       setShowRequestsFilters(false);
     }
-  }, [activeTab, showRequestsFilters]);
+  }, [activeTab, isRequestsHistoryView, showRequestsFilters]);
 
   useEffect(() => {
-    if ((activeTab !== 'requests' || !showScheduledRequestsOnly) && showRecurrenceFilters) {
+    if ((activeTab !== 'requests' || !isRequestsScheduledView) && showRecurrenceFilters) {
       setShowRecurrenceFilters(false);
     }
-  }, [activeTab, showRecurrenceFilters, showScheduledRequestsOnly]);
+  }, [activeTab, isRequestsScheduledView, showRecurrenceFilters]);
 
   useEffect(() => {
     if (activeTab !== 'requests' && isAddPaymentRequestOpen) {
       setIsAddPaymentRequestOpen(false);
     }
   }, [activeTab, isAddPaymentRequestOpen]);
+
+  useEffect(() => {
+    if (!isCreateRequestMenuOpen) {
+      return undefined;
+    }
+
+    const handleClickOutside = (event) => {
+      if (createRequestMenuRef.current && !createRequestMenuRef.current.contains(event.target)) {
+        setIsCreateRequestMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsCreateRequestMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [createRequestMenuRef, isCreateRequestMenuOpen]);
+
+  useEffect(() => {
+    if (activeTab !== 'requests' && isCreateRequestMenuOpen) {
+      setIsCreateRequestMenuOpen(false);
+    }
+  }, [activeTab, isCreateRequestMenuOpen]);
 
   useEffect(() => {
     if (isPaymentRequestResultRoute) {
@@ -2594,6 +2685,70 @@ const PaymentsFinancePage = ({
     onPaymentBreadcrumbChange,
     requestsResultStrings.title,
   ]);
+
+  const CreateRequestIcon = (
+    <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
+      <path d="M9 3h2v6h6v2h-6v6H9v-6H3V9h6z" fill="currentColor" />
+    </svg>
+  );
+
+  const CaretIcon = (
+    <svg viewBox="0 0 20 20" aria-hidden="true" width="14" height="14">
+      <path d="M5 7l5 6 5-6H5z" fill="currentColor" />
+    </svg>
+  );
+
+  const SingleRequestIcon = (
+    <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
+      <path
+        d="M6 3h8.5L19 7.5V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14.5 3v4.5H19"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M12 11v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M9 14h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+
+  const ScheduledRequestIcon = (
+    <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
+      <rect
+        x="5"
+        y="6"
+        width="14"
+        height="13"
+        rx="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M8 4v3m8-3v3M5 9.5h14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 12v3.25l2.5 1.25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 
   const DebtIcon = (
     <svg viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
@@ -2769,14 +2924,70 @@ const PaymentsFinancePage = ({
             </>
           ) : activeKey === 'requests' ? (
             <>
-              {showScheduledRequestsOnly ? (
+              <div
+                className={`payments-page__create-request ${
+                  isCreateRequestMenuOpen ? 'is-open' : ''
+                }`}
+                ref={createRequestMenuRef}
+              >
+                <ActionButton
+                  type="button"
+                  onClick={handleToggleCreateRequestMenu}
+                  className="payments-page__create-request-button"
+                  icon={CreateRequestIcon}
+                  aria-haspopup="menu"
+                  aria-expanded={isCreateRequestMenuOpen}
+                >
+                  <span className="payments-page__create-request-label">
+                    {actionStrings.addRequest}
+                    <span className="payments-page__create-request-caret" aria-hidden="true">
+                      {CaretIcon}
+                    </span>
+                  </span>
+                </ActionButton>
+                {isCreateRequestMenuOpen ? (
+                  <div className="payments-page__create-request-menu" role="menu">
+                    <button
+                      type="button"
+                      className="payments-page__create-request-option"
+                      onClick={handleCreateSingleRequest}
+                      role="menuitem"
+                    >
+                      <span className="payments-page__create-request-option-icon" aria-hidden="true">
+                        {SingleRequestIcon}
+                      </span>
+                      <span className="payments-page__create-request-option-content">
+                        <span className="payments-page__create-request-option-title">
+                          {addRequestMenuStrings.single.title}
+                        </span>
+                        <span className="payments-page__create-request-option-description">
+                          {addRequestMenuStrings.single.description}
+                        </span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="payments-page__create-request-option"
+                      onClick={handleCreateScheduledRequest}
+                      role="menuitem"
+                    >
+                      <span className="payments-page__create-request-option-icon" aria-hidden="true">
+                        {ScheduledRequestIcon}
+                      </span>
+                      <span className="payments-page__create-request-option-content">
+                        <span className="payments-page__create-request-option-title">
+                          {addRequestMenuStrings.scheduled.title}
+                        </span>
+                        <span className="payments-page__create-request-option-description">
+                          {addRequestMenuStrings.scheduled.description}
+                        </span>
+                      </span>
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+              {isRequestsScheduledView ? (
                 <>
-                  <ActionButton
-                    type="button"
-                    onClick={handleOpenSchedulePaymentRecurrence}
-                  >
-                    {actionStrings.scheduleRecurrence}
-                  </ActionButton>
                   <FilterButton
                     type="button"
                     onClick={handleToggleRecurrenceFilters}
@@ -2789,18 +3000,6 @@ const PaymentsFinancePage = ({
                       <span className="badge text-bg-primary rounded-pill">{recurrenceFiltersCount}</span>
                     )}
                   </FilterButton>
-                  <ActionButton
-                    type="button"
-                    variant="ghost"
-                    className={`payments-page__scheduled-button ${
-                      showScheduledRequestsOnly ? 'is-active' : ''
-                    }`}
-                    onClick={handleToggleScheduledRequests}
-                  >
-                    {showScheduledRequestsOnly
-                      ? actionStrings.scheduledActive
-                      : actionStrings.scheduledInactive}
-                  </ActionButton>
                   <ExportButton
                     type="button"
                     onClick={handleRecurrenceExport}
@@ -2813,9 +3012,6 @@ const PaymentsFinancePage = ({
                 </>
               ) : (
                 <>
-                  <ActionButton type="button" onClick={handleOpenAddPaymentRequest}>
-                    {actionStrings.addRequest}
-                  </ActionButton>
                   <FilterButton
                     type="button"
                     onClick={handleToggleRequestsFilters}
@@ -2828,18 +3024,6 @@ const PaymentsFinancePage = ({
                       <span className="badge text-bg-primary rounded-pill">{requestsFiltersCount}</span>
                     )}
                   </FilterButton>
-                  <ActionButton
-                    type="button"
-                    variant="ghost"
-                    className={`payments-page__scheduled-button ${
-                      showScheduledRequestsOnly ? 'is-active' : ''
-                    }`}
-                    onClick={handleToggleScheduledRequests}
-                  >
-                    {showScheduledRequestsOnly
-                      ? actionStrings.scheduledActive
-                      : actionStrings.scheduledInactive}
-                  </ActionButton>
                   <ExportButton
                     type="button"
                     onClick={handleRequestsExport}
@@ -3023,275 +3207,284 @@ const PaymentsFinancePage = ({
               />
             </UiCard>
           ) : isRequestsTab ? (
-            <UiCard className="page__table-card">
-              {showScheduledRequestsOnly ? (
-                <GlobalTable
-                  className="page__table-wrapper"
-                  tableClassName="page__table mb-0"
-                  columns={paymentRecurrencesColumns}
-                  data={recurrenceRows}
-                  getRowId={(row, index) =>
-                    row?.recurrence_id ??
-                    row?.payment_reference ??
-                    row?.student_full_name ??
-                    `payment-recurrence-${index}`
-                  }
-                  renderRow={(row, index) => {
-                    const rowKey =
+            <>
+              <Tabs
+                className="payments-page__requests-tabs"
+                tabs={requestsViewTabs}
+                activeKey={requestsView}
+                onSelect={handleRequestsViewSelect}
+                navClassName="tabs nav-pills flex-wrap gap-2"
+              />
+              <UiCard className="page__table-card">
+                {isRequestsScheduledView ? (
+                  <GlobalTable
+                    className="page__table-wrapper"
+                    tableClassName="page__table mb-0"
+                    columns={paymentRecurrencesColumns}
+                    data={recurrenceRows}
+                    getRowId={(row, index) =>
                       row?.recurrence_id ??
                       row?.payment_reference ??
                       row?.student_full_name ??
-                      `payment-recurrence-${index}`;
-                    const studentName = row?.student_full_name ?? row?.student ?? '';
-                    const paymentReference = row?.payment_reference ?? '';
-                    const amountRaw = row?.amount;
-                    const formattedAmount =
-                      typeof amountRaw === 'number'
-                        ? currencyFormatter.format(amountRaw)
-                        : amountRaw != null && amountRaw !== ''
-                        ? String(amountRaw)
-                        : '';
-                    const lateFeeLabel = (() => {
-                      if (row?.late_fee == null || row?.late_fee === '') {
-                        return '';
-                      }
+                      `payment-recurrence-${index}`
+                    }
+                    renderRow={(row, index) => {
+                      const rowKey =
+                        row?.recurrence_id ??
+                        row?.payment_reference ??
+                        row?.student_full_name ??
+                        `payment-recurrence-${index}`;
+                      const studentName = row?.student_full_name ?? row?.student ?? '';
+                      const paymentReference = row?.payment_reference ?? '';
+                      const amountRaw = row?.amount;
+                      const formattedAmount =
+                        typeof amountRaw === 'number'
+                          ? currencyFormatter.format(amountRaw)
+                          : amountRaw != null && amountRaw !== ''
+                          ? String(amountRaw)
+                          : '';
+                      const lateFeeLabel = (() => {
+                        if (row?.late_fee == null || row?.late_fee === '') {
+                          return '';
+                        }
 
-                      if (row?.fee_type === '%') {
-                        const numericValue = Number(row.late_fee);
-                        return Number.isFinite(numericValue)
-                          ? `${numberFormatter.format(numericValue)}%`
-                          : `${row.late_fee}%`;
-                      }
+                        if (row?.fee_type === '%') {
+                          const numericValue = Number(row.late_fee);
+                          return Number.isFinite(numericValue)
+                            ? `${numberFormatter.format(numericValue)}%`
+                            : `${row.late_fee}%`;
+                        }
 
-                      return typeof row?.late_fee === 'number'
-                        ? currencyFormatter.format(row.late_fee)
-                        : String(row.late_fee);
-                    })();
-                    const nextDueDateLabel = (() => {
-                      if (!row?.next_due_date) {
-                        return '';
-                      }
+                        return typeof row?.late_fee === 'number'
+                          ? currencyFormatter.format(row.late_fee)
+                          : String(row.late_fee);
+                      })();
+                      const nextDueDateLabel = (() => {
+                        if (!row?.next_due_date) {
+                          return '';
+                        }
 
-                      const parsed = new Date(row.next_due_date);
-                      return Number.isNaN(parsed.getTime())
-                        ? String(row.next_due_date)
-                        : dateFormatter.format(parsed);
-                    })();
-                    const activeLabel = row?.active
-                      ? requestsRecurrencesTableStrings.activeYes
-                      : requestsRecurrencesTableStrings.activeNo;
+                        const parsed = new Date(row.next_due_date);
+                        return Number.isNaN(parsed.getTime())
+                          ? String(row.next_due_date)
+                          : dateFormatter.format(parsed);
+                      })();
+                      const activeLabel = row?.active
+                        ? requestsRecurrencesTableStrings.activeYes
+                        : requestsRecurrencesTableStrings.activeNo;
 
-                    return (
-                      <tr key={rowKey}>
-                        <td data-title={requestsRecurrencesTableStrings.columns.id} className="text-center">
-                          {row?.recurrence_id ?? '--'}
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.student}>
-                          <StudentInfo
-                            name={studentName}
-                            fallbackName={tableStrings.studentFallback}
-                            metaLabel={paymentReference ? tableStrings.studentIdLabel : undefined}
-                            metaValue={paymentReference}
-                            onClick={() =>
-                              handleStudentDetailClick({
-                                ...row,
-                                student: studentName,
-                              })
-                            }
-                            nameButtonProps={{ 'aria-label': studentName }}
-                          />
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.reference}>
-                          {paymentReference || <span className="ui-table__empty-indicator">--</span>}
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.gradeGroup}>
-                          {row?.grade_group ?? '--'}
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.scholarLevel}>
-                          {row?.scholar_level_name ?? '--'}
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.generation}>
-                          {row?.generation ?? '--'}
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.amount} className="text-end">
-                          {formattedAmount ? (
-                            formattedAmount
-                          ) : (
-                            <span className="ui-table__empty-indicator">--</span>
-                          )}
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.lateFee} className="text-end">
-                          {lateFeeLabel ? (
-                            lateFeeLabel
-                          ) : (
-                            <span className="ui-table__empty-indicator">--</span>
-                          )}
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.period}>
-                          {row?.period ?? '--'}
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.interval}>
-                          {row?.interval_count ?? '--'}
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.nextDueDate}>
-                          {nextDueDateLabel ? (
-                            nextDueDateLabel
-                          ) : (
-                            <span className="ui-table__empty-indicator">--</span>
-                          )}
-                        </td>
-                        <td data-title={requestsRecurrencesTableStrings.columns.active}>
-                          {activeLabel}
-                        </td>
-                      </tr>
-                    );
-                  }}
-                  loading={recurrenceLoading}
-                  loadingMessage={requestsRecurrencesTableStrings.loading}
-                  error={recurrenceError || null}
-                  emptyMessage={requestsRecurrencesTableStrings.empty}
-                  pagination={{
-                    currentPage: recurrenceCurrentPage,
-                    pageSize: recurrenceLimit,
-                    totalItems: recurrenceTotalElements,
-                    onPageChange: handleRecurrencePageChange,
-                    previousLabel: tableStrings.pagination.previous ?? '←',
-                    nextLabel: tableStrings.pagination.next ?? '→',
-                    summary: paymentSummary,
-                    pageLabel: paymentPageLabel,
-                  }}
-                />
-              ) : (
-                <GlobalTable
-                  className="page__table-wrapper"
-                  tableClassName="page__table mb-0"
-                  columns={paymentRequestsColumns}
-                  data={requestsRows}
-                  getRowId={(row, index) =>
-                    row?.payment_request_id ??
-                    row?.paymentRequestId ??
-                    row?.payment_reference ??
-                    `payment-request-${index}`
-                  }
-                  renderRow={(row, index) => {
-                    const rowKey =
+                      return (
+                        <tr key={rowKey}>
+                          <td data-title={requestsRecurrencesTableStrings.columns.id} className="text-center">
+                            {row?.recurrence_id ?? '--'}
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.student}>
+                            <StudentInfo
+                              name={studentName}
+                              fallbackName={tableStrings.studentFallback}
+                              metaLabel={paymentReference ? tableStrings.studentIdLabel : undefined}
+                              metaValue={paymentReference}
+                              onClick={() =>
+                                handleStudentDetailClick({
+                                  ...row,
+                                  student: studentName,
+                                })
+                              }
+                              nameButtonProps={{ 'aria-label': studentName }}
+                            />
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.reference}>
+                            {paymentReference || <span className="ui-table__empty-indicator">--</span>}
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.gradeGroup}>
+                            {row?.grade_group ?? '--'}
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.scholarLevel}>
+                            {row?.scholar_level_name ?? '--'}
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.generation}>
+                            {row?.generation ?? '--'}
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.amount} className="text-end">
+                            {formattedAmount ? (
+                              formattedAmount
+                            ) : (
+                              <span className="ui-table__empty-indicator">--</span>
+                            )}
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.lateFee} className="text-end">
+                            {lateFeeLabel ? (
+                              lateFeeLabel
+                            ) : (
+                              <span className="ui-table__empty-indicator">--</span>
+                            )}
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.period}>
+                            {row?.period ?? '--'}
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.interval}>
+                            {row?.interval_count ?? '--'}
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.nextDueDate}>
+                            {nextDueDateLabel ? (
+                              nextDueDateLabel
+                            ) : (
+                              <span className="ui-table__empty-indicator">--</span>
+                            )}
+                          </td>
+                          <td data-title={requestsRecurrencesTableStrings.columns.active}>
+                            {activeLabel}
+                          </td>
+                        </tr>
+                      );
+                    }}
+                    loading={recurrenceLoading}
+                    loadingMessage={requestsRecurrencesTableStrings.loading}
+                    error={recurrenceError || null}
+                    emptyMessage={requestsRecurrencesTableStrings.empty}
+                    pagination={{
+                      currentPage: recurrenceCurrentPage,
+                      pageSize: recurrenceLimit,
+                      totalItems: recurrenceTotalElements,
+                      onPageChange: handleRecurrencePageChange,
+                      previousLabel: tableStrings.pagination.previous ?? '←',
+                      nextLabel: tableStrings.pagination.next ?? '→',
+                      summary: paymentSummary,
+                      pageLabel: paymentPageLabel,
+                    }}
+                  />
+                ) : (
+                  <GlobalTable
+                    className="page__table-wrapper"
+                    tableClassName="page__table mb-0"
+                    columns={paymentRequestsColumns}
+                    data={requestsRows}
+                    getRowId={(row, index) =>
                       row?.payment_request_id ??
                       row?.paymentRequestId ??
                       row?.payment_reference ??
-                      `payment-request-${index}`;
-                    const studentName = row?.student_full_name ?? row?.student ?? '';
-                    const studentMeta = row?.payment_reference ?? '';
-                    const amountRaw = row?.pr_amount ?? row?.amount;
-                    const formattedAmount =
-                      typeof amountRaw === 'number'
-                        ? currencyFormatter.format(amountRaw)
-                        : amountRaw != null && amountRaw !== ''
-                        ? String(amountRaw)
-                        : '';
-                    const dueDateRaw = row?.pr_pay_by ?? row?.due_date;
-                    const dueDateLabel = (() => {
-                      if (!dueDateRaw) {
-                        return '';
-                      }
+                      `payment-request-${index}`
+                    }
+                    renderRow={(row, index) => {
+                      const rowKey =
+                        row?.payment_request_id ??
+                        row?.paymentRequestId ??
+                        row?.payment_reference ??
+                        `payment-request-${index}`;
+                      const studentName = row?.student_full_name ?? row?.student ?? '';
+                      const studentMeta = row?.payment_reference ?? '';
+                      const amountRaw = row?.pr_amount ?? row?.amount;
+                      const formattedAmount =
+                        typeof amountRaw === 'number'
+                          ? currencyFormatter.format(amountRaw)
+                          : amountRaw != null && amountRaw !== ''
+                          ? String(amountRaw)
+                          : '';
+                      const dueDateRaw = row?.pr_pay_by ?? row?.due_date;
+                      const dueDateLabel = (() => {
+                        if (!dueDateRaw) {
+                          return '';
+                        }
 
-                      const parsed = new Date(dueDateRaw);
-                      return Number.isNaN(parsed.getTime())
-                        ? String(dueDateRaw)
-                        : dateFormatter.format(parsed);
-                    })();
-                    const requestIdValue = row?.payment_request_id ?? row?.paymentRequestId ?? null;
-                    const requestIdLabel = requestIdValue != null ? String(requestIdValue) : null;
-                    const hasValidRequestId = !(
-                      requestIdLabel == null ||
-                      requestIdLabel.trim() === '' ||
-                      requestIdLabel === 'null' ||
-                      requestIdLabel === 'undefined'
-                    );
-                    const detailButtonLabel = hasValidRequestId
-                      ? `${requestsDetailStrings.open} ${requestIdLabel}`
-                      : requestsDetailStrings.open;
+                        const parsed = new Date(dueDateRaw);
+                        return Number.isNaN(parsed.getTime())
+                          ? String(dueDateRaw)
+                          : dateFormatter.format(parsed);
+                      })();
+                      const requestIdValue = row?.payment_request_id ?? row?.paymentRequestId ?? null;
+                      const requestIdLabel = requestIdValue != null ? String(requestIdValue) : null;
+                      const hasValidRequestId = !(
+                        requestIdLabel == null ||
+                        requestIdLabel.trim() === '' ||
+                        requestIdLabel === 'null' ||
+                        requestIdLabel === 'undefined'
+                      );
+                      const detailButtonLabel = hasValidRequestId
+                        ? `${requestsDetailStrings.open} ${requestIdLabel}`
+                        : requestsDetailStrings.open;
 
-                    return (
-                      <tr key={rowKey}>
-                        <td data-title={requestsTableStrings.columns.id} className="text-center">
-                          {row?.payment_request_id ?? '--'}
-                        </td>
-                        <td data-title={requestsTableStrings.columns.student}>
-                          <StudentInfo
-                            name={studentName}
-                            fallbackName={tableStrings.studentFallback}
-                            metaLabel={studentMeta ? tableStrings.studentIdLabel : undefined}
-                            metaValue={studentMeta}
-                            onClick={() =>
-                              handleStudentDetailClick({
-                                ...row,
-                                student: studentName,
-                              })
-                            }
-                            nameButtonProps={{
-                              'aria-label': studentMeta
-                                ? `${studentName} (${tableStrings.studentIdLabel}: ${studentMeta})`
-                                : studentName,
-                            }}
-                          />
-                        </td>
-                        <td data-title={requestsTableStrings.columns.gradeGroup}>
-                          {row?.grade_group ?? '--'}
-                        </td>
-                        <td data-title={requestsTableStrings.columns.scholarLevel}>
-                          {row?.scholar_level_name ?? '--'}
-                        </td>
-                        <td data-title={requestsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
-                        <td data-title={requestsTableStrings.columns.amount} className="text-end">
-                          {formattedAmount ? (
-                            formattedAmount
-                          ) : (
-                            <span className="ui-table__empty-indicator">--</span>
-                          )}
-                        </td>
-                        <td data-title={requestsTableStrings.columns.status}>
-                          {row?.ps_pr_name ?? row?.status ?? '--'}
-                        </td>
-                        <td data-title={requestsTableStrings.columns.dueDate}>
-                          {dueDateLabel ? (
-                            dueDateLabel
-                          ) : (
-                            <span className="ui-table__empty-indicator">--</span>
-                          )}
-                        </td>
-                        <td data-title={requestsTableStrings.columns.actions} className="text-end">
-                          <ActionButton
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handlePaymentRequestDetailNavigation(requestIdValue)}
-                            disabled={!hasValidRequestId}
-                            aria-label={detailButtonLabel}
-                            title={detailButtonLabel}
-                          >
-                            {requestsDetailStrings.open}
-                          </ActionButton>
-                        </td>
-                      </tr>
-                    );
-                  }}
-                  loading={requestsLoading}
-                  loadingMessage={requestsTableStrings.loading}
-                  error={requestsError || null}
-                  emptyMessage={requestsTableStrings.empty}
-                  pagination={{
-                    currentPage: requestsCurrentPage,
-                    pageSize: requestsLimit,
-                    totalItems: requestsTotalElements,
-                    onPageChange: handleRequestsPageChange,
-                    previousLabel: tableStrings.pagination.previous ?? '←',
-                    nextLabel: tableStrings.pagination.next ?? '→',
-                    summary: paymentSummary,
-                    pageLabel: paymentPageLabel,
-                  }}
-                />
-              )}
-            </UiCard>
+                      return (
+                        <tr key={rowKey}>
+                          <td data-title={requestsTableStrings.columns.id} className="text-center">
+                            {row?.payment_request_id ?? '--'}
+                          </td>
+                          <td data-title={requestsTableStrings.columns.student}>
+                            <StudentInfo
+                              name={studentName}
+                              fallbackName={tableStrings.studentFallback}
+                              metaLabel={studentMeta ? tableStrings.studentIdLabel : undefined}
+                              metaValue={studentMeta}
+                              onClick={() =>
+                                handleStudentDetailClick({
+                                  ...row,
+                                  student: studentName,
+                                })
+                              }
+                              nameButtonProps={{
+                                'aria-label': studentMeta
+                                  ? `${studentName} (${tableStrings.studentIdLabel}: ${studentMeta})`
+                                  : studentName,
+                              }}
+                            />
+                          </td>
+                          <td data-title={requestsTableStrings.columns.gradeGroup}>
+                            {row?.grade_group ?? '--'}
+                          </td>
+                          <td data-title={requestsTableStrings.columns.scholarLevel}>
+                            {row?.scholar_level_name ?? '--'}
+                          </td>
+                          <td data-title={requestsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
+                          <td data-title={requestsTableStrings.columns.amount} className="text-end">
+                            {formattedAmount ? (
+                              formattedAmount
+                            ) : (
+                              <span className="ui-table__empty-indicator">--</span>
+                            )}
+                          </td>
+                          <td data-title={requestsTableStrings.columns.status}>
+                            {row?.ps_pr_name ?? row?.status ?? '--'}
+                          </td>
+                          <td data-title={requestsTableStrings.columns.dueDate}>
+                            {dueDateLabel ? (
+                              dueDateLabel
+                            ) : (
+                              <span className="ui-table__empty-indicator">--</span>
+                            )}
+                          </td>
+                          <td data-title={requestsTableStrings.columns.actions} className="text-end">
+                            <ActionButton
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handlePaymentRequestDetailNavigation(requestIdValue)}
+                              disabled={!hasValidRequestId}
+                              aria-label={detailButtonLabel}
+                              title={detailButtonLabel}
+                            >
+                              {requestsDetailStrings.open}
+                            </ActionButton>
+                          </td>
+                        </tr>
+                      );
+                    }}
+                    loading={requestsLoading}
+                    loadingMessage={requestsTableStrings.loading}
+                    error={requestsError || null}
+                    emptyMessage={requestsTableStrings.empty}
+                    pagination={{
+                      currentPage: requestsCurrentPage,
+                      pageSize: requestsLimit,
+                      totalItems: requestsTotalElements,
+                      onPageChange: handleRequestsPageChange,
+                      previousLabel: tableStrings.pagination.previous ?? '←',
+                      nextLabel: tableStrings.pagination.next ?? '→',
+                      summary: paymentSummary,
+                      pageLabel: paymentPageLabel,
+                    }}
+                  />
+                )}
+              </UiCard>
+            </>
           ) : isPaymentsTab ? (
             <UiCard className="page__table-card">
               <GlobalTable
