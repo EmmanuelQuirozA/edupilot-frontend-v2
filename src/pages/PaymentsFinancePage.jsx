@@ -734,17 +734,14 @@ const PaymentsFinancePage = ({
     () => `/${normalizedLanguage}/payments/detail`,
     [normalizedLanguage],
   );
-  const paymentRequestDetailBasePath = useMemo(
-    () => `/${normalizedLanguage}/payments/requests/detail`,
-    [normalizedLanguage],
-  );
   const paymentRequestsBasePath = useMemo(
     () => `/${normalizedLanguage}/payments/requests`,
     [normalizedLanguage],
   );
+  const paymentRequestDetailBasePath = paymentRequestsBasePath;
   const paymentRequestScheduleDetailBasePath = useMemo(
-    () => `/${normalizedLanguage}/payments/requests/schedule`,
-    [normalizedLanguage],
+    () => `${paymentRequestsBasePath}/scheduled`,
+    [paymentRequestsBasePath],
   );
 
   const detailRouteSegments = Array.isArray(routeSegments) ? routeSegments : [];
@@ -753,8 +750,15 @@ const PaymentsFinancePage = ({
   const tertiaryRouteSegment = detailRouteSegments[2] ?? null;
   const isPaymentDetailRoute = primaryRouteSegment === 'detail';
   const isPaymentRequestRoute = primaryRouteSegment === 'requests';
-  const isPaymentRequestDetailRoute = isPaymentRequestRoute && secondaryRouteSegment === 'detail';
   const isPaymentRequestResultRoute = isPaymentRequestRoute && secondaryRouteSegment === 'result';
+  const isPaymentRequestScheduledRoute = isPaymentRequestRoute && secondaryRouteSegment === 'scheduled';
+  const isPaymentRequestScheduleDetailRoute =
+    isPaymentRequestScheduledRoute && tertiaryRouteSegment != null;
+  const isPaymentRequestDetailRoute =
+    isPaymentRequestRoute &&
+    Boolean(secondaryRouteSegment) &&
+    secondaryRouteSegment !== 'scheduled' &&
+    secondaryRouteSegment !== 'result';
   const paymentDetailId = (() => {
     if (!isPaymentDetailRoute) {
       return null;
@@ -782,7 +786,7 @@ const PaymentsFinancePage = ({
       return null;
     }
 
-    const candidate = tertiaryRouteSegment;
+    const candidate = secondaryRouteSegment;
 
     if (candidate == null) {
       return null;
@@ -1200,6 +1204,18 @@ const PaymentsFinancePage = ({
 
     setActiveTab(activeSectionKey);
   }, [activeSectionKey, onSectionChange, tabKeys]);
+
+  useEffect(() => {
+    if (activeTab !== 'requests') {
+      return;
+    }
+
+    const nextView = isPaymentRequestScheduledRoute
+      ? REQUESTS_VIEW_KEYS.scheduled
+      : REQUESTS_VIEW_KEYS.history;
+
+    setRequestsView((previous) => (previous === nextView ? previous : nextView));
+  }, [activeTab, isPaymentRequestScheduledRoute]);
 
   const handleTabSelect = useCallback(
     (key) => {
@@ -1981,20 +1997,39 @@ const PaymentsFinancePage = ({
     setRecurrenceFiltersDraft((previous) => ({ ...previous, [key]: value }));
   }, []);
 
-  const handleRequestsViewSelect = useCallback((nextView) => {
-    if (!Object.values(REQUESTS_VIEW_KEYS).includes(nextView)) {
-      return;
-    }
+  const handleRequestsViewSelect = useCallback(
+    (nextView) => {
+      if (!Object.values(REQUESTS_VIEW_KEYS).includes(nextView)) {
+        return;
+      }
 
-    setRequestsView((previous) => (previous === nextView ? previous : nextView));
-    setRequestsOffset(0);
-    setRecurrenceOffset(0);
-    setRecurrenceOrderBy('');
-    setRecurrenceOrderDir('ASC');
-    setShowRequestsFilters(false);
-    setShowRecurrenceFilters(false);
-    setIsCreateRequestMenuOpen(false);
-  }, []);
+      setRequestsView((previous) => (previous === nextView ? previous : nextView));
+      setRequestsOffset(0);
+      setRecurrenceOffset(0);
+      setRecurrenceOrderBy('');
+      setRecurrenceOrderDir('ASC');
+      setShowRequestsFilters(false);
+      setShowRecurrenceFilters(false);
+      setIsCreateRequestMenuOpen(false);
+
+      const nextSubPath = nextView === REQUESTS_VIEW_KEYS.scheduled ? 'scheduled' : '';
+
+      if (onSectionChange) {
+        if (nextSubPath) {
+          onSectionChange('requests', { subPath: nextSubPath });
+        } else {
+          onSectionChange('requests');
+        }
+        return;
+      }
+
+      if (typeof window !== 'undefined') {
+        const suffix = nextSubPath ? `/${nextSubPath}` : '';
+        window.location.assign(`${paymentRequestsBasePath}${suffix}`);
+      }
+    },
+    [onSectionChange, paymentRequestsBasePath],
+  );
 
   const handleToggleCreateRequestMenu = useCallback(() => {
     setIsCreateRequestMenuOpen((previous) => !previous);

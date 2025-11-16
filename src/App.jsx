@@ -170,12 +170,24 @@ const App = () => {
   }, [language, navigate]);
 
   const handlePaymentsSectionNavigation = useCallback(
-    (sectionKey, { replace = false } = {}) => {
+    (sectionKey, { replace = false, subPath } = {}) => {
       const basePath = buildPath(language, 'payments');
       const normalizedSection = typeof sectionKey === 'string' ? sectionKey.trim() : '';
-      const suffix = normalizedSection && normalizedSection !== 'tuition' ? `/${encodeURIComponent(normalizedSection)}` : '';
+      const sectionSuffix =
+        normalizedSection && normalizedSection !== 'tuition'
+          ? `/${encodeURIComponent(normalizedSection)}`
+          : '';
+      const normalizedSubPath =
+        typeof subPath === 'string'
+          ? subPath
+              .split('/')
+              .filter(Boolean)
+              .map((segment) => encodeURIComponent(segment.trim()))
+              .join('/')
+          : '';
+      const extraSuffix = normalizedSubPath ? `/${normalizedSubPath}` : '';
 
-      navigate(`${basePath}${suffix}`, { replace });
+      navigate(`${basePath}${sectionSuffix}${extraSuffix}`, { replace });
     },
     [language, navigate],
   );
@@ -201,7 +213,20 @@ const App = () => {
 
       const basePath = buildPath(language, 'payments');
       const safeId = encodeURIComponent(String(requestId));
-      navigate(`${basePath}/requests/detail/${safeId}`, { replace });
+      navigate(`${basePath}/requests/${safeId}`, { replace });
+    },
+    [language, navigate],
+  );
+
+  const handlePaymentRequestScheduleDetailNavigation = useCallback(
+    (scheduleId, { replace = false } = {}) => {
+      if (scheduleId == null || scheduleId === '') {
+        return;
+      }
+
+      const basePath = buildPath(language, 'payments');
+      const safeId = encodeURIComponent(String(scheduleId));
+      navigate(`${basePath}/requests/scheduled/${safeId}`, { replace });
     },
     [language, navigate],
   );
@@ -247,6 +272,7 @@ const App = () => {
         onStudentsSectionChange={handleStudentsSectionNavigation}
         onNavigateToPaymentDetail={handlePaymentDetailNavigation}
         onNavigateToPaymentRequestDetail={handlePaymentRequestDetailNavigation}
+        onNavigateToPaymentRequestScheduleDetail={handlePaymentRequestScheduleDetailNavigation}
         onNavigateToPaymentRequestResult={handlePaymentRequestResultNavigation}
       />
     );
