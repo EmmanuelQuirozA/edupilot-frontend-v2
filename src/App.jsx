@@ -200,7 +200,7 @@ const App = () => {
 
       const basePath = buildPath(language, 'payments');
       const safeId = encodeURIComponent(String(paymentId));
-      navigate(`${basePath}/detail/${safeId}`, { replace });
+      navigate(`${basePath}/payments/${safeId}`, { replace });
     },
     [language, navigate],
   );

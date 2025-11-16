@@ -208,6 +208,48 @@ const formatCurrency = (value, language) => {
   }).format(numeric);
 };
 
+const decodeValue = (value) => {
+  if (value == null) {
+    return '';
+  }
+
+  const stringValue = typeof value === 'string' ? value : String(value);
+
+  try {
+    return decodeURIComponent(stringValue);
+  } catch (decodeError) {
+    return stringValue;
+  }
+};
+
+const buildPaymentRequestBreadcrumbLabel = (payload, fallbackLabel, fallbackId) => {
+  const studentName = [payload?.student?.full_name, payload?.student?.student].find(
+    (candidate) => typeof candidate === 'string' && candidate.trim() !== '',
+  );
+  const normalizedFallbackId = decodeValue(fallbackId);
+  const requestIdCandidate = [
+    payload?.paymentRequest?.payment_request_id,
+    payload?.paymentRequest?.payment_requestId,
+    payload?.paymentRequest?.id,
+    normalizedFallbackId,
+  ].find((candidate) => candidate != null && String(candidate).trim() !== '');
+  const requestId = requestIdCandidate != null ? String(requestIdCandidate).trim() : '';
+
+  if (studentName && requestId) {
+    return `${studentName.trim()} → ${requestId}`;
+  }
+
+  if (studentName) {
+    return studentName.trim();
+  }
+
+  if (requestId) {
+    return `${fallbackLabel} → ${requestId}`;
+  }
+
+  return fallbackLabel;
+};
+
 const getFeeTypeLabel = (value, language) => {
   if (!value) {
     return '';
@@ -362,8 +404,11 @@ const PaymentRequestDetailPage = ({
       setDetails(payload);
       setFormData(buildFormState(payload?.paymentRequest));
 
-      const breadcrumbLabel =
-        payload?.student?.full_name || payload?.student?.student || mergedStrings.breadcrumbFallback;
+      const breadcrumbLabel = buildPaymentRequestBreadcrumbLabel(
+        payload,
+        mergedStrings.breadcrumbFallback,
+        safeRequestId,
+      );
       onBreadcrumbChange?.(breadcrumbLabel);
     } catch (requestError) {
       console.error('Payment request detail error', requestError);
