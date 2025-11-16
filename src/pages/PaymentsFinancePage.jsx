@@ -374,7 +374,7 @@ const DEFAULT_PAYMENTS_STRINGS = {
       recurrenceType: 'Tipo de recurrencia',
       appliesTo: 'Aplica a',
       amount: 'Monto programado',
-      nextDueDate: 'Próximo vencimiento',
+      nextExecutionDate: 'Próxima ejecución',
       active: 'Activa',
       actions: 'Acciones',
     },
@@ -609,13 +609,13 @@ const DEFAULT_PAYMENTS_STRINGS = {
     },
     lateFeeLabel: 'Recargo',
     lateFeeFrequencyLabel: 'Frecuencia de recargo',
+    paymentWindowLabel: 'Ventana de pago',
     periodLabel: 'Periodo de tiempo',
     periodPlaceholder: 'Selecciona un periodo',
     intervalLabel: 'Intervalo',
     startDateLabel: 'Fecha inicial',
     endDateLabel: 'Fecha final',
-    paymentMonthLabel: 'Mes de pago',
-    nextDueDateLabel: 'Próximo vencimiento',
+    nextExecutionDateLabel: 'Próxima ejecución',
     commentsLabel: 'Comentarios',
     cancel: 'Cancelar',
     submit: 'Crear programación',
@@ -1447,10 +1447,10 @@ const PaymentsFinancePage = ({
         align: 'end',
       },
       {
-        key: 'next_due_date',
+        key: 'next_execution_date',
         header: sortableHeader(
-          requestsRecurrencesTableStrings.columns.nextDueDate,
-          'next_due_date',
+          requestsRecurrencesTableStrings.columns.nextExecutionDate,
+          'next_execution_date',
         ),
       },
       {
@@ -2782,7 +2782,7 @@ const PaymentsFinancePage = ({
         requestsRecurrencesTableStrings.columns.recurrenceType,
         requestsRecurrencesTableStrings.columns.appliesTo,
         requestsRecurrencesTableStrings.columns.amount,
-        requestsRecurrencesTableStrings.columns.nextDueDate,
+        requestsRecurrencesTableStrings.columns.nextExecutionDate,
         requestsRecurrencesTableStrings.columns.active,
       ];
       const headerRow = headerLabels.map(escapeValue).join(',');
@@ -2797,8 +2797,8 @@ const PaymentsFinancePage = ({
           normalizedAmount != null
             ? currencyFormatter.format(normalizedAmount)
             : row?.amount ?? '';
-        const nextDueDateValue = row?.next_due_date
-          ? new Date(row.next_due_date).toISOString().slice(0, 10)
+        const nextExecutionDateValue = row?.next_execution_date
+          ? new Date(row.next_execution_date).toISOString().slice(0, 10)
           : '';
         const activeLabel = row?.active
           ? requestsRecurrencesTableStrings.activeYes
@@ -2811,7 +2811,7 @@ const PaymentsFinancePage = ({
           escapeValue(row?.pot_name),
           escapeValue(row?.applies_to),
           escapeValue(amountValue),
-          escapeValue(nextDueDateValue),
+          escapeValue(nextExecutionDateValue),
           escapeValue(activeLabel),
         ].join(',');
       });
@@ -3488,14 +3488,14 @@ const PaymentsFinancePage = ({
                           : row?.amount != null
                           ? String(row.amount)
                           : '';
-                      const nextDueDateLabel = (() => {
-                        if (!row?.next_due_date) {
+                      const nextExecutionDateLabel = (() => {
+                        if (!row?.next_execution_date) {
                           return '';
                         }
 
-                        const parsed = new Date(row.next_due_date);
+                        const parsed = new Date(row.next_execution_date);
                         return Number.isNaN(parsed.getTime())
-                          ? String(row.next_due_date)
+                          ? String(row.next_execution_date)
                           : dateFormatter.format(parsed);
                       })();
                       const activeLabel = row?.active
@@ -3531,9 +3531,9 @@ const PaymentsFinancePage = ({
                               <span>--</span>
                             )}
                           </td>
-                          <td data-title={requestsRecurrencesTableStrings.columns.nextDueDate}>
-                            {nextDueDateLabel ? (
-                              nextDueDateLabel
+                          <td data-title={requestsRecurrencesTableStrings.columns.nextExecutionDate}>
+                            {nextExecutionDateLabel ? (
+                              nextExecutionDateLabel
                             ) : (
                               <span>--</span>
                             )}

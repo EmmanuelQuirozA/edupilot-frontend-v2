@@ -26,19 +26,19 @@ const DEFAULT_STRINGS = {
   conceptPlaceholder: 'Selecciona un concepto',
   amountLabel: 'Monto',
   feeTypeLabel: 'Tipo de recargo',
+  lateFeeLabel: 'Recargo',
   feeTypeOptions: {
     currency: '$',
     percentage: '%',
   },
-  lateFeeLabel: 'Recargo',
   lateFeeFrequencyLabel: 'Frecuencia de recargo',
+  paymentWindowLabel: 'Ventana de pago',
   periodLabel: 'Periodo de tiempo',
   periodPlaceholder: 'Selecciona un periodo',
   intervalLabel: 'Intervalo',
   startDateLabel: 'Fecha inicial',
   endDateLabel: 'Fecha final',
-  paymentMonthLabel: 'Mes de pago',
-  nextDueDateLabel: 'Próximo vencimiento',
+  nextExecutionDateLabel: 'Próxima ejecución',
   commentsLabel: 'Comentarios',
   cancel: 'Cancelar',
   submit: 'Crear programación',
@@ -108,24 +108,6 @@ const parseNumeric = (value, { allowZero = true, integer = false } = {}) => {
   return parsed;
 };
 
-const formatMonthValue = (value) => {
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-
-  if (!trimmed) {
-    return undefined;
-  }
-
-  if (/^\d{4}-\d{2}$/.test(trimmed)) {
-    return `${trimmed}-01`;
-  }
-
-  return trimmed;
-};
-
 const SchedulePaymentRequestModal = ({
   isOpen,
   onClose,
@@ -152,12 +134,12 @@ const SchedulePaymentRequestModal = ({
   const [feeType, setFeeType] = useState('$');
   const [lateFee, setLateFee] = useState('');
   const [lateFeeFrequency, setLateFeeFrequency] = useState('');
+  const [paymentWindow, setPaymentWindow] = useState('');
   const [periodId, setPeriodId] = useState('');
   const [intervalCount, setIntervalCount] = useState('1');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [paymentMonth, setPaymentMonth] = useState('');
-  const [nextDueDate, setNextDueDate] = useState('');
+  const [nextExecutionDate, setNextExecutionDate] = useState('');
   const [comments, setComments] = useState('');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -180,12 +162,12 @@ const SchedulePaymentRequestModal = ({
     setFeeType('$');
     setLateFee('');
     setLateFeeFrequency('');
+    setPaymentWindow('');
     setPeriodId('');
     setIntervalCount('1');
     setStartDate('');
     setEndDate('');
-    setPaymentMonth('');
-    setNextDueDate('');
+    setNextExecutionDate('');
     setComments('');
     setFormError('');
     setIsSubmitting(false);
@@ -471,7 +453,15 @@ const SchedulePaymentRequestModal = ({
         return;
       }
 
-      if (!paymentConceptId || !amount || !periodId || !intervalCount || !startDate || !endDate || !nextDueDate) {
+      if (
+        !paymentConceptId ||
+        !amount ||
+        !periodId ||
+        !intervalCount ||
+        !startDate ||
+        !nextExecutionDate ||
+        paymentWindow === ''
+      ) {
         setFormError(mergedStrings.requiredField);
         return;
       }
@@ -494,14 +484,15 @@ const SchedulePaymentRequestModal = ({
       const amountValue = parseNumeric(amount, { allowZero: false });
       const lateFeeValue = parseNumeric(lateFee, { allowZero: true });
       const frequencyValue = parseNumeric(lateFeeFrequency, { allowZero: true, integer: true });
+      const paymentWindowValue = parseNumeric(paymentWindow, { allowZero: true, integer: true });
       const intervalValue = parseNumeric(intervalCount, { allowZero: false, integer: true });
 
-      if (amountValue == null || intervalValue == null) {
+      if (amountValue == null || intervalValue == null || paymentWindowValue == null) {
         setFormError(mergedStrings.requiredField);
         return;
       }
 
-      if (amountValue < 0 || intervalValue <= 0) {
+      if (amountValue < 0 || intervalValue <= 0 || paymentWindowValue < 0) {
         setFormError(mergedStrings.requiredField);
         return;
       }
@@ -525,13 +516,13 @@ const SchedulePaymentRequestModal = ({
         fee_type: feeType || '$',
         late_fee: lateFeeValue ?? 0,
         late_fee_frequency: frequencyValue ?? 0,
+        payment_window: paymentWindowValue ?? 0,
         period_of_time_id: Number(periodId),
         interval_count: intervalValue,
         start_date: startDate,
-        end_date: endDate,
+        end_date: endDate || undefined,
         comments: comments || undefined,
-        payment_month: formatMonthValue(paymentMonth),
-        next_due_date: nextDueDate,
+        next_execution_date: nextExecutionDate,
       };
 
       setIsSubmitting(true);
@@ -581,12 +572,12 @@ const SchedulePaymentRequestModal = ({
       logout,
       mergedStrings.error,
       mergedStrings.requiredField,
-      nextDueDate,
+      nextExecutionDate,
       normalizedLanguage,
       onClose,
       onSuccess,
       paymentConceptId,
-      paymentMonth,
+      paymentWindow,
       periodId,
       ruleNameEn,
       ruleNameEs,
@@ -792,32 +783,30 @@ const SchedulePaymentRequestModal = ({
                       />
                     </div>
                     <div className="col-sm-6">
-                      <label htmlFor="schedule-request-feetype" className="form-label">
-                        {mergedStrings.feeTypeLabel}
-                      </label>
-                      <select
-                        id="schedule-request-feetype"
-                        className="form-select"
-                        value={feeType}
-                        onChange={(event) => setFeeType(event.target.value)}
-                      >
-                        <option value="$">{mergedStrings.feeTypeOptions.currency}</option>
-                        <option value="%">{mergedStrings.feeTypeOptions.percentage}</option>
-                      </select>
-                    </div>
-                    <div className="col-sm-6">
                       <label htmlFor="schedule-request-latefee" className="form-label">
                         {mergedStrings.lateFeeLabel}
                       </label>
-                      <input
-                        id="schedule-request-latefee"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="form-control"
-                        value={lateFee}
-                        onChange={(event) => setLateFee(event.target.value)}
-                      />
+                      <div className="input-group schedule-payment-request__fee-input-group">
+                        <input
+                          id="schedule-request-latefee"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          className="form-control"
+                          value={lateFee}
+                          onChange={(event) => setLateFee(event.target.value)}
+                        />
+                        <select
+                          id="schedule-request-feetype"
+                          className="form-select"
+                          value={feeType}
+                          onChange={(event) => setFeeType(event.target.value)}
+                          aria-label={mergedStrings.feeTypeLabel || mergedStrings.lateFeeLabel}
+                        >
+                          <option value="$">{mergedStrings.feeTypeOptions.currency}</option>
+                          <option value="%">{mergedStrings.feeTypeOptions.percentage}</option>
+                        </select>
+                      </div>
                     </div>
                     <div className="col-sm-6">
                       <label htmlFor="schedule-request-frequency" className="form-label">
@@ -831,6 +820,20 @@ const SchedulePaymentRequestModal = ({
                         className="form-control"
                         value={lateFeeFrequency}
                         onChange={(event) => setLateFeeFrequency(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-sm-6">
+                      <label htmlFor="schedule-request-payment-window" className="form-label">
+                        {mergedStrings.paymentWindowLabel}
+                      </label>
+                      <input
+                        id="schedule-request-payment-window"
+                        type="number"
+                        step="1"
+                        min="0"
+                        className="form-control"
+                        value={paymentWindow}
+                        onChange={(event) => setPaymentWindow(event.target.value)}
                       />
                     </div>
                     <div className="col-sm-6">
@@ -893,27 +896,15 @@ const SchedulePaymentRequestModal = ({
                       />
                     </div>
                     <div className="col-sm-6">
-                      <label htmlFor="schedule-request-month" className="form-label">
-                        {mergedStrings.paymentMonthLabel}
+                      <label htmlFor="schedule-request-next-execution" className="form-label">
+                        {mergedStrings.nextExecutionDateLabel}
                       </label>
                       <input
-                        id="schedule-request-month"
-                        type="month"
-                        className="form-control"
-                        value={paymentMonth}
-                        onChange={(event) => setPaymentMonth(event.target.value)}
-                      />
-                    </div>
-                    <div className="col-sm-6">
-                      <label htmlFor="schedule-request-next-due" className="form-label">
-                        {mergedStrings.nextDueDateLabel}
-                      </label>
-                      <input
-                        id="schedule-request-next-due"
+                        id="schedule-request-next-execution"
                         type="date"
                         className="form-control"
-                        value={nextDueDate}
-                        onChange={(event) => setNextDueDate(event.target.value)}
+                        value={nextExecutionDate}
+                        onChange={(event) => setNextExecutionDate(event.target.value)}
                       />
                     </div>
                     <div className="col-12">
