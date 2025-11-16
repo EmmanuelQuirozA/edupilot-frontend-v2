@@ -17,6 +17,10 @@ const DEFAULT_STRINGS = {
   generalTitle: 'Detalles de la solicitud',
   studentTitle: 'Información del alumno',
   viewStudent: 'Ver detalle del alumno',
+  booleans: {
+    yes: 'Sí',
+    no: 'No',
+  },
   contactLabels: {
     email: 'Correo electrónico',
     phone: 'Teléfono',
@@ -70,6 +74,12 @@ const DEFAULT_STRINGS = {
       date: 'Fecha',
       amount: 'Monto',
       balance: 'Saldo',
+    },
+    typeLabels: {
+      payment: 'Pago',
+      late_fee: 'Recargo',
+      closed_at: 'Cierre',
+      initial_payment_request: 'Solicitud inicial',
     },
   },
   tabs: {
@@ -183,20 +193,70 @@ const formatCurrency = (value, language) => {
   }).format(numeric);
 };
 
-const getFeeTypeLabel = (value) => {
+const getFeeTypeLabel = (value, language) => {
   if (!value) {
     return '';
   }
 
   if (value === '%') {
-    return 'Porcentaje';
+    return language === 'en' ? 'Percentage' : 'Porcentaje';
   }
 
   if (value === '$') {
-    return 'Monto fijo';
+    return language === 'en' ? 'Fixed amount' : 'Monto fijo';
   }
 
   return value;
+};
+
+const parseNumericValue = (value) => {
+  if (value == null || value === '') {
+    return null;
+  }
+
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const getFriendlyText = (value) => {
+  if (value == null) {
+    return '';
+  }
+
+  const normalized = String(value).trim();
+  if (!normalized) {
+    return '';
+  }
+
+  const lower = normalized.toLowerCase();
+  if (lower === 'null' || lower === 'undefined') {
+    return '';
+  }
+
+  return normalized;
+};
+
+const getAmountClassName = (type) => {
+  if (type === 'late_fee') {
+    return 'payment-request-detail__amount--late';
+  }
+
+  if (type === 'payment') {
+    return 'payment-request-detail__amount--payment';
+  }
+
+  return '';
+};
+
+const getBalanceClassName = (balance) => {
+  const numeric = parseNumericValue(balance);
+  if (numeric == null) {
+    return '';
+  }
+
+  return numeric < 0
+    ? 'payment-request-detail__balance--negative'
+    : 'payment-request-detail__balance--positive';
 };
 
 const buildFormState = (paymentRequest) => ({
@@ -244,6 +304,12 @@ const PaymentRequestDetailPage = ({
   const payments = Array.isArray(details?.payments) ? details.payments : [];
   const paymentInfo = details?.paymentInfo ?? null;
   const breakdown = Array.isArray(details?.breakdown) ? details.breakdown : [];
+  const normalizedStudentEmail = typeof studentEmail === 'string' ? studentEmail.trim() : '';
+  const commentsValue = paymentRequest?.pr_comments;
+  const commentsText = useMemo(() => getFriendlyText(commentsValue), [commentsValue]);
+  const commentsContent = commentsText || mergedStrings.comments.empty;
+  const yesLabel = mergedStrings.booleans?.yes ?? (language === 'en' ? 'Yes' : 'Sí');
+  const noLabel = mergedStrings.booleans?.no ?? 'No';
 
   const fetchDetails = useCallback(async () => {
     if (!safeRequestId) {
@@ -356,12 +422,12 @@ const PaymentRequestDetailPage = ({
       { label: mergedStrings.fields.gradeGroup, value: student?.grade_group },
       { label: mergedStrings.fields.lateFee, value: formatCurrency(paymentRequest.late_fee, language) },
       { label: mergedStrings.fields.frequency, value: paymentRequest.late_fee_frequency },
-      { label: mergedStrings.fields.feeType, value: getFeeTypeLabel(paymentRequest.fee_type) },
+      { label: mergedStrings.fields.feeType, value: getFeeTypeLabel(paymentRequest.fee_type, language) },
       { label: mergedStrings.fields.paymentMonth, value: formatMonth(paymentRequest.payment_month, language) },
-      { label: mergedStrings.fields.partialPayment, value: paymentRequest.partial_payment ? 'Sí' : 'No' },
+      { label: mergedStrings.fields.partialPayment, value: paymentRequest.partial_payment ? yesLabel : noLabel },
       { label: mergedStrings.fields.closedAt, value: formatDateTime(paymentRequest.closed_at, language) },
     ].filter((item) => item.value !== undefined && item.value !== null && item.value !== '');
-  }, [language, mergedStrings.fields, paymentRequest, student]);
+  }, [language, mergedStrings.fields, noLabel, paymentRequest, student, yesLabel]);
 
   const paymentInfoItems = useMemo(() => {
     if (!paymentInfo) {
@@ -369,27 +435,53 @@ const PaymentRequestDetailPage = ({
     }
 
     return [
-      { label: mergedStrings.paymentInfo.fields.totalPaid, value: formatCurrency(paymentInfo.totalPaid, language) },
-      { label: mergedStrings.paymentInfo.fields.latePeriods, value: paymentInfo.latePeriods },
-      { label: mergedStrings.paymentInfo.fields.lateFeeTotal, value: formatCurrency(paymentInfo.lateFeeTotal, language) },
-      { label: mergedStrings.paymentInfo.fields.accumulatedFees, value: formatCurrency(paymentInfo.accumulatedFees, language) },
-      { label: mergedStrings.paymentInfo.fields.pendingPayment, value: formatCurrency(paymentInfo.pendingPayment, language) },
-    ].filter((item) => item.value !== undefined && item.value !== null && item.value !== '');
+      {
+        key: 'totalPaid',
+        label: mergedStrings.paymentInfo.fields.totalPaid,
+        value: formatCurrency(paymentInfo.totalPaid, language),
+        rawValue: paymentInfo.totalPaid,
+      },
+      {
+        key: 'latePeriods',
+        label: mergedStrings.paymentInfo.fields.latePeriods,
+        value: paymentInfo.latePeriods,
+        rawValue: paymentInfo.latePeriods,
+      },
+      {
+        key: 'lateFeeTotal',
+        label: mergedStrings.paymentInfo.fields.lateFeeTotal,
+        value: formatCurrency(paymentInfo.lateFeeTotal, language),
+        rawValue: paymentInfo.lateFeeTotal,
+      },
+      {
+        key: 'accumulatedFees',
+        label: mergedStrings.paymentInfo.fields.accumulatedFees,
+        value: formatCurrency(paymentInfo.accumulatedFees, language),
+        rawValue: paymentInfo.accumulatedFees,
+      },
+      {
+        key: 'pendingPayment',
+        label: mergedStrings.paymentInfo.fields.pendingPayment,
+        value: formatCurrency(paymentInfo.pendingPayment, language),
+        rawValue: paymentInfo.pendingPayment,
+      },
+    ]
+      .filter((item) => item.value !== undefined && item.value !== null && item.value !== '')
+      .map((item) => ({
+        ...item,
+        valueClassName:
+          item.key === 'pendingPayment' && parseNumericValue(item.rawValue) > 0
+            ? 'payment-request-detail__summary-value--danger'
+            : '',
+      }));
   }, [language, mergedStrings.paymentInfo.fields, paymentInfo]);
 
   const breakdownWithLabels = useMemo(() => {
-    const typeLabels = {
-      payment: 'Pago',
-      late_fee: 'Recargo',
-      closed_at: 'Cierre',
-      initial_payment_request: 'Solicitud inicial',
-    };
-
     return breakdown.map((item) => ({
       ...item,
-      typeLabel: typeLabels[item.type] ?? item.type,
+      typeLabel: mergedStrings.breakdown?.typeLabels?.[item.type] ?? item.type,
     }));
-  }, [breakdown]);
+  }, [breakdown, mergedStrings.breakdown]);
 
   const updatePaymentRequest = useCallback(
     async (payload) => {
@@ -510,6 +602,17 @@ const PaymentRequestDetailPage = ({
       registerId: student.payment_reference,
     });
   }, [onStudentDetail, student]);
+
+  const handleEmailClick = useCallback(() => {
+    if (!normalizedStudentEmail) {
+      return;
+    }
+
+    const mailto = `mailto:${encodeURIComponent(normalizedStudentEmail)}`;
+    if (typeof window !== 'undefined') {
+      window.location.href = mailto;
+    }
+  }, [normalizedStudentEmail]);
 
   const handlePrint = useCallback(async () => {
     if (typeof window === 'undefined' || typeof document === 'undefined' || !detailRef.current) {
@@ -651,7 +754,7 @@ const PaymentRequestDetailPage = ({
   return (
     <div className="page">
       <header className="page__header page__header--actions">
-        <ActionButton type="button" variant="text" onClick={onNavigateBack}>
+        <ActionButton type="button" variant="text" onClick={() => onNavigateBack?.()}>
           {mergedStrings.back}
         </ActionButton>
         <div className="payment-request-detail__actions">
@@ -688,7 +791,7 @@ const PaymentRequestDetailPage = ({
                     {paymentInfoItems.map((item) => (
                       <div key={item.label} className="payment-request-detail__summary-item">
                         <span>{item.label}</span>
-                        <strong>{item.value ?? '—'}</strong>
+                        <strong className={item.valueClassName || undefined}>{item.value ?? '—'}</strong>
                       </div>
                     ))}
                   </div>
@@ -716,7 +819,17 @@ const PaymentRequestDetailPage = ({
                 <div className="payment-request-detail__student-extra">
                   <div>
                     <span>{mergedStrings.contactLabels.email}</span>
-                    <strong>{studentEmail || '—'}</strong>
+                    {normalizedStudentEmail ? (
+                      <button
+                        type="button"
+                        className="payment-request-detail__email-button"
+                        onClick={handleEmailClick}
+                      >
+                        {normalizedStudentEmail}
+                      </button>
+                    ) : (
+                      <strong>—</strong>
+                    )}
                   </div>
                   <div>
                     <span>{mergedStrings.contactLabels.phone}</span>
@@ -947,8 +1060,16 @@ const PaymentRequestDetailPage = ({
                               <td>{item.typeLabel ?? '—'}</td>
                               <td>{item.status_name ?? '—'}</td>
                               <td>{formatDateTime(item.date, language)}</td>
-                              <td>{formatCurrency(item.amount, language) || '—'}</td>
-                              <td>{formatCurrency(item.balance, language) || '—'}</td>
+                              <td
+                                className={`payment-request-detail__amount ${getAmountClassName(item.type)}`.trim()}
+                              >
+                                {formatCurrency(item.amount, language) || '—'}
+                              </td>
+                              <td
+                                className={`payment-request-detail__balance ${getBalanceClassName(item.balance)}`.trim()}
+                              >
+                                {formatCurrency(item.balance, language) || '—'}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -957,10 +1078,10 @@ const PaymentRequestDetailPage = ({
                   )
                 ) : (
                   <div className="payment-request-detail__activity">
-                    <div className="payment-request-detail__comments">
-                      <h3>{mergedStrings.comments.title}</h3>
-                      <p>{paymentRequest?.pr_comments || mergedStrings.comments.empty}</p>
-                    </div>
+                  <div className="payment-request-detail__comments">
+                    <h3>{mergedStrings.comments.title}</h3>
+                    <p>{commentsContent}</p>
+                  </div>
                     <div className="payment-request-detail__logs">
                       <h3>{mergedStrings.logs.title}</h3>
                       {logsError ? (
