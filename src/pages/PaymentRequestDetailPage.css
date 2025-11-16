@@ -101,7 +101,10 @@
   font: inherit;
   font-weight: 600;
   color: #2563eb;
-  text-decoration: underline;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -117,12 +120,19 @@
   gap: 0.35rem;
   font-weight: 600;
   color: #16a34a;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .payment-request-detail__phone-link:hover,
 .payment-request-detail__phone-link:focus {
   color: #15803d;
+}
+
+.payment-request-detail__contact-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  fill: currentColor;
 }
 
 .payment-request-detail__summary-grid {

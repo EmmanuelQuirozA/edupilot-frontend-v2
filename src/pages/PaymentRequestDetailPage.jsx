@@ -8,6 +8,28 @@ import { handleExpiredToken } from '../utils/auth.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import './PaymentRequestDetailPage.css';
 
+const EmailIcon = () => (
+  <svg
+    className="payment-request-detail__contact-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm0 2v.01L12 13l8-5.99V7H4zm0 10h16V9.24l-7.553 5.65a1 1 0 0 1-1.194 0L4 9.24V17z" />
+  </svg>
+);
+
+const WhatsappIcon = () => (
+  <svg
+    className="payment-request-detail__contact-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M12 2a10 10 0 0 0-8.94 14.5L2 22l5.76-1.52A10 10 0 1 0 12 2zm0 2a8 8 0 1 1 0 16 7.9 7.9 0 0 1-3.56-.86l-.41-.2-3.05.8.82-2.94-.22-.41A7.9 7.9 0 0 1 12 4zm4.08 4.78c-.23-.36-.44-.36-.64-.37-.17-.01-.37-.02-.57-.02-.2 0-.53.08-.81.39-.28.31-1.07 1.04-1.07 2.52s1.1 2.92 1.26 3.12c.16.2 2 3.17 4.94 4.32 2.45.96 2.94.77 3.47.72.53-.05 1.8-.69 2.04-1.36.24-.67.24-1.25.18-1.36-.07-.11-.29-.2-.61-.35-.32-.15-1.75-.86-2.05-.96-.3-.1-.49-.15-.69.15-.2.3-.8.95-.99 1.15-.2.2-.36.22-.69.08-.33-.14-1.29-.47-2.25-1.33-.96-.86-1.6-1.9-1.78-2.22-.18-.32-.02-.46.12-.63.14-.17.32-.31.48-.49.16-.18.2-.29.3-.47.1-.18.05-.34-.02-.48-.08-.15-.64-1.57-.89-2.17z" />
+  </svg>
+);
+
 const DEFAULT_STRINGS = {
   breadcrumbFallback: 'Detalle de solicitud',
   back: 'Volver a solicitudes',
@@ -828,7 +850,8 @@ const PaymentRequestDetailPage = ({
                         className="payment-request-detail__email-button"
                         onClick={handleEmailClick}
                       >
-                        {normalizedStudentEmail}
+                        <EmailIcon />
+                        <span>{normalizedStudentEmail}</span>
                       </button>
                     ) : (
                       <strong>—</strong>
@@ -843,7 +866,8 @@ const PaymentRequestDetailPage = ({
                         rel="noopener noreferrer"
                         className="payment-request-detail__phone-link"
                       >
-                        {normalizedStudentPhone}
+                        <WhatsappIcon />
+                        <span>{normalizedStudentPhone}</span>
                       </a>
                     ) : (
                       <strong>{studentPhone || '—'}</strong>
