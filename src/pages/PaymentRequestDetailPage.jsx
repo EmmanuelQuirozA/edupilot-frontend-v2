@@ -236,7 +236,7 @@ const buildPaymentRequestBreadcrumbLabel = (payload, fallbackLabel, fallbackId) 
   const requestId = requestIdCandidate != null ? String(requestIdCandidate).trim() : '';
 
   if (studentName && requestId) {
-    return `${studentName.trim()} → ${requestId}`;
+    return `${requestId}`;
   }
 
   if (studentName) {

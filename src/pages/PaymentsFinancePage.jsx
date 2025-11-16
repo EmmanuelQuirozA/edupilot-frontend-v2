@@ -3512,30 +3512,30 @@ const PaymentsFinancePage = ({
                           </td>
                           <td data-title={requestsRecurrencesTableStrings.columns.ruleName}>
                             {row?.rule_name ?? (
-                              <span className="ui-table__empty-indicator">--</span>
+                              <span>--</span>
                             )}
                           </td>
                           <td data-title={requestsRecurrencesTableStrings.columns.concept}>
-                            {row?.pt_name ?? <span className="ui-table__empty-indicator">--</span>}
+                            {row?.pt_name ?? <span>--</span>}
                           </td>
                           <td data-title={requestsRecurrencesTableStrings.columns.recurrenceType}>
-                            {row?.pot_name ?? <span className="ui-table__empty-indicator">--</span>}
+                            {row?.pot_name ?? <span>--</span>}
                           </td>
                           <td data-title={requestsRecurrencesTableStrings.columns.appliesTo}>
-                            {row?.applies_to ?? <span className="ui-table__empty-indicator">--</span>}
+                            {row?.applies_to ?? <span>--</span>}
                           </td>
                           <td data-title={requestsRecurrencesTableStrings.columns.amount} className="text-end">
                             {formattedAmount ? (
                               formattedAmount
                             ) : (
-                              <span className="ui-table__empty-indicator">--</span>
+                              <span>--</span>
                             )}
                           </td>
                           <td data-title={requestsRecurrencesTableStrings.columns.nextDueDate}>
                             {nextDueDateLabel ? (
                               nextDueDateLabel
                             ) : (
-                              <span className="ui-table__empty-indicator">--</span>
+                              <span>--</span>
                             )}
                           </td>
                           <td data-title={requestsRecurrencesTableStrings.columns.active}>
