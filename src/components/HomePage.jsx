@@ -30,6 +30,7 @@ const HomePage = ({
   onStudentsSectionChange,
   onNavigateToPaymentDetail,
   onNavigateToPaymentRequestDetail,
+  onNavigateToPaymentRequestScheduleDetail,
   onNavigateToPaymentRequestResult,
 }) => {
   const { user, logout } = useAuth();
@@ -50,16 +51,26 @@ const HomePage = ({
   const paymentsSecondarySegment = paymentsRouteSegments[1] ?? '';
   const isPaymentRequestRoute = activePage === 'payments' && paymentsPrimarySegment === 'requests';
   const isPaymentDetailRoute = activePage === 'payments' && paymentsPrimarySegment === 'detail';
-  const isPaymentRequestDetailRoute = isPaymentRequestRoute && paymentsSecondarySegment === 'detail';
   const isPaymentRequestResultRoute = isPaymentRequestRoute && paymentsSecondarySegment === 'result';
+  const isPaymentRequestScheduledRoute = isPaymentRequestRoute && paymentsSecondarySegment === 'scheduled';
+  const isPaymentRequestScheduleDetailRoute =
+    isPaymentRequestScheduledRoute && paymentsRouteSegments.length > 2;
+  const isPaymentRequestDetailRoute =
+    isPaymentRequestRoute &&
+    Boolean(paymentsSecondarySegment) &&
+    paymentsSecondarySegment !== 'scheduled' &&
+    paymentsSecondarySegment !== 'result';
   const isPaymentDetailActive =
-    isPaymentDetailRoute || isPaymentRequestDetailRoute || isPaymentRequestResultRoute;
+    isPaymentDetailRoute ||
+    isPaymentRequestDetailRoute ||
+    isPaymentRequestResultRoute ||
+    isPaymentRequestScheduleDetailRoute;
   const paymentsSectionKey = (() => {
     if (activePage !== 'payments') {
       return 'tuition';
     }
 
-    if (isPaymentRequestDetailRoute || isPaymentRequestResultRoute) {
+    if (isPaymentRequestDetailRoute || isPaymentRequestResultRoute || isPaymentRequestScheduleDetailRoute) {
       return 'requests';
     }
 
@@ -289,6 +300,17 @@ const HomePage = ({
     [onNavigateToPaymentRequestDetail],
   );
 
+  const handlePaymentRequestScheduleDetailNavigate = useCallback(
+    (scheduleId, options) => {
+      if (!scheduleId) {
+        return;
+      }
+
+      onNavigateToPaymentRequestScheduleDetail?.(scheduleId, options);
+    },
+    [onNavigateToPaymentRequestScheduleDetail],
+  );
+
   const handlePaymentRequestResultNavigate = useCallback(
     (options) => {
       onNavigateToPaymentRequestResult?.(options);
@@ -305,6 +327,7 @@ const HomePage = ({
       onStudentDetail={handleStudentDetailNavigate}
       onPaymentDetail={handlePaymentDetailNavigate}
       onPaymentRequestDetail={handlePaymentRequestDetailNavigate}
+      onPaymentRequestScheduleDetail={handlePaymentRequestScheduleDetailNavigate}
       onPaymentRequestResult={handlePaymentRequestResultNavigate}
       onPaymentBreadcrumbChange={setPaymentDetailBreadcrumbLabel}
       activeSectionKey={paymentsSectionKey}
@@ -377,17 +400,6 @@ const HomePage = ({
       return items;
     }
 
-    if (isPaymentDetailActive) {
-      items.push({
-        label: t.home.menu.items.payments,
-        onClick: () => handleNavClick('payments'),
-      });
-      items.push({
-        label: paymentDetailBreadcrumbLabel,
-      });
-      return items;
-    }
-
     if (isBulkUploadActive) {
       items.push({
         label: t.home.menu.items.students,
@@ -399,6 +411,47 @@ const HomePage = ({
       return items;
     }
 
+    if (activePage === 'payments') {
+      items.push({
+        label: t.home.menu.items.payments,
+        onClick: () => handleNavClick('payments'),
+      });
+
+      if (isPaymentRequestRoute) {
+        const requestsLabel =
+          t.home.paymentsPage.tabs?.requests ?? t.home.menu.items.payments;
+        items.push({
+          label: requestsLabel,
+          onClick: () => handlePaymentsSectionChange('requests'),
+        });
+
+        if (isPaymentRequestScheduledRoute) {
+          const scheduledLabel =
+            t.home.paymentsPage.requestsViews?.scheduled ?? requestsLabel;
+          items.push({
+            label: scheduledLabel,
+            onClick: () => handlePaymentsSectionChange('requests', { subPath: 'scheduled' }),
+          });
+        }
+
+        if (isPaymentDetailActive) {
+          items.push({
+            label: paymentDetailBreadcrumbLabel,
+          });
+        }
+
+        return items;
+      }
+
+      if (isPaymentDetailRoute) {
+        items.push({
+          label: paymentDetailBreadcrumbLabel,
+        });
+      }
+
+      return items;
+    }
+
     items.push({
       label: t.home.menu.items[activePage] ?? headerTitle,
     });
@@ -407,16 +460,22 @@ const HomePage = ({
   }, [
     activePage,
     detailBreadcrumbLabel,
-    headerTitle,
     handleNavClick,
+    handlePaymentsSectionChange,
+    headerTitle,
     isBulkUploadActive,
     isPaymentDetailActive,
-    paymentDetailBreadcrumbLabel,
+    isPaymentDetailRoute,
+    isPaymentRequestRoute,
+    isPaymentRequestScheduledRoute,
     isStudentDetailActive,
+    paymentDetailBreadcrumbLabel,
     studentsBulkStrings.breadcrumb,
     studentsPageStrings.actions.bulkUpload,
     t.home.menu.items,
     t.home.menu.items.payments,
+    t.home.paymentsPage.requestsViews?.scheduled,
+    t.home.paymentsPage.tabs?.requests,
   ]);
 
   const toggleSidebar = () => {
