@@ -94,6 +94,23 @@
   color: #0f172a;
 }
 
+.payment-request-detail__email-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.payment-request-detail__email-button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
 .payment-request-detail__summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -119,6 +136,10 @@
   color: #0f172a;
 }
 
+.payment-request-detail__summary-value--danger {
+  color: #dc2626;
+}
+
 .payment-request-detail__table-wrapper {
   width: 100%;
   overflow-x: auto;
@@ -142,6 +163,21 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #475569;
+}
+
+.payment-request-detail__amount,
+.payment-request-detail__balance {
+  font-weight: 600;
+}
+
+.payment-request-detail__amount--payment,
+.payment-request-detail__balance--positive {
+  color: #15803d;
+}
+
+.payment-request-detail__amount--late,
+.payment-request-detail__balance--negative {
+  color: #dc2626;
 }
 
 .payment-request-detail__table tbody tr:nth-child(even) {
