@@ -621,6 +621,15 @@ const PaymentRequestDetailPage = ({
     });
   }, [onStudentDetail, student]);
 
+  const canViewStudent = Boolean(onStudentDetail && student?.student_id);
+  const studentNameButtonProps = useMemo(() => {
+    if (!mergedStrings.viewStudent) {
+      return { 'aria-label': 'Ver detalle del alumno' };
+    }
+
+    return { 'aria-label': mergedStrings.viewStudent };
+  }, [mergedStrings.viewStudent]);
+
   const handleEmailClick = useCallback(() => {
     if (!normalizedStudentEmail) {
       return;
@@ -817,22 +826,15 @@ const PaymentRequestDetailPage = ({
               )}
 
               <UiCard className="payment-request-detail__card">
-                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                  <h2 className="payment-request-detail__title mb-0">{mergedStrings.studentTitle}</h2>
-                  <ActionButton
-                    type="button"
-                    variant="secondary"
-                    onClick={handleViewStudent}
-                    disabled={!student?.student_id}
-                  >
-                    {mergedStrings.viewStudent ?? 'Ver detalle del alumno'}
-                  </ActionButton>
-                </div>
+                <h2 className="payment-request-detail__title mb-3">{mergedStrings.studentTitle}</h2>
                 <StudentInfo
                   name={student?.full_name}
                   fallbackName="—"
                   metaLabel={mergedStrings.fields.id}
                   metaValue={student?.payment_reference}
+                  onClick={canViewStudent ? handleViewStudent : undefined}
+                  disabled={!canViewStudent}
+                  nameButtonProps={canViewStudent ? studentNameButtonProps : undefined}
                 />
                 <div className="payment-request-detail__student-extra">
                   <div>
