@@ -23,6 +23,11 @@
   gap: 1rem;
 }
 
+.schedule-payment-request__fee-input-group .form-select {
+  flex: 0 0 auto;
+  width: 4.5rem;
+}
+
 @media (max-width: 576px) {
   .schedule-payment-request__footer {
     flex-direction: column-reverse;
