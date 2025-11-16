@@ -305,6 +305,9 @@ const PaymentRequestDetailPage = ({
   const paymentInfo = details?.paymentInfo ?? null;
   const breakdown = Array.isArray(details?.breakdown) ? details.breakdown : [];
   const normalizedStudentEmail = typeof studentEmail === 'string' ? studentEmail.trim() : '';
+  const normalizedStudentPhone = typeof studentPhone === 'string' ? studentPhone.trim() : '';
+  const whatsappPhoneNumber = normalizedStudentPhone.replace(/\D+/g, '');
+  const whatsappLink = whatsappPhoneNumber ? `https://wa.me/${whatsappPhoneNumber}` : '';
   const commentsValue = paymentRequest?.pr_comments;
   const commentsText = useMemo(() => getFriendlyText(commentsValue), [commentsValue]);
   const commentsContent = commentsText || mergedStrings.comments.empty;
@@ -833,7 +836,18 @@ const PaymentRequestDetailPage = ({
                   </div>
                   <div>
                     <span>{mergedStrings.contactLabels.phone}</span>
-                    <strong>{studentPhone || '—'}</strong>
+                    {whatsappLink ? (
+                      <a
+                        href={whatsappLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="payment-request-detail__phone-link"
+                      >
+                        {normalizedStudentPhone}
+                      </a>
+                    ) : (
+                      <strong>{studentPhone || '—'}</strong>
+                    )}
                   </div>
                 </div>
               </UiCard>
