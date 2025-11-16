@@ -1246,6 +1246,29 @@ const PaymentsFinancePage = ({
       }),
     [locale],
   );
+  const parseDateWithoutTimezoneShift = useCallback((value) => {
+    if (!value) {
+      return null;
+    }
+
+    if (typeof value === 'string') {
+      const trimmedValue = value.trim();
+      const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedValue);
+
+      if (dateOnlyMatch) {
+        const [, yearString, monthString, dayString] = dateOnlyMatch;
+        const year = Number(yearString);
+        const monthIndex = Number(monthString) - 1;
+        const day = Number(dayString);
+        const parsedDate = new Date(year, monthIndex, day);
+
+        return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+      }
+    }
+
+    const parsedDate = new Date(value);
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }, []);
   const displayedColumns = useMemo(
     () => [
       { key: 'student', label: columnLabels.student, sortable: true, orderKey: 'student' },
@@ -3493,10 +3516,8 @@ const PaymentsFinancePage = ({
                           return '';
                         }
 
-                        const parsed = new Date(row.next_execution_date);
-                        return Number.isNaN(parsed.getTime())
-                          ? String(row.next_execution_date)
-                          : dateFormatter.format(parsed);
+                        const parsed = parseDateWithoutTimezoneShift(row.next_execution_date);
+                        return parsed ? dateFormatter.format(parsed) : String(row.next_execution_date);
                       })();
                       const activeLabel = row?.active
                         ? requestsRecurrencesTableStrings.activeYes
