@@ -681,6 +681,50 @@ const PaymentRequestDetailPage = ({
             <div className="page__empty-state">{mergedStrings.error}</div>
           ) : (
             <>
+              {paymentInfoItems.length > 0 && (
+                <UiCard className="payment-request-detail__card">
+                  <h2 className="payment-request-detail__title">{mergedStrings.paymentInfo.title}</h2>
+                  <div className="payment-request-detail__summary-grid">
+                    {paymentInfoItems.map((item) => (
+                      <div key={item.label} className="payment-request-detail__summary-item">
+                        <span>{item.label}</span>
+                        <strong>{item.value ?? '—'}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </UiCard>
+              )}
+
+              <UiCard className="payment-request-detail__card">
+                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                  <h2 className="payment-request-detail__title mb-0">{mergedStrings.studentTitle}</h2>
+                  <ActionButton
+                    type="button"
+                    variant="secondary"
+                    onClick={handleViewStudent}
+                    disabled={!student?.student_id}
+                  >
+                    {mergedStrings.viewStudent ?? 'Ver detalle del alumno'}
+                  </ActionButton>
+                </div>
+                <StudentInfo
+                  name={student?.full_name}
+                  fallbackName="—"
+                  metaLabel={mergedStrings.fields.id}
+                  metaValue={student?.payment_reference}
+                />
+                <div className="payment-request-detail__student-extra">
+                  <div>
+                    <span>{mergedStrings.contactLabels.email}</span>
+                    <strong>{studentEmail || '—'}</strong>
+                  </div>
+                  <div>
+                    <span>{mergedStrings.contactLabels.phone}</span>
+                    <strong>{studentPhone || '—'}</strong>
+                  </div>
+                </div>
+              </UiCard>
+
               <UiCard className="payment-request-detail__card">
                 <div className="payment-request-detail__card-header">
                   <h1 className="payment-request-detail__title">{mergedStrings.generalTitle}</h1>
@@ -693,6 +737,22 @@ const PaymentRequestDetailPage = ({
                     >
                       {isEditing ? mergedStrings.edit.cancel : mergedStrings.edit.button}
                     </ActionButton>
+                  <ActionButton
+                    type="button"
+                    variant="primary"
+                    onClick={() => handleStatusChange(7)}
+                    disabled={isSaving}
+                  >
+                    {mergedStrings.statusActions.close}
+                  </ActionButton>
+                  <ActionButton
+                    type="button"
+                    variant="danger"
+                    onClick={() => handleStatusChange(8)}
+                    disabled={isSaving}
+                  >
+                    {mergedStrings.statusActions.cancel}
+                  </ActionButton>
                   </div>
                 </div>
 
@@ -803,70 +863,7 @@ const PaymentRequestDetailPage = ({
                     </div>
                   </form>
                 )}
-
-                <div className="payment-request-detail__status-actions">
-                  <ActionButton
-                    type="button"
-                    variant="primary"
-                    onClick={() => handleStatusChange(7)}
-                    disabled={isSaving}
-                  >
-                    {mergedStrings.statusActions.close}
-                  </ActionButton>
-                  <ActionButton
-                    type="button"
-                    variant="danger"
-                    onClick={() => handleStatusChange(8)}
-                    disabled={isSaving}
-                  >
-                    {mergedStrings.statusActions.cancel}
-                  </ActionButton>
-                </div>
               </UiCard>
-
-              <UiCard className="payment-request-detail__card">
-                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                  <h2 className="payment-request-detail__title mb-0">{mergedStrings.studentTitle}</h2>
-                  <ActionButton
-                    type="button"
-                    variant="secondary"
-                    onClick={handleViewStudent}
-                    disabled={!student?.student_id}
-                  >
-                    {mergedStrings.viewStudent ?? 'Ver detalle del alumno'}
-                  </ActionButton>
-                </div>
-                <StudentInfo
-                  name={student?.full_name}
-                  fallbackName="—"
-                  metaLabel={mergedStrings.fields.id}
-                  metaValue={student?.payment_reference}
-                />
-                <div className="payment-request-detail__student-extra">
-                  <div>
-                    <span>{mergedStrings.contactLabels.email}</span>
-                    <strong>{studentEmail || '—'}</strong>
-                  </div>
-                  <div>
-                    <span>{mergedStrings.contactLabels.phone}</span>
-                    <strong>{studentPhone || '—'}</strong>
-                  </div>
-                </div>
-              </UiCard>
-
-              {paymentInfoItems.length > 0 && (
-                <UiCard className="payment-request-detail__card">
-                  <h2 className="payment-request-detail__title">{mergedStrings.paymentInfo.title}</h2>
-                  <div className="payment-request-detail__summary-grid">
-                    {paymentInfoItems.map((item) => (
-                      <div key={item.label} className="payment-request-detail__summary-item">
-                        <span>{item.label}</span>
-                        <strong>{item.value ?? '—'}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </UiCard>
-              )}
 
               <UiCard className="payment-request-detail__card">
                 <h2 className="payment-request-detail__title">{mergedStrings.payments.title}</h2>
