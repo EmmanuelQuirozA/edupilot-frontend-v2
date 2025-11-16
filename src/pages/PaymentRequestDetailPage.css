@@ -111,6 +111,20 @@
   text-decoration: none;
 }
 
+.payment-request-detail__phone-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: #16a34a;
+  text-decoration: underline;
+}
+
+.payment-request-detail__phone-link:hover,
+.payment-request-detail__phone-link:focus {
+  color: #15803d;
+}
+
 .payment-request-detail__summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
