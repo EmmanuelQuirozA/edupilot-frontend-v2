@@ -731,7 +731,7 @@ const PaymentsFinancePage = ({
   const normalizedLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : 'es';
   const locale = getLocaleFromLanguage(normalizedLanguage);
   const paymentDetailBasePath = useMemo(
-    () => `/${normalizedLanguage}/payments/detail`,
+    () => `/${normalizedLanguage}/payments/payments`,
     [normalizedLanguage],
   );
   const paymentRequestsBasePath = useMemo(
@@ -748,7 +748,8 @@ const PaymentsFinancePage = ({
   const primaryRouteSegment = detailRouteSegments[0] ?? null;
   const secondaryRouteSegment = detailRouteSegments[1] ?? null;
   const tertiaryRouteSegment = detailRouteSegments[2] ?? null;
-  const isPaymentDetailRoute = primaryRouteSegment === 'detail';
+  const isPaymentDetailRoute =
+    primaryRouteSegment === 'payments' && detailRouteSegments.length > 1;
   const isPaymentRequestRoute = primaryRouteSegment === 'requests';
   const isPaymentRequestResultRoute = isPaymentRequestRoute && secondaryRouteSegment === 'result';
   const isPaymentRequestScheduledRoute = isPaymentRequestRoute && secondaryRouteSegment === 'scheduled';

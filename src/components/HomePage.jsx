@@ -18,6 +18,20 @@ const COLLAPSE_BREAKPOINT = 1200;
 const getIsDesktop = () =>
   typeof window === 'undefined' ? true : window.innerWidth >= COLLAPSE_BREAKPOINT;
 
+const decodeRouteSegment = (segment) => {
+  if (segment == null) {
+    return '';
+  }
+
+  const stringValue = typeof segment === 'string' ? segment : String(segment);
+
+  try {
+    return decodeURIComponent(stringValue);
+  } catch (decodeError) {
+    return stringValue;
+  }
+};
+
 const HomePage = ({
   language,
   onLanguageChange,
@@ -49,8 +63,12 @@ const HomePage = ({
   const paymentsRouteSegments = activePage === 'payments' ? routeSegments : [];
   const paymentsPrimarySegment = paymentsRouteSegments[0] ?? '';
   const paymentsSecondarySegment = paymentsRouteSegments[1] ?? '';
+  const paymentsTertiarySegment = paymentsRouteSegments[2] ?? '';
   const isPaymentRequestRoute = activePage === 'payments' && paymentsPrimarySegment === 'requests';
-  const isPaymentDetailRoute = activePage === 'payments' && paymentsPrimarySegment === 'detail';
+  const isPaymentsTabRoute =
+    activePage === 'payments' && paymentsPrimarySegment === 'payments' && !paymentsSecondarySegment;
+  const isPaymentDetailRoute =
+    activePage === 'payments' && paymentsPrimarySegment === 'payments' && Boolean(paymentsSecondarySegment);
   const isPaymentRequestResultRoute = isPaymentRequestRoute && paymentsSecondarySegment === 'result';
   const isPaymentRequestScheduledRoute = isPaymentRequestRoute && paymentsSecondarySegment === 'scheduled';
   const isPaymentRequestScheduleDetailRoute =
@@ -74,11 +92,15 @@ const HomePage = ({
       return 'requests';
     }
 
-    if (isPaymentDetailRoute) {
+    if (isPaymentDetailRoute || isPaymentsTabRoute) {
+      return 'payments';
+    }
+
+    if (!paymentsPrimarySegment || paymentsPrimarySegment === 'tuition') {
       return 'tuition';
     }
 
-    return paymentsPrimarySegment || 'tuition';
+    return paymentsPrimarySegment;
   })();
 
   const studentsRouteSegments = activePage === 'students' ? routeSegments : [];
@@ -434,7 +456,33 @@ const HomePage = ({
           });
         }
 
+        const scheduleFallbackLabel =
+          t.home.paymentsPage.detail?.breadcrumbFallback || t.home.menu.items.payments;
+        const scheduleDetailId = decodeRouteSegment(paymentsTertiarySegment);
+        const scheduleDetailLabel = scheduleDetailId
+          ? `${scheduleFallbackLabel} → ${scheduleDetailId}`
+          : scheduleFallbackLabel;
+        const detailLabel = isPaymentRequestScheduleDetailRoute
+          ? scheduleDetailLabel
+          : paymentDetailBreadcrumbLabel;
+
         if (isPaymentDetailActive) {
+          items.push({
+            label: detailLabel,
+          });
+        }
+
+        return items;
+      }
+
+      if (paymentsPrimarySegment === 'payments') {
+        const paymentsLabel = t.home.paymentsPage.tabs?.payments ?? t.home.menu.items.payments;
+        items.push({
+          label: paymentsLabel,
+          onClick: () => handlePaymentsSectionChange('payments'),
+        });
+
+        if (isPaymentDetailRoute) {
           items.push({
             label: paymentDetailBreadcrumbLabel,
           });
@@ -443,9 +491,12 @@ const HomePage = ({
         return items;
       }
 
-      if (isPaymentDetailRoute) {
+      if (paymentsPrimarySegment && paymentsPrimarySegment !== 'tuition') {
+        const paymentsLabel =
+          t.home.paymentsPage.tabs?.[paymentsPrimarySegment] ?? t.home.menu.items.payments;
         items.push({
-          label: paymentDetailBreadcrumbLabel,
+          label: paymentsLabel,
+          onClick: () => handlePaymentsSectionChange(paymentsPrimarySegment),
         });
       }
 
@@ -468,13 +519,18 @@ const HomePage = ({
     isPaymentDetailRoute,
     isPaymentRequestRoute,
     isPaymentRequestScheduledRoute,
+    isPaymentRequestScheduleDetailRoute,
+    paymentsPrimarySegment,
+    paymentsTertiarySegment,
     isStudentDetailActive,
     paymentDetailBreadcrumbLabel,
     studentsBulkStrings.breadcrumb,
     studentsPageStrings.actions.bulkUpload,
     t.home.menu.items,
     t.home.menu.items.payments,
+    t.home.paymentsPage.detail?.breadcrumbFallback,
     t.home.paymentsPage.requestsViews?.scheduled,
+    t.home.paymentsPage.tabs?.payments,
     t.home.paymentsPage.tabs?.requests,
   ]);
 
