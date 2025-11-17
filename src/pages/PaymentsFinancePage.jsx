@@ -1107,12 +1107,16 @@ const PaymentsFinancePage = ({
   const [paymentsFiltersDraft, setPaymentsFiltersDraft] = useState(
     () => ({ ...DEFAULT_PAYMENTS_FILTERS }),
   );
+  const [paymentsOrderBy, setPaymentsOrderBy] = useState('');
+  const [paymentsOrderDir, setPaymentsOrderDir] = useState('ASC');
   const [requestsFilters, setRequestsFilters] = useState(
     () => ({ ...DEFAULT_PAYMENT_REQUEST_FILTERS }),
   );
   const [requestsFiltersDraft, setRequestsFiltersDraft] = useState(
     () => ({ ...DEFAULT_PAYMENT_REQUEST_FILTERS }),
   );
+  const [requestsOrderBy, setRequestsOrderBy] = useState('');
+  const [requestsOrderDir, setRequestsOrderDir] = useState('ASC');
   const [recurrenceFilters, setRecurrenceFilters] = useState(
     () => ({ ...DEFAULT_PAYMENT_RECURRENCE_FILTERS }),
   );
@@ -1321,6 +1325,54 @@ const PaymentsFinancePage = ({
     [orderBy],
   );
 
+  const handlePaymentsSort = useCallback(
+    (orderKey) => {
+      if (!orderKey) {
+        return;
+      }
+
+      const isSameColumn = paymentsOrderBy === orderKey;
+
+      setPaymentsOrderDir((previousDir) => {
+        if (isSameColumn) {
+          return previousDir === 'ASC' ? 'DESC' : 'ASC';
+        }
+
+        return 'ASC';
+      });
+
+      setPaymentsOrderBy((previousOrderKey) =>
+        previousOrderKey === orderKey ? previousOrderKey : orderKey,
+      );
+      setPaymentsOffset(0);
+    },
+    [paymentsOrderBy],
+  );
+
+  const handleRequestsSort = useCallback(
+    (orderKey) => {
+      if (!orderKey) {
+        return;
+      }
+
+      const isSameColumn = requestsOrderBy === orderKey;
+
+      setRequestsOrderDir((previousDir) => {
+        if (isSameColumn) {
+          return previousDir === 'ASC' ? 'DESC' : 'ASC';
+        }
+
+        return 'ASC';
+      });
+
+      setRequestsOrderBy((previousOrderKey) =>
+        previousOrderKey === orderKey ? previousOrderKey : orderKey,
+      );
+      setRequestsOffset(0);
+    },
+    [requestsOrderBy],
+  );
+
   const renderSortIndicator = useCallback(
     (orderKey) => {
       const isActive = orderBy === orderKey;
@@ -1336,6 +1388,40 @@ const PaymentsFinancePage = ({
       );
     },
     [orderBy, orderDir],
+  );
+
+  const renderPaymentsSortIndicator = useCallback(
+    (orderKey) => {
+      const isActive = paymentsOrderBy === orderKey;
+      const direction = isActive ? paymentsOrderDir : null;
+      const upColor = isActive && direction !== 'DESC' ? '#4338ca' : '#c7d2fe';
+      const downColor = isActive && direction === 'DESC' ? '#4338ca' : '#c7d2fe';
+
+      return (
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M6 2l3 4H3l3-4Z" fill={upColor} />
+          <path d="M6 10l3-4H3l3 4Z" fill={downColor} />
+        </svg>
+      );
+    },
+    [paymentsOrderBy, paymentsOrderDir],
+  );
+
+  const renderRequestsSortIndicator = useCallback(
+    (orderKey) => {
+      const isActive = requestsOrderBy === orderKey;
+      const direction = isActive ? requestsOrderDir : null;
+      const upColor = isActive && direction !== 'DESC' ? '#4338ca' : '#c7d2fe';
+      const downColor = isActive && direction === 'DESC' ? '#4338ca' : '#c7d2fe';
+
+      return (
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M6 2l3 4H3l3-4Z" fill={upColor} />
+          <path d="M6 10l3-4H3l3 4Z" fill={downColor} />
+        </svg>
+      );
+    },
+    [requestsOrderBy, requestsOrderDir],
   );
 
   const handleRecurrenceSort = useCallback(
@@ -1405,26 +1491,63 @@ const PaymentsFinancePage = ({
   }, [displayedColumns, handleSort, monthColumns, renderSortIndicator]);
 
   const paymentsColumns = useMemo(
-    () => [
-      { key: 'payment_id', header: paymentsTableStrings.columns.id },
-      { key: 'student', header: paymentsTableStrings.columns.student },
-      { key: 'pt_name', header: paymentsTableStrings.columns.concept },
-      { key: 'amount', header: paymentsTableStrings.columns.amount, align: 'end' },
-      { key: 'actions', header: paymentsTableStrings.columns.actions, align: 'end' },
-    ],
-    [paymentsTableStrings.columns],
+    () => {
+      const sortableHeader = (label, key) => (
+        <button
+          type="button"
+          className="payments-page__sortable"
+          onClick={() => handlePaymentsSort(key)}
+        >
+          <span>{label}</span>
+          {renderPaymentsSortIndicator(key)}
+        </button>
+      );
+
+      return [
+        { key: 'payment_id', header: sortableHeader(paymentsTableStrings.columns.id, 'payment_id') },
+        { key: 'student', header: sortableHeader(paymentsTableStrings.columns.student, 'student') },
+        { key: 'pt_name', header: sortableHeader(paymentsTableStrings.columns.concept, 'pt_name') },
+        {
+          key: 'amount',
+          header: sortableHeader(paymentsTableStrings.columns.amount, 'amount'),
+          align: 'end',
+        },
+        { key: 'actions', header: paymentsTableStrings.columns.actions, align: 'end' },
+      ];
+    },
+    [handlePaymentsSort, paymentsTableStrings.columns, renderPaymentsSortIndicator],
   );
   const paymentRequestsColumns = useMemo(
-    () => [
-      { key: 'payment_request_id', header: requestsTableStrings.columns.id },
-      { key: 'student', header: requestsTableStrings.columns.student },
-      { key: 'pt_name', header: requestsTableStrings.columns.concept },
-      { key: 'pr_amount', header: requestsTableStrings.columns.amount, align: 'end' },
-      { key: 'ps_pr_name', header: requestsTableStrings.columns.status },
-      { key: 'pr_pay_by', header: requestsTableStrings.columns.dueDate },
-      { key: 'actions', header: requestsTableStrings.columns.actions, align: 'end' },
-    ],
-    [requestsTableStrings.columns],
+    () => {
+      const sortableHeader = (label, key) => (
+        <button
+          type="button"
+          className="payments-page__sortable"
+          onClick={() => handleRequestsSort(key)}
+        >
+          <span>{label}</span>
+          {renderRequestsSortIndicator(key)}
+        </button>
+      );
+
+      return [
+        {
+          key: 'payment_request_id',
+          header: sortableHeader(requestsTableStrings.columns.id, 'payment_request_id'),
+        },
+        { key: 'student', header: sortableHeader(requestsTableStrings.columns.student, 'student') },
+        { key: 'pt_name', header: sortableHeader(requestsTableStrings.columns.concept, 'pt_name') },
+        {
+          key: 'pr_amount',
+          header: sortableHeader(requestsTableStrings.columns.amount, 'pr_amount'),
+          align: 'end',
+        },
+        { key: 'ps_pr_name', header: sortableHeader(requestsTableStrings.columns.status, 'ps_pr_name') },
+        { key: 'pr_pay_by', header: sortableHeader(requestsTableStrings.columns.dueDate, 'pr_pay_by') },
+        { key: 'actions', header: requestsTableStrings.columns.actions, align: 'end' },
+      ];
+    },
+    [handleRequestsSort, renderRequestsSortIndicator, requestsTableStrings.columns],
   );
   const paymentRecurrencesColumns = useMemo(() => {
     const sortableHeader = (label, key) => (
@@ -1587,6 +1710,11 @@ const PaymentsFinancePage = ({
     params.set('limit', String(paymentsLimit));
     params.set('export_all', 'false');
 
+    if (paymentsOrderBy) {
+      params.set('order_by', paymentsOrderBy);
+      params.set('order_dir', paymentsOrderDir === 'DESC' ? 'DESC' : 'ASC');
+    }
+
     for (const [key, value] of Object.entries(paymentsFilters)) {
       if (value === null || value === undefined) {
         continue;
@@ -1607,7 +1735,14 @@ const PaymentsFinancePage = ({
     }
 
     return params;
-  }, [normalizedLanguage, paymentsFilters, paymentsLimit, paymentsOffset]);
+  }, [
+    normalizedLanguage,
+    paymentsFilters,
+    paymentsLimit,
+    paymentsOffset,
+    paymentsOrderBy,
+    paymentsOrderDir,
+  ]);
 
   const requestsQueryParams = useMemo(() => {
     const params = new URLSearchParams();
@@ -1616,6 +1751,11 @@ const PaymentsFinancePage = ({
     params.set('offset', String(requestsOffset));
     params.set('limit', String(requestsLimit));
     params.set('export_all', 'false');
+
+    if (requestsOrderBy) {
+      params.set('order_by', requestsOrderBy);
+      params.set('order_dir', requestsOrderDir === 'DESC' ? 'DESC' : 'ASC');
+    }
 
     for (const [key, value] of Object.entries(requestsFilters)) {
       if (value === null || value === undefined) {
@@ -1637,6 +1777,8 @@ const PaymentsFinancePage = ({
     requestsFilters,
     requestsLimit,
     requestsOffset,
+    requestsOrderBy,
+    requestsOrderDir,
   ]);
   const recurrenceQueryParams = useMemo(() => {
     const params = new URLSearchParams();

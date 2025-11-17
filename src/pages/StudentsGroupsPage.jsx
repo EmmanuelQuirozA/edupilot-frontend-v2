@@ -276,6 +276,8 @@ const StudentsGroupsPage = ({
   const [filters, setFilters] = useState(createInitialFilters);
   const [appliedFilters, setAppliedFilters] = useState(createInitialFilters);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [studentsOrderBy, setStudentsOrderBy] = useState('');
+  const [studentsOrderDir, setStudentsOrderDir] = useState('ASC');
 
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [studentForm, setStudentForm] = useState(createInitialStudent);
@@ -296,6 +298,8 @@ const StudentsGroupsPage = ({
   const [groupFilters, setGroupFilters] = useState(createInitialGroupFilters);
   const [appliedGroupFilters, setAppliedGroupFilters] = useState(createInitialGroupFilters);
   const [isGroupFiltersOpen, setIsGroupFiltersOpen] = useState(false);
+  const [groupsOrderBy, setGroupsOrderBy] = useState('');
+  const [groupsOrderDir, setGroupsOrderDir] = useState('ASC');
   const [isGroupsLoading, setIsGroupsLoading] = useState(false);
   const [groupsError, setGroupsError] = useState('');
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -416,6 +420,11 @@ const StudentsGroupsPage = ({
       params.set(key, value);
     });
 
+    if (studentsOrderBy) {
+      params.set('order_by', studentsOrderBy);
+      params.set('order_dir', studentsOrderDir === 'DESC' ? 'DESC' : 'ASC');
+    }
+
     const controller = new AbortController();
 
     try {
@@ -451,7 +460,16 @@ const StudentsGroupsPage = ({
     return () => {
       controller.abort();
     };
-  }, [appliedFilters, language, logout, pagination.limit, pagination.offset, token]);
+  }, [
+    appliedFilters,
+    language,
+    logout,
+    pagination.limit,
+    pagination.offset,
+    studentsOrderBy,
+    studentsOrderDir,
+    token,
+  ]);
 
   const fetchGroups = useCallback(async () => {
     setIsGroupsLoading(true);
@@ -476,6 +494,11 @@ const StudentsGroupsPage = ({
 
       params.set(key, value);
     });
+
+    if (groupsOrderBy) {
+      params.set('order_by', groupsOrderBy);
+      params.set('order_dir', groupsOrderDir === 'DESC' ? 'DESC' : 'ASC');
+    }
 
     const controller = new AbortController();
 
@@ -516,6 +539,8 @@ const StudentsGroupsPage = ({
     appliedGroupFilters,
     groupPagination.limit,
     groupPagination.offset,
+    groupsOrderBy,
+    groupsOrderDir,
     language,
     logout,
     token,
@@ -574,6 +599,28 @@ const StudentsGroupsPage = ({
     }));
   };
 
+  const handleStudentSort = useCallback(
+    (orderKey) => {
+      if (!orderKey) {
+        return;
+      }
+
+      const isSameColumn = studentsOrderBy === orderKey;
+
+      setStudentsOrderDir((previousDir) => {
+        if (isSameColumn) {
+          return previousDir === 'ASC' ? 'DESC' : 'ASC';
+        }
+
+        return 'ASC';
+      });
+
+      setStudentsOrderBy((previousOrderKey) => (previousOrderKey === orderKey ? previousOrderKey : orderKey));
+      setPagination((previous) => ({ ...previous, offset: 0 }));
+    },
+    [studentsOrderBy],
+  );
+
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
     setFilters((previous) => ({ ...previous, [name]: value }));
@@ -620,6 +667,28 @@ const StudentsGroupsPage = ({
       offset: Math.max(0, (page - 1) * previous.limit),
     }));
   };
+
+  const handleGroupSort = useCallback(
+    (orderKey) => {
+      if (!orderKey) {
+        return;
+      }
+
+      const isSameColumn = groupsOrderBy === orderKey;
+
+      setGroupsOrderDir((previousDir) => {
+        if (isSameColumn) {
+          return previousDir === 'ASC' ? 'DESC' : 'ASC';
+        }
+
+        return 'ASC';
+      });
+
+      setGroupsOrderBy((previousOrderKey) => (previousOrderKey === orderKey ? previousOrderKey : orderKey));
+      setGroupPagination((previous) => ({ ...previous, offset: 0 }));
+    },
+    [groupsOrderBy],
+  );
 
   const fetchClasses = useCallback(
     async (schoolId, preferredGroupId = '') => {
@@ -1624,25 +1693,97 @@ const StudentsGroupsPage = ({
   const tablePaginationStrings = tableStrings.pagination ?? {};
 
   const studentColumns = useMemo(
-    () => [
-      { key: 'student', header: tableStrings.student },
-      { key: 'gradeGroup', header: tableStrings.gradeGroup },
-      { key: 'status', header: tableStrings.status, headerClassName: 'text-center', align: 'center' },
-      { key: 'actions', header: tableStrings.actions, headerClassName: 'text-end', align: 'end' },
+    () => {
+      const renderSortIndicator = (orderKey) => {
+        const isActive = studentsOrderBy === orderKey;
+        const direction = isActive ? studentsOrderDir : null;
+        const upColor = isActive && direction !== 'DESC' ? '#4338ca' : '#c7d2fe';
+        const downColor = isActive && direction === 'DESC' ? '#4338ca' : '#c7d2fe';
+
+        return (
+          <svg viewBox="0 0 12 12" aria-hidden="true" className="ms-1">
+            <path d="M6 2l3 4H3l3-4Z" fill={upColor} />
+            <path d="M6 10l3-4H3l3 4Z" fill={downColor} />
+          </svg>
+        );
+      };
+
+      const sortableHeader = (label, orderKey) => (
+        <button
+          type="button"
+          className="btn btn-link p-0 d-inline-flex align-items-center gap-1 text-decoration-none"
+          onClick={() => handleStudentSort(orderKey)}
+        >
+          <span className="text-dark">{label}</span>
+          {renderSortIndicator(orderKey)}
+        </button>
+      );
+
+      return [
+        { key: 'student', header: sortableHeader(tableStrings.student, 'full_name') },
+        { key: 'gradeGroup', header: sortableHeader(tableStrings.gradeGroup, 'grade_group') },
+        {
+          key: 'status',
+          header: sortableHeader(tableStrings.status, 'enabled'),
+          headerClassName: 'text-center',
+          align: 'center',
+        },
+        { key: 'actions', header: tableStrings.actions, headerClassName: 'text-end', align: 'end' },
+      ];
+    },
+    [
+      handleStudentSort,
+      studentsOrderBy,
+      studentsOrderDir,
+      tableStrings.actions,
+      tableStrings.gradeGroup,
+      tableStrings.status,
+      tableStrings.student,
     ],
-    [tableStrings.actions, tableStrings.gradeGroup, tableStrings.status, tableStrings.student],
   );
 
   const groupTableStrings = strings.groupsView?.table ?? {};
   const groupColumns = useMemo(
-    () => [
-      { key: 'generation', header: groupTableStrings.generation },
-      { key: 'gradeGroup', header: groupTableStrings.gradeGroup },
-      { key: 'scholarLevel', header: groupTableStrings.scholarLevel },
-      { key: 'status', header: groupTableStrings.status, headerClassName: 'text-center', align: 'center' },
-      { key: 'actions', header: groupTableStrings.actions, headerClassName: 'text-end', align: 'end' },
-    ],
-    [groupTableStrings],
+    () => {
+      const renderSortIndicator = (orderKey) => {
+        const isActive = groupsOrderBy === orderKey;
+        const direction = isActive ? groupsOrderDir : null;
+        const upColor = isActive && direction !== 'DESC' ? '#4338ca' : '#c7d2fe';
+        const downColor = isActive && direction === 'DESC' ? '#4338ca' : '#c7d2fe';
+
+        return (
+          <svg viewBox="0 0 12 12" aria-hidden="true" className="ms-1">
+            <path d="M6 2l3 4H3l3-4Z" fill={upColor} />
+            <path d="M6 10l3-4H3l3 4Z" fill={downColor} />
+          </svg>
+        );
+      };
+
+      const sortableHeader = (label, orderKey) => (
+        <button
+          type="button"
+          className="btn btn-link p-0 d-inline-flex align-items-center gap-1 text-decoration-none"
+          onClick={() => handleGroupSort(orderKey)}
+        >
+          <span className="text-dark">{label}</span>
+          {renderSortIndicator(orderKey)}
+        </button>
+      );
+
+      return [
+        { key: 'generation', header: sortableHeader(groupTableStrings.generation, 'generation') },
+        { key: 'gradeGroup', header: sortableHeader(groupTableStrings.gradeGroup, 'grade_group') },
+        { key: 'scholarLevel', header: sortableHeader(groupTableStrings.scholarLevel, 'scholar_level_name') },
+        {
+          key: 'status',
+          header: sortableHeader(groupTableStrings.status, 'enabled'),
+          headerClassName: 'text-center',
+          align: 'center',
+        },
+        { key: 'actions', header: groupTableStrings.actions, headerClassName: 'text-end', align: 'end' },
+      ];
+    },
+    [groupTableStrings, groupsOrderBy, groupsOrderDir, handleGroupSort],
   );
 
   const studentSummary = useCallback(
