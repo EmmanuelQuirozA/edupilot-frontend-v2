@@ -55,6 +55,19 @@ const extractArrayFromPayload = (payload) => {
   return candidates.find(Array.isArray) ?? [];
 };
 
+const getSwalInstance = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const { Swal } = window;
+  if (Swal && typeof Swal.fire === 'function') {
+    return Swal;
+  }
+
+  return null;
+};
+
 const normalizeCatalogOption = (item, index = 0) => {
   const id =
     item?.id ??
@@ -122,6 +135,7 @@ const PaymentRequestPaymentModal = ({
   yesLabel,
   noLabel,
   strings = {},
+  studentId,
 }) => {
   const mergedStrings = useMemo(() => ({ ...DEFAULT_STRINGS, ...strings }), [strings]);
   const [paymentMethodId, setPaymentMethodId] = useState('');
@@ -325,6 +339,7 @@ const PaymentRequestPaymentModal = ({
       try {
         const payload = {
           payment_request_id: Number(paymentRequestId),
+          student_id: studentId != null && studentId !== '' ? Number(studentId) : undefined,
           payment_concept_id:
             paymentConceptId != null && paymentConceptId !== '' ? Number(paymentConceptId) : undefined,
           payment_month: paymentMonth || undefined,
@@ -356,39 +371,61 @@ const PaymentRequestPaymentModal = ({
         );
 
         const rawText = await response.text();
+        let parsedResponse = null;
 
-        if (!response.ok) {
+        if (rawText) {
+          try {
+            parsedResponse = JSON.parse(rawText);
+          } catch (parseError) {
+            parsedResponse = null;
+          }
+        }
+        const swalInstance = getSwalInstance();
+
+        if (!response.ok || parsedResponse?.success === false || parsedResponse?.type === 'error') {
           handleExpiredToken(response, logout);
 
           let message = mergedStrings.error;
-          if (rawText) {
-            try {
-              const data = JSON.parse(rawText);
-              if (typeof data === 'string') {
-                message = data;
-              } else if (data?.message) {
-                message = data.message;
-              }
-            } catch (parseError) {
-              message = rawText;
+          let title = parsedResponse?.title;
+
+          if (parsedResponse) {
+            if (typeof parsedResponse === 'string') {
+              message = parsedResponse;
+            } else if (parsedResponse?.message) {
+              message = parsedResponse.message;
             }
+          } else if (rawText) {
+            message = rawText;
+          }
+
+          if (swalInstance) {
+            swalInstance.fire({
+              icon: 'error',
+              title: title || mergedStrings.error,
+              text: message,
+            });
           }
 
           throw new Error(message);
         }
 
         let successMessage = mergedStrings.success;
-        if (rawText) {
-          try {
-            const data = JSON.parse(rawText);
-            if (typeof data === 'string') {
-              successMessage = data;
-            } else if (data?.message) {
-              successMessage = data.message;
-            }
-          } catch (parseError) {
-            successMessage = rawText;
+        if (parsedResponse) {
+          if (typeof parsedResponse === 'string') {
+            successMessage = parsedResponse;
+          } else if (parsedResponse?.message) {
+            successMessage = parsedResponse.message;
           }
+        } else if (rawText) {
+          successMessage = rawText;
+        }
+
+        if (swalInstance) {
+          swalInstance.fire({
+            icon: 'success',
+            title: mergedStrings.success,
+            text: successMessage,
+          });
         }
 
         onSuccess?.(successMessage);
@@ -415,6 +452,7 @@ const PaymentRequestPaymentModal = ({
       paymentMethodId,
       paymentMonth,
       paymentRequestId,
+      studentId,
       selectedFile,
       token,
     ],
