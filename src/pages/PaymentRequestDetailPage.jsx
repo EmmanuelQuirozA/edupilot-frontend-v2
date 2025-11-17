@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GlobalToast from '../components/GlobalToast.jsx';
 import ActionButton from '../components/ui/ActionButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
-import StudentInfo from '../components/ui/StudentInfo.jsx';
+import StudentTableCell from '../components/ui/StudentTableCell.jsx';
 import { API_BASE_URL } from '../config.js';
 import { handleExpiredToken } from '../utils/auth.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -969,11 +969,12 @@ const PaymentRequestDetailPage = ({
 
               <UiCard className="payment-request-detail__card">
                 <h2 className="payment-request-detail__title mb-3">{mergedStrings.studentTitle}</h2>
-                <StudentInfo
+                <StudentTableCell
                   name={student?.full_name}
                   fallbackName="—"
-                  metaLabel={mergedStrings.fields.id}
-                  metaValue={student?.payment_reference}
+                  gradeGroup={student?.grade_group}
+                  scholarLevel={student?.scholar_level_name}
+                  enrollment={student?.payment_reference}
                   onClick={canViewStudent ? handleViewStudent : undefined}
                   disabled={!canViewStudent}
                   nameButtonProps={canViewStudent ? studentNameButtonProps : undefined}
