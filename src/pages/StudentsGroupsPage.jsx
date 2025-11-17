@@ -1720,7 +1720,7 @@ const StudentsGroupsPage = ({
       );
 
       return [
-        { key: 'student', header: sortableHeader(tableStrings.student, 'full_name') },
+        { key: 'student', header: sortableHeader(tableStrings.student, 'student_full_name') },
         { key: 'gradeGroup', header: sortableHeader(tableStrings.gradeGroup, 'grade_group') },
         {
           key: 'status',
