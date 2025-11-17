@@ -551,6 +551,7 @@ export const translations = {
               date: 'Fecha',
               amount: 'Monto',
               comments: 'Comentarios',
+              view: 'Ver detalles',
             },
           },
           breakdown: {
@@ -1597,6 +1598,7 @@ export const translations = {
               date: 'Date',
               amount: 'Amount',
               comments: 'Comments',
+              view: 'View details',
             },
           },
           breakdown: {

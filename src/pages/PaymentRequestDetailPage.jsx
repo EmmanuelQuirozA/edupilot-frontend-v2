@@ -78,6 +78,7 @@ const DEFAULT_STRINGS = {
       date: 'Fecha',
       amount: 'Monto',
       comments: 'Comentarios',
+      view: 'Ver detalles',
     },
   },
   breakdown: {
@@ -362,6 +363,7 @@ const PaymentRequestDetailPage = ({
   onBreadcrumbChange,
   onNavigateBack,
   onStudentDetail,
+  onPaymentDetail,
 }) => {
   const mergedStrings = useMemo(() => ({ ...DEFAULT_STRINGS, ...strings }), [strings]);
   const { token, logout } = useAuth();
@@ -1123,19 +1125,36 @@ const PaymentRequestDetailPage = ({
                           <th>{mergedStrings.payments.columns.date}</th>
                           <th>{mergedStrings.payments.columns.amount}</th>
                           <th>{mergedStrings.payments.columns.comments}</th>
+                          <th>{mergedStrings.payments.columns.view}</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {payments.map((payment) => (
-                          <tr key={payment.payment_id}>
-                            <td>{payment.payment_id ?? '—'}</td>
-                            <td>{payment.pt_name ?? payment.type ?? '—'}</td>
-                            <td>{payment.payment_status_name ?? '—'}</td>
-                            <td>{formatDateTime(payment.pay_created_at, language)}</td>
-                            <td>{formatCurrency(payment.amount, language) || '—'}</td>
-                            <td>{payment.comments ?? '—'}</td>
-                          </tr>
-                        ))}
+                        {payments.map((payment) => {
+                          const paymentIdValue =
+                            payment.payment_id ?? payment.paymentId ?? payment.id ?? '';
+                          const isViewDisabled = !onPaymentDetail || !paymentIdValue;
+
+                          return (
+                            <tr key={payment.payment_id}>
+                              <td>{payment.payment_id ?? '—'}</td>
+                              <td>{payment.pt_name ?? payment.type ?? '—'}</td>
+                              <td>{payment.payment_status_name ?? '—'}</td>
+                              <td>{formatDateTime(payment.pay_created_at, language)}</td>
+                              <td>{formatCurrency(payment.amount, language) || '—'}</td>
+                              <td>{payment.comments ?? '—'}</td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="payment-request-detail__link-button"
+                                  onClick={() => onPaymentDetail?.(paymentIdValue)}
+                                  disabled={isViewDisabled}
+                                >
+                                  {mergedStrings.payments.columns.view}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
