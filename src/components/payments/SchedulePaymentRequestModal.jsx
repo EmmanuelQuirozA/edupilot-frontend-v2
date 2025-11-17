@@ -795,6 +795,7 @@ const SchedulePaymentRequestModal = ({
                           className="form-control"
                           value={lateFee}
                           onChange={(event) => setLateFee(event.target.value)}
+                          style={{width:"70%"}}
                         />
                         <select
                           id="schedule-request-feetype"

@@ -617,7 +617,7 @@ export const translations = {
             yes: 'Sí',
             no: 'No',
           },
-          open: 'Abrir detalle de la solicitud',
+          open: 'Ver detalle',
         },
         requestsResult: {
           title: 'Resultado de creación de solicitudes',

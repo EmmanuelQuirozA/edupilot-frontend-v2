@@ -582,7 +582,7 @@ const PaymentRequestDetailPage = ({
       const response = await fetch(
         `${API_BASE_URL}/reports/payment-request/update/${safeRequestId}?lang=${language ?? 'es'}`,
         {
-          method: 'POST',
+          method: 'PUT',
           headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',

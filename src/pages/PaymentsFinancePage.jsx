@@ -672,7 +672,7 @@ const DEFAULT_PAYMENTS_STRINGS = {
       feeType: 'Tipo de recargo',
       paymentMonth: 'Mes de pago',
     },
-    open: 'Abrir detalle de la solicitud',
+    open: 'Ver detalle',
     viewStudent: 'Ver detalle del alumno',
   },
   requestsResult: {
