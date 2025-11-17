@@ -173,7 +173,7 @@ const PaymentRequestPaymentModal = ({
 
       try {
         const response = await fetch(
-          `${API_BASE_URL}/catalog/payment-concepts?lang=${normalizedLanguage}`,
+          `${API_BASE_URL}/catalog/payment-through?lang=${normalizedLanguage}`,
           {
             method: 'GET',
             signal: controller.signal,
@@ -275,9 +275,14 @@ const PaymentRequestPaymentModal = ({
     [handleFileSelection],
   );
 
-  const handleRemoveFile = useCallback(() => {
-    handleFileSelection(null);
-  }, [handleFileSelection]);
+  const handleRemoveFile = useCallback(
+    (event) => {
+      event?.preventDefault();
+      event?.stopPropagation();
+      handleFileSelection(null);
+    },
+    [handleFileSelection],
+  );
 
   const handleDragOver = useCallback((event) => {
     event.preventDefault();
