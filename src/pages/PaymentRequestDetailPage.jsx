@@ -6,6 +6,7 @@ import StudentInfo from '../components/ui/StudentInfo.jsx';
 import { API_BASE_URL } from '../config.js';
 import { handleExpiredToken } from '../utils/auth.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import PaymentRequestPaymentModal from '../components/payments/PaymentRequestPaymentModal.jsx';
 import './PaymentRequestDetailPage.css';
 
 const EmailIcon = () => (
@@ -136,9 +137,34 @@ const DEFAULT_STRINGS = {
   },
   actions: {
     print: 'Imprimir',
+    pay: 'Pagar solicitud',
   },
   printError: 'No fue posible preparar la impresión de la solicitud.',
   printWindowError: 'Habilita las ventanas emergentes para imprimir la solicitud.',
+  paymentModal: {
+    title: 'Registrar pago',
+    description: 'Ingresa el pago correspondiente a esta solicitud.',
+    amountLabel: 'Monto a pagar',
+    commentsLabel: 'Comentarios',
+    methodLabel: 'Método de pago',
+    methodPlaceholder: 'Selecciona un método',
+    methodLoading: 'Cargando métodos...',
+    monthLabel: 'Mes del pago',
+    conceptLabel: 'Concepto',
+    partialLabel: 'Pago parcial',
+    pendingLabel: 'Pendiente de pago',
+    attachmentLabel: 'Adjuntar archivo',
+    attachmentHint: 'Arrastra y suelta o haz clic para seleccionar',
+    attachmentSelected: 'Archivo seleccionado',
+    removeFile: 'Quitar archivo',
+    cancel: 'Cancelar',
+    submit: 'Registrar pago',
+    submitting: 'Guardando...',
+    success: 'Pago registrado correctamente.',
+    error: 'No fue posible registrar el pago.',
+    fileSizeError: 'El archivo supera el tamaño máximo permitido (5 MB).',
+    requiredField: 'Completa los campos obligatorios.',
+  },
 };
 
 const formatDate = (value, language) => {
@@ -350,6 +376,7 @@ const PaymentRequestDetailPage = ({
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const detailRef = useRef(null);
 
   const safeRequestId = requestId ? String(requestId) : '';
@@ -823,6 +850,25 @@ const PaymentRequestDetailPage = ({
     }
   }, [language, mergedStrings.breadcrumbFallback, mergedStrings.generalTitle, mergedStrings.printError, mergedStrings.printWindowError, paymentRequest, student]);
 
+  const handleOpenPaymentModal = useCallback(() => {
+    if (!details) {
+      return;
+    }
+    setIsPaymentModalOpen(true);
+  }, [details]);
+
+  const handleClosePaymentModal = useCallback(() => {
+    setIsPaymentModalOpen(false);
+  }, []);
+
+  const handlePaymentSuccess = useCallback(
+    (message) => {
+      setToast({ type: 'success', message: message || mergedStrings.paymentModal.success });
+      fetchDetails();
+    },
+    [fetchDetails, mergedStrings.paymentModal.success],
+  );
+
   return (
     <div className="page">
       <header className="page__header page__header--actions">
@@ -830,6 +876,9 @@ const PaymentRequestDetailPage = ({
           {mergedStrings.back}
         </ActionButton>
         <div className="payment-request-detail__actions">
+          <ActionButton type="button" onClick={handleOpenPaymentModal} disabled={!details}>
+            {mergedStrings.actions.pay}
+          </ActionButton>
           <ActionButton
             type="button"
             variant="secondary"
@@ -1202,6 +1251,19 @@ const PaymentRequestDetailPage = ({
         </section>
       </div>
 
+      <PaymentRequestPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={handleClosePaymentModal}
+        language={language}
+        token={token}
+        logout={logout}
+        paymentRequest={paymentRequest}
+        paymentInfo={paymentInfo}
+        yesLabel={yesLabel}
+        noLabel={noLabel}
+        strings={mergedStrings.paymentModal}
+        onSuccess={handlePaymentSuccess}
+      />
       <GlobalToast alert={toast} onClose={() => setToast(null)} />
     </div>
   );
