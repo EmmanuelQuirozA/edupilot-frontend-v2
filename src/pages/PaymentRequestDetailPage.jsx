@@ -869,6 +869,9 @@ const PaymentRequestDetailPage = ({
     [fetchDetails, mergedStrings.paymentModal.success],
   );
 
+  const payButtonLabel =
+    mergedStrings.actions?.pay || mergedStrings.paymentModal?.submit || DEFAULT_STRINGS.actions.pay;
+
   return (
     <div className="page">
       <header className="page__header page__header--actions">
@@ -877,7 +880,7 @@ const PaymentRequestDetailPage = ({
         </ActionButton>
         <div className="payment-request-detail__actions">
           <ActionButton type="button" onClick={handleOpenPaymentModal} disabled={!details}>
-            {mergedStrings.actions.pay}
+            {payButtonLabel}
           </ActionButton>
           <ActionButton
             type="button"
