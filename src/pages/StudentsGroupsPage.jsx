@@ -1697,11 +1697,11 @@ const StudentsGroupsPage = ({
       const renderSortIndicator = (orderKey) => {
         const isActive = studentsOrderBy === orderKey;
         const direction = isActive ? studentsOrderDir : null;
-        const upColor = isActive && direction !== 'DESC' ? '#4338ca' : '#c7d2fe';
-        const downColor = isActive && direction === 'DESC' ? '#4338ca' : '#c7d2fe';
+        const upColor = isActive && direction !== 'DESC' ? '#4338ca' : '#cbd5e1';
+        const downColor = isActive && direction === 'DESC' ? '#4338ca' : '#cbd5e1';
 
         return (
-          <svg viewBox="0 0 12 12" aria-hidden="true" className="ms-1">
+          <svg viewBox="0 0 12 12" aria-hidden="true" className="table__sort-icon">
             <path d="M6 2l3 4H3l3-4Z" fill={upColor} />
             <path d="M6 10l3-4H3l3 4Z" fill={downColor} />
           </svg>
@@ -1711,7 +1711,7 @@ const StudentsGroupsPage = ({
       const sortableHeader = (label, orderKey) => (
         <button
           type="button"
-          className="btn btn-link p-0 d-inline-flex align-items-center gap-1 text-decoration-none"
+          className="btn btn-link table__sort-button"
           onClick={() => handleStudentSort(orderKey)}
         >
           <span className="text-dark">{label}</span>
@@ -1748,11 +1748,11 @@ const StudentsGroupsPage = ({
       const renderSortIndicator = (orderKey) => {
         const isActive = groupsOrderBy === orderKey;
         const direction = isActive ? groupsOrderDir : null;
-        const upColor = isActive && direction !== 'DESC' ? '#4338ca' : '#c7d2fe';
-        const downColor = isActive && direction === 'DESC' ? '#4338ca' : '#c7d2fe';
+        const upColor = isActive && direction !== 'DESC' ? '#4338ca' : '#cbd5e1';
+        const downColor = isActive && direction === 'DESC' ? '#4338ca' : '#cbd5e1';
 
         return (
-          <svg viewBox="0 0 12 12" aria-hidden="true" className="ms-1">
+          <svg viewBox="0 0 12 12" aria-hidden="true" className="table__sort-icon">
             <path d="M6 2l3 4H3l3-4Z" fill={upColor} />
             <path d="M6 10l3-4H3l3 4Z" fill={downColor} />
           </svg>
@@ -1762,7 +1762,7 @@ const StudentsGroupsPage = ({
       const sortableHeader = (label, orderKey) => (
         <button
           type="button"
-          className="btn btn-link p-0 d-inline-flex align-items-center gap-1 text-decoration-none"
+          className="btn btn-link table__sort-button"
           onClick={() => handleGroupSort(orderKey)}
         >
           <span className="text-dark">{label}</span>
