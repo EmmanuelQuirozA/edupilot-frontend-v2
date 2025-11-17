@@ -403,6 +403,10 @@ const PaymentRequestDetailPage = ({
   const commentsContent = commentsText || mergedStrings.comments.empty;
   const yesLabel = mergedStrings.booleans?.yes ?? (language === 'en' ? 'Yes' : 'Sí');
   const noLabel = mergedStrings.booleans?.no ?? 'No';
+  const isClosedOrCancelled = useMemo(
+    () => paymentRequest?.payment_status_id === 7 || paymentRequest?.payment_status_id === 8,
+    [paymentRequest?.payment_status_id],
+  );
 
   const fetchDetails = useCallback(async () => {
     if (!safeRequestId) {
@@ -1018,30 +1022,38 @@ const PaymentRequestDetailPage = ({
                 <div className="payment-request-detail__card-header">
                   <h1 className="payment-request-detail__title">{mergedStrings.generalTitle}</h1>
                   <div className="payment-request-detail__actions">
-                    <ActionButton
-                      type="button"
-                      variant="secondary"
-                      onClick={handleToggleEditing}
-                      disabled={!paymentRequest}
-                    >
-                      {isEditing ? mergedStrings.edit.cancel : mergedStrings.edit.button}
-                    </ActionButton>
-                  <ActionButton
-                    type="button"
-                    variant="primary"
-                    onClick={() => handleStatusChange(7)}
-                    disabled={isSaving}
-                  >
-                    {mergedStrings.statusActions.close}
-                  </ActionButton>
-                  <ActionButton
-                    type="button"
-                    variant="danger"
-                    onClick={() => handleStatusChange(8)}
-                    disabled={isSaving}
-                  >
-                    {mergedStrings.statusActions.cancel}
-                  </ActionButton>
+                    {isClosedOrCancelled ? (
+                      <span className="payment-request-detail__status-badge">
+                        {paymentRequest?.ps_pr_name ?? '—'}
+                      </span>
+                    ) : (
+                      <>
+                        <ActionButton
+                          type="button"
+                          variant="secondary"
+                          onClick={handleToggleEditing}
+                          disabled={!paymentRequest}
+                        >
+                          {isEditing ? mergedStrings.edit.cancel : mergedStrings.edit.button}
+                        </ActionButton>
+                        <ActionButton
+                          type="button"
+                          variant="primary"
+                          onClick={() => handleStatusChange(7)}
+                          disabled={isSaving}
+                        >
+                          {mergedStrings.statusActions.close}
+                        </ActionButton>
+                        <ActionButton
+                          type="button"
+                          variant="danger"
+                          onClick={() => handleStatusChange(8)}
+                          disabled={isSaving}
+                        >
+                          {mergedStrings.statusActions.cancel}
+                        </ActionButton>
+                      </>
+                    )}
                   </div>
                 </div>
 
