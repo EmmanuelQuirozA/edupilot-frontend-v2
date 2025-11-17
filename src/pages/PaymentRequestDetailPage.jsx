@@ -168,6 +168,10 @@ const DEFAULT_STRINGS = {
   },
 };
 
+const SKELETON_SUMMARY_ITEMS = Array.from({ length: 4 }, (_, index) => index);
+const SKELETON_DETAIL_ROWS = Array.from({ length: 6 }, (_, index) => index);
+const SKELETON_TABLE_ROWS = Array.from({ length: 3 }, (_, index) => index);
+
 const formatDate = (value, language) => {
   if (!value) {
     return '';
@@ -898,7 +902,46 @@ const PaymentRequestDetailPage = ({
       <div className="page__layout">
         <section className="page__content payment-request-detail" ref={detailRef}>
           {isLoading ? (
-            <div className="page__empty-state">{mergedStrings.loading}</div>
+            <>
+              <UiCard className="payment-request-detail__card">
+                <div className="payment-request-detail__skeleton" role="status" aria-live="polite">
+                  <span className="payment-request-detail__sr-only">{mergedStrings.loading}</span>
+                  <div className="payment-request-detail__skeleton-grid">
+                    {SKELETON_SUMMARY_ITEMS.map((item) => (
+                      <div key={`summary-skeleton-${item}`} className="payment-request-detail__skeleton-tile">
+                        <div className="payment-request-detail__skeleton-line payment-request-detail__skeleton-line--label" />
+                        <div className="payment-request-detail__skeleton-line payment-request-detail__skeleton-line--value" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </UiCard>
+
+              <UiCard className="payment-request-detail__card">
+                <div className="payment-request-detail__skeleton">
+                  <div className="payment-request-detail__skeleton-line payment-request-detail__skeleton-line--title" />
+                  <div className="payment-request-detail__skeleton-columns">
+                    {SKELETON_DETAIL_ROWS.map((item) => (
+                      <div key={`details-skeleton-${item}`} className="payment-request-detail__skeleton-field">
+                        <div className="payment-request-detail__skeleton-line payment-request-detail__skeleton-line--label" />
+                        <div className="payment-request-detail__skeleton-line payment-request-detail__skeleton-line--value" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </UiCard>
+
+              <UiCard className="payment-request-detail__card">
+                <div className="payment-request-detail__skeleton">
+                  <div className="payment-request-detail__skeleton-line payment-request-detail__skeleton-line--title" />
+                  <div className="payment-request-detail__skeleton-rows">
+                    {SKELETON_TABLE_ROWS.map((item) => (
+                      <div key={`table-skeleton-${item}`} className="payment-request-detail__skeleton-rectangle" />
+                    ))}
+                  </div>
+                </div>
+              </UiCard>
+            </>
           ) : error ? (
             <UiCard className="payment-request-detail__card">
               <p className="text-danger mb-3">{error}</p>
