@@ -1275,7 +1275,12 @@ const PaymentsFinancePage = ({
   }, []);
   const displayedColumns = useMemo(
     () => [
-      { key: 'student', label: columnLabels.student, sortable: true, orderKey: 'student' },
+      {
+        key: 'student',
+        label: columnLabels.student,
+        sortable: true,
+        orderKey: 'student_full_name',
+      },
       { key: 'generation', label: columnLabels.generation, sortable: false },
     ],
     [columnLabels.generation, columnLabels.student],
@@ -1505,7 +1510,10 @@ const PaymentsFinancePage = ({
 
       return [
         { key: 'payment_id', header: sortableHeader(paymentsTableStrings.columns.id, 'payment_id') },
-        { key: 'student', header: sortableHeader(paymentsTableStrings.columns.student, 'student') },
+        {
+          key: 'student',
+          header: sortableHeader(paymentsTableStrings.columns.student, 'student_full_name'),
+        },
         { key: 'pt_name', header: sortableHeader(paymentsTableStrings.columns.concept, 'pt_name') },
         {
           key: 'amount',
@@ -1535,7 +1543,10 @@ const PaymentsFinancePage = ({
           key: 'payment_request_id',
           header: sortableHeader(requestsTableStrings.columns.id, 'payment_request_id'),
         },
-        { key: 'student', header: sortableHeader(requestsTableStrings.columns.student, 'student') },
+        {
+          key: 'student',
+          header: sortableHeader(requestsTableStrings.columns.student, 'student_full_name'),
+        },
         { key: 'pt_name', header: sortableHeader(requestsTableStrings.columns.concept, 'pt_name') },
         {
           key: 'pr_amount',
