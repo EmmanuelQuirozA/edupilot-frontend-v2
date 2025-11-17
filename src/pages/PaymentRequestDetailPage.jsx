@@ -1266,6 +1266,7 @@ const PaymentRequestDetailPage = ({
         noLabel={noLabel}
         strings={mergedStrings.paymentModal}
         onSuccess={handlePaymentSuccess}
+        studentId={student?.student_id}
       />
       <GlobalToast alert={toast} onClose={() => setToast(null)} />
     </div>
