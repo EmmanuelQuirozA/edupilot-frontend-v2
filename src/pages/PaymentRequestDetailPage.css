@@ -187,6 +187,20 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
+.payment-request-detail__link-button {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+}
+
+.payment-request-detail__link-button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .payment-request-detail__table th {
   font-size: 0.85rem;
   text-transform: uppercase;

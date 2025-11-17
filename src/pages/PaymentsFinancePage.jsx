@@ -3140,6 +3140,7 @@ const PaymentsFinancePage = ({
               onBreadcrumbChange={onPaymentBreadcrumbChange}
               onNavigateBack={() => handlePaymentRequestListNavigation({ replace: true })}
               onStudentDetail={onStudentDetail}
+              onPaymentDetail={handlePaymentDetailNavigation}
             />
           </section>
         </div>
