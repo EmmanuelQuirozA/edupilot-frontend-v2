@@ -112,6 +112,10 @@ const DEFAULT_STRINGS = {
     empty: 'No hay actividad registrada para este pago.',
     error: 'No fue posible cargar el historial de actividad.',
   },
+  comments: {
+    title: 'Comentarios',
+    empty: 'Sin comentarios registrados.',
+  },
 };
 
 const SKELETON_DETAIL_ITEMS = Array.from({ length: 6 }, (_, index) => index);
@@ -200,6 +204,24 @@ const buildStatusVariant = (statusName) => {
   }
 
   return 'info';
+};
+
+const getFriendlyText = (value) => {
+  if (value == null) {
+    return '';
+  }
+
+  const normalized = String(value).trim();
+  if (!normalized) {
+    return '';
+  }
+
+  const lower = normalized.toLowerCase();
+  if (lower === 'null' || lower === 'undefined') {
+    return '';
+  }
+
+  return normalized;
 };
 
 const buildProtectedFilePath = (path) => {
@@ -414,6 +436,10 @@ const PaymentDetailPage = ({
     logs: {
       ...DEFAULT_STRINGS.logs,
       ...(strings.logs ?? {}),
+    },
+    comments: {
+      ...DEFAULT_STRINGS.comments,
+      ...(strings.comments ?? {}),
     },
     actionFeedback: {
       ...DEFAULT_STRINGS.actionFeedback,
@@ -1681,6 +1707,10 @@ const PaymentDetailPage = ({
     });
   }, [logs, normalizedLanguage]);
 
+  const commentsText = useMemo(() => getFriendlyText(payment?.comments), [payment?.comments]);
+  const commentsContent =
+    commentsText || mergedStrings.comments?.empty || DEFAULT_STRINGS.comments.empty;
+
   const hasReceipt = Boolean(payment?.receipt_path);
 
 
@@ -2113,69 +2143,57 @@ const PaymentDetailPage = ({
             ) : null}
 
             <UiCard className="payment-detail__card">
-              <div className="payment-detail__section-header">
-                <h2 className="payment-detail__section-title">{mergedStrings.logs.title}</h2>
-              </div>
-
-              {logsLoading ? (
-                <p className="payment-detail__status-text" role="status">
-                  {mergedStrings.loading}
-                </p>
-              ) : logsError ? (
-                <div className="payment-detail__error" role="alert">
-                  <p>{logsError}</p>
-                  <ActionButton variant="secondary" onClick={fetchPaymentLogs}>
-                    {mergedStrings.retry}
-                  </ActionButton>
+              <div className="payment-detail__activity">
+                <div className="payment-detail__comments">
+                  <h3>{mergedStrings.comments.title}</h3>
+                  <p>{commentsContent}</p>
                 </div>
-              ) : formattedLogs.length === 0 ? (
-                <p className="payment-detail__status-text">{mergedStrings.logs.empty}</p>
-              ) : (
-                <ul className="payment-detail__logs">
-                  {formattedLogs.map((log) => (
-                    <li key={log.key} className="payment-detail__log-item">
-                      <div className="payment-detail__log-header">
-                        <div>
-                          <p className="payment-detail__log-user">
-                            {log.responsable ?? <span className="payment-detail__placeholder">--</span>}
-                          </p>
-                          <p className="payment-detail__log-role">
-                            {log.role ? log.role : <span className="payment-detail__placeholder">--</span>}
-                          </p>
-                        </div>
-                        <div className="payment-detail__log-meta">
-                          <span className="payment-detail__log-type">{log.type ?? '--'}</span>
-                          <span className="payment-detail__log-date">{log.updatedAt ?? '--'}</span>
-                        </div>
-                      </div>
-                      {log.changes.length > 0 ? (
-                        <ul className="payment-detail__log-changes">
-                          {log.changes.map((change) => (
-                            <li key={change.key}>
-                              <div className="payment-detail__change-field">
-                                <strong>{change.field ?? '—'}</strong>
-                              </div>
-                              <div className="payment-detail__change-values">
-                                <span>
-                                  <span className="payment-detail__change-label">De:</span>{' '}
-                                  {change.from ?? <span className="payment-detail__placeholder">--</span>}
-                                </span>
-                                <span>
-                                  <span className="payment-detail__change-label">A:</span>{' '}
-                                  {change.to ?? <span className="payment-detail__placeholder">--</span>}
-                                </span>
-                              </div>
-                              {change.comments ? (
-                                <p className="payment-detail__change-comments">{change.comments}</p>
-                              ) : null}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
+                <div className="payment-detail__logs-section">
+                  <div className="payment-detail__logs-header">
+                    <h3>{mergedStrings.logs.title}</h3>
+                  </div>
+                  {logsLoading ? (
+                    <p className="payment-detail__status-text" role="status">
+                      {mergedStrings.loading}
+                    </p>
+                  ) : logsError ? (
+                    <div className="payment-detail__error" role="alert">
+                      <p>{logsError}</p>
+                      <ActionButton variant="secondary" onClick={fetchPaymentLogs}>
+                        {mergedStrings.retry}
+                      </ActionButton>
+                    </div>
+                  ) : formattedLogs.length === 0 ? (
+                    <p className="payment-detail__status-text">{mergedStrings.logs.empty}</p>
+                  ) : (
+                    <ul className="payment-detail__logs">
+                      {formattedLogs.map((log) => (
+                        <li key={log.key} className="payment-detail__log-entry">
+                          <div className="payment-detail__log-header">
+                            <strong>{log.responsable ?? '—'}</strong>
+                            <span>{log.role ?? '—'}</span>
+                            <time>{log.updatedAt ?? '—'}</time>
+                          </div>
+                          <p className="payment-detail__log-description">{log.type ?? '—'}</p>
+                          {log.changes.length > 0 ? (
+                            <ul className="payment-detail__log-changes">
+                              {log.changes.map((change) => (
+                                <li key={change.key}>
+                                  <span className="payment-detail__log-field">{change.field ?? '—'}</span>
+                                  <span>
+                                    {change.from ?? '—'} → {change.to ?? '—'}
+                                  </span>
+                                  {change.comments ? <p>{change.comments}</p> : null}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
             </UiCard>
           </>
         )}
