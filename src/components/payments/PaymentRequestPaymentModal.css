@@ -1,0 +1,102 @@
+.payment-request-payment-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.payment-request-payment-modal__summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.payment-request-payment-modal__summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.payment-request-payment-modal__summary-item span {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.payment-request-payment-modal__summary-item strong {
+  font-size: 1rem;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.payment-request-payment-modal__summary-amount {
+  color: #0f172a;
+}
+
+.payment-request-payment-modal__dropzone {
+  position: relative;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.payment-request-payment-modal__dropzone--dragging {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.payment-request-payment-modal__dropzone--has-file {
+  border-color: #10b981;
+  background: #ecfdf3;
+}
+
+.payment-request-payment-modal__dropzone-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  gap: 0.75rem;
+  color: #0f172a;
+  font-weight: 600;
+  width: 100%;
+}
+
+.payment-request-payment-modal__file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.payment-request-payment-modal__file-name {
+  font-size: 0.95rem;
+}
+
+.payment-request-payment-modal__file-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.payment-request-payment-modal__error {
+  color: #b91c1c;
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+}
+
+.payment-request-payment-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 576px) {
+  .payment-request-payment-modal__footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
