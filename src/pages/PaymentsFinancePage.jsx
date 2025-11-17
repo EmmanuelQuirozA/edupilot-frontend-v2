@@ -8,7 +8,7 @@ import Tabs from '../components/ui/Tabs.jsx';
 import SearchInput from '../components/ui/SearchInput.jsx';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
 import SidebarModal from '../components/ui/SidebarModal.jsx';
-import StudentInfo from '../components/ui/StudentInfo.jsx';
+import StudentTableCell from '../components/ui/StudentTableCell.jsx';
 import AddPaymentModal from '../components/payments/AddPaymentModal.jsx';
 import AddPaymentRequestModal from '../components/payments/AddPaymentRequestModal.jsx';
 import SchedulePaymentRequestModal from '../components/payments/SchedulePaymentRequestModal.jsx';
@@ -1272,11 +1272,9 @@ const PaymentsFinancePage = ({
   const displayedColumns = useMemo(
     () => [
       { key: 'student', label: columnLabels.student, sortable: true, orderKey: 'student' },
-      { key: 'class', label: columnLabels.class, sortable: true, orderKey: 'class' },
       { key: 'generation', label: columnLabels.generation, sortable: false },
-      { key: 'scholar_level_name', label: columnLabels.scholarLevel, sortable: false },
     ],
-    [columnLabels.class, columnLabels.generation, columnLabels.scholarLevel, columnLabels.student],
+    [columnLabels.generation, columnLabels.student],
   );
 
   const monthColumns = useMemo(() => {
@@ -1410,8 +1408,6 @@ const PaymentsFinancePage = ({
     () => [
       { key: 'payment_id', header: paymentsTableStrings.columns.id },
       { key: 'student', header: paymentsTableStrings.columns.student },
-      { key: 'grade_group', header: paymentsTableStrings.columns.gradeGroup },
-      { key: 'scholar_level_name', header: paymentsTableStrings.columns.scholarLevel },
       { key: 'pt_name', header: paymentsTableStrings.columns.concept },
       { key: 'amount', header: paymentsTableStrings.columns.amount, align: 'end' },
       { key: 'actions', header: paymentsTableStrings.columns.actions, align: 'end' },
@@ -1422,8 +1418,6 @@ const PaymentsFinancePage = ({
     () => [
       { key: 'payment_request_id', header: requestsTableStrings.columns.id },
       { key: 'student', header: requestsTableStrings.columns.student },
-      { key: 'grade_group', header: requestsTableStrings.columns.gradeGroup },
-      { key: 'scholar_level_name', header: requestsTableStrings.columns.scholarLevel },
       { key: 'pt_name', header: requestsTableStrings.columns.concept },
       { key: 'pr_amount', header: requestsTableStrings.columns.amount, align: 'end' },
       { key: 'ps_pr_name', header: requestsTableStrings.columns.status },
@@ -3398,22 +3392,19 @@ const PaymentsFinancePage = ({
 
                   return (
                     <tr key={rowKey}>
-                      <td
-                        data-title={tableStrings.columns.student}
-                      >
-                        <StudentInfo
+                      <td data-title={tableStrings.columns.student}>
+                        <StudentTableCell
                           name={row.student}
                           fallbackName={tableStrings.studentFallback}
-                          metaLabel={studentMetaValue ? studentIdLabel : undefined}
-                          metaValue={studentMetaValue}
+                          gradeGroup={row.class ?? row.grade_group}
+                          scholarLevel={row.scholar_level_name}
+                          enrollment={studentMetaValue}
                           onClick={() => handleStudentDetailClick(row)}
                           disabled={!canNavigateToStudent}
                           nameButtonProps={{ 'aria-label': studentName }}
                         />
                       </td>
-                      <td data-title={tableStrings.columns.class}>{row.class ?? '--'}</td>
                       <td data-title={tableStrings.columns.generation}>{row.generation ?? '--'}</td>
-                      <td data-title={tableStrings.columns.scholarLevel}>{row.scholar_level_name ?? '--'}</td>
                       {monthColumns.map((month) => {
                         const value = row?.[month];
                         const details = extractTuitionCellDetails(value);
@@ -3654,11 +3645,12 @@ const PaymentsFinancePage = ({
                             {row?.payment_request_id ?? '--'}
                           </td>
                           <td data-title={requestsTableStrings.columns.student}>
-                            <StudentInfo
+                            <StudentTableCell
                               name={studentName}
                               fallbackName={tableStrings.studentFallback}
-                              metaLabel={studentMeta ? tableStrings.studentIdLabel : undefined}
-                              metaValue={studentMeta}
+                              gradeGroup={row?.grade_group}
+                              scholarLevel={row?.scholar_level_name}
+                              enrollment={studentMeta}
                               onClick={() =>
                                 handleStudentDetailClick({
                                   ...row,
@@ -3671,12 +3663,6 @@ const PaymentsFinancePage = ({
                                   : studentName,
                               }}
                             />
-                          </td>
-                          <td data-title={requestsTableStrings.columns.gradeGroup}>
-                            {row?.grade_group ?? '--'}
-                          </td>
-                          <td data-title={requestsTableStrings.columns.scholarLevel}>
-                            {row?.scholar_level_name ?? '--'}
                           </td>
                           <td data-title={requestsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
                           <td data-title={requestsTableStrings.columns.amount} className="text-end">
@@ -3771,18 +3757,13 @@ const PaymentsFinancePage = ({
                         {row?.payment_id ?? '--'}
                       </td>
                       <td data-title={paymentsTableStrings.columns.student}>
-                        <StudentInfo
+                        <StudentTableCell
                           name={studentName}
                           fallbackName={tableStrings.studentFallback}
-                          metaLabel={studentMeta ? tableStrings.studentIdLabel : undefined}
-                          metaValue={studentMeta}
+                          gradeGroup={row?.grade_group}
+                          scholarLevel={row?.scholar_level_name}
+                          enrollment={studentMeta}
                         />
-                      </td>
-                      <td data-title={paymentsTableStrings.columns.gradeGroup}>
-                        {row?.grade_group ?? '--'}
-                      </td>
-                      <td data-title={paymentsTableStrings.columns.scholarLevel}>
-                        {row?.scholar_level_name ?? '--'}
                       </td>
                       <td data-title={paymentsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
                       <td data-title={paymentsTableStrings.columns.amount} className="text-end">
