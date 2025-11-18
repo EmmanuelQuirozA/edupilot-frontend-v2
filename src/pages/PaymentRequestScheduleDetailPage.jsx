@@ -432,7 +432,7 @@ const PaymentRequestScheduleDetailPage = ({
                     </div>
                   </div>
                   <span className="schedule-detail__log-chevron" aria-hidden="true">
-                    <i className="bi bi-chevron-right" />
+                    ▶
                   </span>
                 </summary>
                 <div className="schedule-detail__log-body">
@@ -481,38 +481,17 @@ const PaymentRequestScheduleDetailPage = ({
       />
       <section className="page__content">
         <div className="page__header">
-          <div className="schedule-detail__topbar">
-            <div className="schedule-detail__title-stack">
-              {onNavigateBack ? (
-                <ActionButton type="button" variant="secondary" onClick={onNavigateBack}>
-                  ← {mergedStrings.back}
-                </ActionButton>
-              ) : null}
-              <div>
-                <p className="schedule-detail__eyebrow">{mergedStrings.generalTitle}</p>
-                <div className="d-flex align-items-center gap-2 flex-wrap">
-                  <h2 className="schedule-detail__page-title mb-0">
-                    {detail?.rule_name_es || detail?.rule_name_en || mergedStrings.breadcrumbFallback}
-                  </h2>
-                  <span
-                    className={`schedule-detail__status-badge ${detail?.active ? 'schedule-detail__status-badge--success' : 'schedule-detail__status-badge--muted'}`}
-                  >
-                    {detail?.active ? mergedStrings.statusActive : mergedStrings.statusInactive}
-                  </span>
-                </div>
-                <p className="schedule-detail__subtitle mb-0">
-                  {detail?.period_name || mergedStrings.breadcrumbFallback}
-                </p>
-              </div>
-            </div>
-
-            <div className="schedule-detail__actions">
-              <ActionButton variant="outline" size="sm" icon={<i className="bi bi-pencil" aria-hidden="true" />}>
-                Editar
+          <div className="schedule-detail__header">
+            {onNavigateBack ? (
+              <ActionButton type="button" variant="secondary" onClick={onNavigateBack}>
+                ← {mergedStrings.back}
               </ActionButton>
-              <ActionButton variant="secondary" size="sm" icon={<i className="bi bi-pause" aria-hidden="true" />}>
-                Pausar
-              </ActionButton>
+            ) : null}
+            <div>
+              <p className="schedule-detail__subtitle">{mergedStrings.generalTitle}</p>
+              <h2 className="schedule-detail__title">
+                {detail?.rule_name_es || detail?.rule_name_en || mergedStrings.breadcrumbFallback}
+              </h2>
             </div>
           </div>
         </div>
@@ -528,141 +507,63 @@ const PaymentRequestScheduleDetailPage = ({
           </div>
         ) : detail ? (
           <div className="schedule-detail">
-            <div className="schedule-detail__content">
-              <div className="schedule-detail__column schedule-detail__column--main">
-                <UiCard className="schedule-detail__card schedule-detail__card--stacked">
-                  <header className="schedule-detail__card-header">
-                    <div>
-                      <p className="card__subtitle mb-1">{mergedStrings.generalTitle}</p>
-                      <h3 className="card__title mb-0">#{detail.payment_request_scheduled_id ?? '—'}</h3>
-                    </div>
-                    <span className="schedule-detail__pill">{mergedStrings.fields.status}</span>
-                  </header>
-                  <div className="schedule-detail__info-grid">
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.amount}</p>
-                      <p className="schedule-detail__info-value">{formatCurrency(detail.amount, language) || '—'}</p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.lateFee}</p>
-                      <p className="schedule-detail__info-value">
-                        {formatCurrency(detail.late_fee, language) || '—'} {detail.fee_type ?? ''}
-                      </p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.startDate}</p>
-                      <p className="schedule-detail__info-value">{formatDate(detail.start_date, language) || '—'}</p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.paymentWindow}</p>
-                      <p className="schedule-detail__info-value">{detail.payment_window ?? '—'}</p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.intervalCount}</p>
-                      <p className="schedule-detail__info-value">{detail.interval_count ?? '—'}</p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.createdAt}</p>
-                      <p className="schedule-detail__info-value">{formatDate(detail.created_at, language) || '—'}</p>
-                    </div>
-                  </div>
-                </UiCard>
+            <div className="schedule-detail__grid">
+              <UiCard>
+                <header className="card__header">
+                  <p className="card__subtitle">{mergedStrings.generalTitle}</p>
+                  <h3 className="card__title">#{detail.payment_request_scheduled_id ?? '—'}</h3>
+                </header>
+                <ul className="schedule-detail__list">
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.amount}</span>
+                    <span>{formatCurrency(detail.amount, language) || '—'}</span>
+                  </li>
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.lateFee}</span>
+                    <span>
+                      {formatCurrency(detail.late_fee, language) || '—'} {detail.fee_type ?? ''}
+                    </span>
+                  </li>
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.status}</span>
+                    <span>{detail.active ? mergedStrings.statusActive : mergedStrings.statusInactive}</span>
+                  </li>
+                </ul>
+              </UiCard>
 
-                <UiCard className="schedule-detail__card schedule-detail__card--highlight">
-                  <header className="schedule-detail__card-header">
-                    <div>
-                      <p className="card__subtitle mb-1">{mergedStrings.logLabels.schedule}</p>
-                      <h3 className="card__title mb-0">{mergedStrings.fields.amount} &amp; {mergedStrings.fields.lateFee}</h3>
-                    </div>
-                  </header>
-                  <div className="schedule-detail__metrics">
-                    <div className="schedule-detail__metric">
-                      <p className="schedule-detail__metric-label">{mergedStrings.fields.amount}</p>
-                      <p className="schedule-detail__metric-value">{formatCurrency(detail.amount, language) || '—'}</p>
-                    </div>
-                    <div className="schedule-detail__metric">
-                      <p className="schedule-detail__metric-label">{mergedStrings.fields.lateFee}</p>
-                      <p className="schedule-detail__metric-value">
-                        {formatCurrency(detail.late_fee, language) || '—'} {detail.fee_type ?? ''}
-                      </p>
-                      <span className="schedule-detail__metric-footnote">
-                        {detail.fee_type ? mergedStrings.fields.feeType : mergedStrings.fields.lateFeeFrequency}
-                      </span>
-                    </div>
-                  </div>
-                </UiCard>
+              <UiCard>
+                <header className="card__header">
+                  <p className="card__subtitle">{mergedStrings.executionTitle}</p>
+                </header>
+                <ul className="schedule-detail__list">
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.startDate}</span>
+                    <span>{formatDate(detail.start_date, language) || '—'}</span>
+                  </li>
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.nextExecutionDate}</span>
+                    <span>{formatDate(detail.next_execution_date, language) || '—'}</span>
+                  </li>
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.paymentWindow}</span>
+                    <span>{detail.payment_window ?? '—'}</span>
+                  </li>
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.intervalCount}</span>
+                    <span>{detail.interval_count ?? '—'}</span>
+                  </li>
+                </ul>
+              </UiCard>
 
-                <UiCard className="schedule-detail__card">
-                  <header className="schedule-detail__card-header">
-                    <div>
-                      <p className="card__subtitle mb-1">{mergedStrings.targetTitle}</p>
-                      <h3 className="card__title mb-0">{mergedStrings.fields.periodName}</h3>
-                    </div>
-                  </header>
-                  {renderTarget()}
-                </UiCard>
-              </div>
-
-              <div className="schedule-detail__column schedule-detail__column--side">
-                <UiCard className="schedule-detail__card schedule-detail__card--compact">
-                  <header className="schedule-detail__card-header">
-                    <div>
-                      <p className="card__subtitle mb-1">{mergedStrings.executionTitle}</p>
-                      <h3 className="card__title mb-0">Frecuencia y programación</h3>
-                    </div>
-                  </header>
-                  <div className="schedule-detail__info-grid schedule-detail__info-grid--vertical">
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.intervalCount}</p>
-                      <p className="schedule-detail__info-value">{detail.interval_count ?? '—'}</p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.paymentWindow}</p>
-                      <p className="schedule-detail__info-value">{detail.payment_window ?? '—'}</p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.periodName}</p>
-                      <p className="schedule-detail__info-value">{detail.period_name ?? '—'}</p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.lateFeeFrequency}</p>
-                      <p className="schedule-detail__info-value">{detail.late_fee_frequency ?? '—'}</p>
-                    </div>
-                  </div>
-                </UiCard>
-
-                <UiCard className="schedule-detail__card schedule-detail__card--compact">
-                  <header className="schedule-detail__card-header">
-                    <div>
-                      <p className="card__subtitle mb-1">Estado de ejecución</p>
-                      <h3 className="card__title mb-0">{mergedStrings.fields.nextExecutionDate}</h3>
-                    </div>
-                  </header>
-                  <div className="schedule-detail__info-grid schedule-detail__info-grid--vertical">
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.nextExecutionDate}</p>
-                      <p className="schedule-detail__info-value">{formatDate(detail.next_execution_date, language) || '—'}</p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.startDate}</p>
-                      <p className="schedule-detail__info-value">{formatDate(detail.start_date, language) || '—'}</p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.updatedAt}</p>
-                      <p className="schedule-detail__info-value">{formatDate(detail.updated_at, language) || '—'}</p>
-                    </div>
-                    <div className="schedule-detail__info-item">
-                      <p className="schedule-detail__info-label">{mergedStrings.fields.status}</p>
-                      <p className="schedule-detail__info-value">
-                        {detail.active ? mergedStrings.statusActive : mergedStrings.statusInactive}
-                      </p>
-                    </div>
-                  </div>
-                </UiCard>
-              </div>
+              <UiCard>
+                <header className="card__header">
+                  <p className="card__subtitle">{mergedStrings.targetTitle}</p>
+                </header>
+                {renderTarget()}
+              </UiCard>
             </div>
 
-            <UiCard className="schedule-detail__card schedule-detail__card--full">
+            <UiCard>
               <header className="card__header d-flex align-items-center justify-content-between">
                 <div>
                   <p className="card__subtitle">{mergedStrings.logsTitle}</p>
