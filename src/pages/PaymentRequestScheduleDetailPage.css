@@ -49,6 +49,13 @@
   font-weight: 600;
 }
 
+.schedule-detail__item-extra {
+  display: block;
+  color: #6c757d;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+}
+
 .schedule-detail__tag {
   display: inline-flex;
   align-items: center;

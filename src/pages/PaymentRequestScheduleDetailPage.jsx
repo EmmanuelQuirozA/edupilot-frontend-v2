@@ -29,12 +29,19 @@ const DEFAULT_STRINGS = {
   statusActive: 'Activo',
   statusInactive: 'Inactivo',
   fields: {
+    id: 'ID de regla',
     amount: 'Monto',
+    concept: 'Concepto',
+    comments: 'Comentarios',
     lateFee: 'Recargo',
     lateFeeFrequency: 'Frecuencia de recargo',
     feeType: 'Tipo de recargo',
+    frequency: 'Frecuencia',
     intervalCount: 'Intervalo',
     paymentWindow: 'Ventana de pago (días)',
+    endDate: 'Fin de la regla',
+    indefinite: 'Indefinido',
+    lastExecutionDate: 'Última ejecución',
     startDate: 'Fecha de inicio',
     nextExecutionDate: 'Próxima ejecución',
     periodName: 'Periodo de tiempo',
@@ -515,18 +522,65 @@ const PaymentRequestScheduleDetailPage = ({
                 </header>
                 <ul className="schedule-detail__list">
                   <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.concept}</span>
+                    <span>{detail.pt_name || detail.payment_concept || '—'}</span>
+                  </li>
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.comments}</span>
+                    <span>{detail.comments || '—'}</span>
+                  </li>
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.periodName}</span>
+                    <span>{detail.period_name || '—'}</span>
+                  </li>
+                </ul>
+              </UiCard>
+
+              <UiCard>
+                <header className="card__header">
+                  <p className="card__subtitle">{mergedStrings.fields.frequency}</p>
+                </header>
+                <ul className="schedule-detail__list">
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.intervalCount}</span>
+                    <span>
+                      {detail.interval_count ? `Cada ${detail.interval_count} ${detail.period_name ?? ''}` : '—'}
+                    </span>
+                  </li>
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.paymentWindow}</span>
+                    <span>{detail.payment_window ?? '—'}</span>
+                  </li>
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.startDate}</span>
+                    <span>{formatDate(detail.start_date, language) || '—'}</span>
+                  </li>
+                  <li className="schedule-detail__item">
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.endDate}</span>
+                    <span>{formatDate(detail.end_date, language) || mergedStrings.fields.indefinite}</span>
+                  </li>
+                </ul>
+              </UiCard>
+
+              <UiCard>
+                <header className="card__header">
+                  <p className="card__subtitle">{mergedStrings.fields.amount}</p>
+                </header>
+                <ul className="schedule-detail__list">
+                  <li className="schedule-detail__item">
                     <span className="schedule-detail__item-label">{mergedStrings.fields.amount}</span>
                     <span>{formatCurrency(detail.amount, language) || '—'}</span>
                   </li>
                   <li className="schedule-detail__item">
                     <span className="schedule-detail__item-label">{mergedStrings.fields.lateFee}</span>
                     <span>
-                      {formatCurrency(detail.late_fee, language) || '—'} {detail.fee_type ?? ''}
+                      <span>{formatCurrency(detail.late_fee, language) || '—'} {detail.fee_type ?? ''}</span>
+                      <span className="schedule-detail__item-extra">
+                        {detail.late_fee_frequency
+                          ? `${mergedStrings.fields.lateFeeFrequency}: ${detail.late_fee_frequency}`
+                          : '—'}
+                      </span>
                     </span>
-                  </li>
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.status}</span>
-                    <span>{detail.active ? mergedStrings.statusActive : mergedStrings.statusInactive}</span>
                   </li>
                 </ul>
               </UiCard>
@@ -537,20 +591,20 @@ const PaymentRequestScheduleDetailPage = ({
                 </header>
                 <ul className="schedule-detail__list">
                   <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.startDate}</span>
-                    <span>{formatDate(detail.start_date, language) || '—'}</span>
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.lastExecutionDate}</span>
+                    <span>{formatDate(detail.last_execution_date, language) || '—'}</span>
                   </li>
                   <li className="schedule-detail__item">
                     <span className="schedule-detail__item-label">{mergedStrings.fields.nextExecutionDate}</span>
                     <span>{formatDate(detail.next_execution_date, language) || '—'}</span>
                   </li>
                   <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.paymentWindow}</span>
-                    <span>{detail.payment_window ?? '—'}</span>
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.status}</span>
+                    <span>{detail.active ? mergedStrings.statusActive : mergedStrings.statusInactive}</span>
                   </li>
                   <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.intervalCount}</span>
-                    <span>{detail.interval_count ?? '—'}</span>
+                    <span className="schedule-detail__item-label">{mergedStrings.fields.id}</span>
+                    <span>#{detail.payment_request_scheduled_id ?? '—'}</span>
                   </li>
                 </ul>
               </UiCard>
