@@ -601,7 +601,7 @@ const PaymentRequestScheduleDetailPage = ({
 
             <UiCard className="schedule-detail__card schedule-detail__card--stacked">
               <header className="card__header">
-                <p className="card__subtitle">{mergedStrings.fields.amount}</p>
+                <p className="card__subtitle m-0">{mergedStrings.fields.amount}</p>
               </header>
               <div className="schedule-detail__amounts">
                 <div className="schedule-detail__amount-box">
