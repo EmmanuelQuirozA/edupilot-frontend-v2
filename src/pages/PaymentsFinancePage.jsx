@@ -3740,7 +3740,7 @@ const PaymentsFinancePage = ({
                           <td data-title={requestsRecurrencesTableStrings.columns.appliesTo}>
                             {row?.applies_to ?? <span>--</span>}
                           </td>
-                          <td data-title={requestsRecurrencesTableStrings.columns.amount} className="text-end">
+                          <td data-title={requestsRecurrencesTableStrings.columns.amount}>
                             {formattedAmount ? (
                               formattedAmount
                             ) : (
@@ -3757,7 +3757,7 @@ const PaymentsFinancePage = ({
                           <td data-title={requestsRecurrencesTableStrings.columns.active}>
                             {activeLabel}
                           </td>
-                          <td data-title={requestsRecurrencesTableStrings.columns.actions} className="text-end">
+                          <td data-title={requestsRecurrencesTableStrings.columns.actions}>
                             <ActionButton
                               type="button"
                               variant="secondary"
@@ -3868,7 +3868,7 @@ const PaymentsFinancePage = ({
                             />
                           </td>
                           <td data-title={requestsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
-                          <td data-title={requestsTableStrings.columns.amount} className="text-end">
+                          <td data-title={requestsTableStrings.columns.amount}>
                             {formattedAmount ? (
                               formattedAmount
                             ) : (
@@ -3885,7 +3885,7 @@ const PaymentsFinancePage = ({
                               <span className="ui-table__empty-indicator">--</span>
                             )}
                           </td>
-                          <td data-title={requestsTableStrings.columns.actions} className="text-end">
+                          <td data-title={requestsTableStrings.columns.actions}>
                             <ActionButton
                               type="button"
                               variant="secondary"
@@ -3969,14 +3969,14 @@ const PaymentsFinancePage = ({
                         />
                       </td>
                       <td data-title={paymentsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
-                      <td data-title={paymentsTableStrings.columns.amount} className="text-end">
+                      <td data-title={paymentsTableStrings.columns.amount}>
                         {formattedAmount ? (
                           formattedAmount
                         ) : (
                           <span className="ui-table__empty-indicator">--</span>
                         )}
                       </td>
-                      <td data-title={paymentsTableStrings.columns.actions} className="text-end">
+                      <td data-title={paymentsTableStrings.columns.actions}>
                         <ActionButton
                           type="button"
                           variant="secondary"

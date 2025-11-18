@@ -889,9 +889,11 @@ const PaymentRequestDetailPage = ({
           {mergedStrings.back}
         </ActionButton>
         <div className="payment-request-detail__actions">
-          <ActionButton type="button" onClick={handleOpenPaymentModal} disabled={!details}>
-            {payButtonLabel}
-          </ActionButton>
+          {isClosedOrCancelled ? ( null ) : (
+            <ActionButton type="button" onClick={handleOpenPaymentModal} disabled={!details}>
+              {payButtonLabel}
+            </ActionButton>
+          )}
           <ActionButton
             type="button"
             variant="secondary"

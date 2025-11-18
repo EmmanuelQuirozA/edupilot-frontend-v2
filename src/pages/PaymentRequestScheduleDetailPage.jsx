@@ -15,7 +15,7 @@ const DEFAULT_STRINGS = {
   error: 'No fue posible cargar la programación.',
   logsError: 'No fue posible cargar el historial.',
   retry: 'Reintentar',
-  generalTitle: 'Resumen de la programación',
+  generalTitle: 'Resumen de la regla',
   executionTitle: 'Ejecución',
   targetTitle: 'Dirigido a',
   logsTitle: 'Historial de ejecuciones',
@@ -415,31 +415,34 @@ const PaymentRequestScheduleDetailPage = ({
           return (
             <li key={`${log.reference_date ?? 'log'}-${index}`} className="schedule-detail__log">
               <details>
-                <summary>
-                  <span className={tagClassName[logType]}>{logTypeLabels[logType]}</span>
-                  <div>
-                    <strong>{log?.title || mergedStrings.logsTitle}</strong>
-                    <p className="mb-0 schedule-detail__subtitle">{log?.message || summaryLabel}</p>
-                    <div className="schedule-detail__log-meta">
-                      {referenceDateLabel ? (
-                        <span>
-                          {mergedStrings.logLabels.referenceDate}: <strong>{referenceDateLabel}</strong>
-                        </span>
-                      ) : null}
-                      {log?.created_count != null ? (
-                        <span>
-                          {mergedStrings.logLabels.created}: <strong>{log.created_count}</strong>
-                        </span>
-                      ) : null}
-                      {log?.duplicate_count != null ? (
-                        <span>
-                          {mergedStrings.logLabels.duplicates}: <strong>{log.duplicate_count}</strong>
-                        </span>
-                      ) : null}
+                <summary className='justify-content-between'>
+                  <div className='d-flex align-items-center gap-md-4'>
+                    <span className={tagClassName[logType]}>{logTypeLabels[logType]}</span>
+                    <div>
+                      <strong>{log?.title || mergedStrings.logsTitle}</strong>
+                      <p className="mb-0 schedule-detail__subtitle">{log?.message || summaryLabel}</p>
+                      <div className="schedule-detail__log-meta">
+                        {referenceDateLabel ? (
+                          <span>
+                            {mergedStrings.logLabels.referenceDate}: <strong>{referenceDateLabel}</strong>
+                          </span>
+                        ) : null}
+                        {log?.created_count != null ? (
+                          <span>
+                            {mergedStrings.logLabels.created}: <strong>{log.created_count}</strong>
+                          </span>
+                        ) : null}
+                        {log?.duplicate_count != null ? (
+                          <span>
+                            {mergedStrings.logLabels.duplicates}: <strong>{log.duplicate_count}</strong>
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                  <span className="schedule-detail__log-chevron" aria-hidden="true">
-                    ▶
+
+                  <span className="schedule-detail__log-chevron p-3" aria-hidden="true">
+                    <i className="bi bi-chevron-right" />
                   </span>
                 </summary>
                 <div className="schedule-detail__log-body">
@@ -488,12 +491,7 @@ const PaymentRequestScheduleDetailPage = ({
       />
       <section className="page__content">
         <div className="page__header">
-          <div className="schedule-detail__header">
-            {onNavigateBack ? (
-              <ActionButton type="button" variant="secondary" onClick={onNavigateBack}>
-                ← {mergedStrings.back}
-              </ActionButton>
-            ) : null}
+          <div className="schedule-detail__header mb-4">
             <div>
               <p className="schedule-detail__subtitle">{mergedStrings.generalTitle}</p>
               <h2 className="schedule-detail__title">
@@ -515,106 +513,111 @@ const PaymentRequestScheduleDetailPage = ({
         ) : detail ? (
           <div className="schedule-detail">
             <div className="schedule-detail__grid">
-              <UiCard>
-                <header className="card__header">
-                  <p className="card__subtitle">{mergedStrings.generalTitle}</p>
-                  <h3 className="card__title">#{detail.payment_request_scheduled_id ?? '—'}</h3>
-                </header>
-                <ul className="schedule-detail__list">
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.concept}</span>
-                    <span>{detail.pt_name || detail.payment_concept || '—'}</span>
-                  </li>
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.comments}</span>
-                    <span>{detail.comments || '—'}</span>
-                  </li>
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.periodName}</span>
-                    <span>{detail.period_name || '—'}</span>
-                  </li>
-                </ul>
-              </UiCard>
+              <div className='d-flex flex-column gap-md-4'>
+                <UiCard>
+                  <header className="card__header">
+                    <p className="card__subtitle">{mergedStrings.generalTitle}</p>
+                    <h3 className="card__title">#{detail.payment_request_scheduled_id ?? '—'}</h3>
+                  </header>
+                  <ul className="schedule-detail__list">
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.concept}</span>
+                      <span>{detail.pt_name || detail.payment_concept || '—'}</span>
+                    </li>
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.comments}</span>
+                      <span>{detail.comments || '—'}</span>
+                    </li>
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.periodName}</span>
+                      <span>{detail.period_name || '—'}</span>
+                    </li>
+                  </ul>
+                </UiCard>
 
-              <UiCard>
-                <header className="card__header">
-                  <p className="card__subtitle">{mergedStrings.fields.frequency}</p>
-                </header>
-                <ul className="schedule-detail__list">
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.intervalCount}</span>
-                    <span>
-                      {detail.interval_count ? `Cada ${detail.interval_count} ${detail.period_name ?? ''}` : '—'}
-                    </span>
-                  </li>
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.paymentWindow}</span>
-                    <span>{detail.payment_window ?? '—'}</span>
-                  </li>
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.startDate}</span>
-                    <span>{formatDate(detail.start_date, language) || '—'}</span>
-                  </li>
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.endDate}</span>
-                    <span>{formatDate(detail.end_date, language) || mergedStrings.fields.indefinite}</span>
-                  </li>
-                </ul>
-              </UiCard>
-
-              <UiCard>
-                <header className="card__header">
-                  <p className="card__subtitle">{mergedStrings.fields.amount}</p>
-                </header>
-                <ul className="schedule-detail__list">
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.amount}</span>
-                    <span>{formatCurrency(detail.amount, language) || '—'}</span>
-                  </li>
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.lateFee}</span>
-                    <span>
-                      <span>{formatCurrency(detail.late_fee, language) || '—'} {detail.fee_type ?? ''}</span>
-                      <span className="schedule-detail__item-extra">
-                        {detail.late_fee_frequency
-                          ? `${mergedStrings.fields.lateFeeFrequency}: ${detail.late_fee_frequency}`
-                          : '—'}
+                <UiCard>
+                  <header className="card__header">
+                    <p className="card__subtitle">{mergedStrings.fields.frequency}</p>
+                  </header>
+                  <ul className="schedule-detail__list">
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.intervalCount}</span>
+                      <span>
+                        {detail.interval_count ? `Cada ${detail.interval_count} ${detail.period_name ?? ''}` : '—'}
                       </span>
-                    </span>
-                  </li>
-                </ul>
-              </UiCard>
+                    </li>
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.paymentWindow}</span>
+                      <span>{detail.payment_window ?? '—'}</span>
+                    </li>
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.startDate}</span>
+                      <span>{formatDate(detail.start_date, language) || '—'}</span>
+                    </li>
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.endDate}</span>
+                      <span>{formatDate(detail.end_date, language) || mergedStrings.fields.indefinite}</span>
+                    </li>
+                  </ul>
+                </UiCard>
 
-              <UiCard>
-                <header className="card__header">
-                  <p className="card__subtitle">{mergedStrings.executionTitle}</p>
-                </header>
-                <ul className="schedule-detail__list">
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.lastExecutionDate}</span>
-                    <span>{formatDate(detail.last_execution_date, language) || '—'}</span>
-                  </li>
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.nextExecutionDate}</span>
-                    <span>{formatDate(detail.next_execution_date, language) || '—'}</span>
-                  </li>
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.status}</span>
-                    <span>{detail.active ? mergedStrings.statusActive : mergedStrings.statusInactive}</span>
-                  </li>
-                  <li className="schedule-detail__item">
-                    <span className="schedule-detail__item-label">{mergedStrings.fields.id}</span>
-                    <span>#{detail.payment_request_scheduled_id ?? '—'}</span>
-                  </li>
-                </ul>
-              </UiCard>
+                <UiCard>
+                  <header className="card__header">
+                    <p className="card__subtitle">{mergedStrings.fields.amount}</p>
+                  </header>
+                  <ul className="schedule-detail__list">
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.amount}</span>
+                      <span>{formatCurrency(detail.amount, language) || '—'}</span>
+                    </li>
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.lateFee}</span>
+                      <span>
+                        <span>{formatCurrency(detail.late_fee, language) || '—'} {detail.fee_type ?? ''}</span>
+                        <span className="schedule-detail__item-extra">
+                          {detail.late_fee_frequency
+                            ? `${mergedStrings.fields.lateFeeFrequency}: ${detail.late_fee_frequency}`
+                            : '—'}
+                        </span>
+                      </span>
+                    </li>
+                  </ul>
+                </UiCard>
+              </div>
 
-              <UiCard>
-                <header className="card__header">
-                  <p className="card__subtitle">{mergedStrings.targetTitle}</p>
-                </header>
-                {renderTarget()}
-              </UiCard>
+              <div className='d-flex flex-column gap-md-4'>
+                <UiCard>
+                  <header className="card__header">
+                    <p className="card__subtitle">{mergedStrings.executionTitle}</p>
+                  </header>
+                  <ul className="schedule-detail__list">
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.lastExecutionDate}</span>
+                      <span>{formatDate(detail.last_executed_at, language) || '—'}</span>
+                    </li>
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.nextExecutionDate}</span>
+                      <span>{formatDate(detail.next_execution_date, language) || '—'}</span>
+                    </li>
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.status}</span>
+                      <span>{detail.active ? mergedStrings.statusActive : mergedStrings.statusInactive}</span>
+                    </li>
+                    <li className="schedule-detail__item">
+                      <span className="schedule-detail__item-label">{mergedStrings.fields.id}</span>
+                      <span>#{detail.payment_request_scheduled_id ?? '—'}</span>
+                    </li>
+                  </ul>
+                </UiCard>
+
+                <UiCard>
+                  <header className="card__header">
+                    <p className="card__subtitle">{mergedStrings.targetTitle}</p>
+                  </header>
+                  {renderTarget()}
+                </UiCard>
+              </div>
+            
             </div>
 
             <UiCard>

@@ -460,7 +460,7 @@ const HomePage = ({
           t.home.paymentsPage.detail?.breadcrumbFallback || t.home.menu.items.payments;
         const scheduleDetailId = decodeRouteSegment(paymentsTertiarySegment);
         const scheduleDetailLabel = scheduleDetailId
-          ? `${scheduleFallbackLabel} → ${scheduleDetailId}`
+          ? `${scheduleDetailId}`
           : scheduleFallbackLabel;
         const detailLabel = isPaymentRequestScheduleDetailRoute
           ? scheduleDetailLabel

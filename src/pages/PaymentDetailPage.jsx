@@ -2104,7 +2104,7 @@ const PaymentDetailPage = ({
                   </div>
                 )}
 
-                {!hasReceipt ? (
+                {!hasReceipt && !isPaymentFinalized ? (
                   <div className="payment-detail__upload payment-detail__upload--form">
                     <label className="payment-detail__upload-label">
                       {mergedStrings.attachments.uploadLabel}
