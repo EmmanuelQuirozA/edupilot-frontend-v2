@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { handleExpiredToken } from '../utils/auth';
 import PaymentDetailPage from './PaymentDetailPage.jsx';
 import PaymentRequestDetailPage from './PaymentRequestDetailPage.jsx';
+import PaymentRequestScheduleDetailPage from './PaymentRequestScheduleDetailPage.jsx';
 import PaymentRequestResultPage, {
   PAYMENT_REQUEST_RESULT_STORAGE_KEY,
   extractPaymentRequestResultPayload,
@@ -760,6 +761,28 @@ const PaymentsFinancePage = ({
     Boolean(secondaryRouteSegment) &&
     secondaryRouteSegment !== 'scheduled' &&
     secondaryRouteSegment !== 'result';
+  const paymentRequestScheduleDetailId = (() => {
+    if (!isPaymentRequestScheduleDetailRoute) {
+      return null;
+    }
+
+    const candidate = tertiaryRouteSegment;
+
+    if (candidate == null) {
+      return null;
+    }
+
+    if (typeof candidate !== 'string') {
+      return candidate;
+    }
+
+    try {
+      return decodeURIComponent(candidate);
+    } catch (decodeError) {
+      console.warn('Unable to decode payment request schedule id from route', decodeError);
+      return candidate;
+    }
+  })();
   const paymentDetailId = (() => {
     if (!isPaymentDetailRoute) {
       return null;
@@ -2265,6 +2288,14 @@ const PaymentsFinancePage = ({
   const handlePaymentRequestListNavigation = useCallback(
     (options = {}) => {
       setActiveTab('requests');
+      const normalizedSubPath =
+        typeof options.subPath === 'string'
+          ? options.subPath
+              .split('/')
+              .filter(Boolean)
+              .map((segment) => encodeURIComponent(segment.trim()))
+              .join('/')
+          : '';
 
       if (onSectionChange) {
         onSectionChange('requests', options);
@@ -2272,7 +2303,8 @@ const PaymentsFinancePage = ({
       }
 
       if (typeof window !== 'undefined') {
-        window.location.assign(paymentRequestsBasePath);
+        const suffix = normalizedSubPath ? `/${normalizedSubPath}` : '';
+        window.location.assign(`${paymentRequestsBasePath}${suffix}`);
       }
     },
     [onSectionChange, paymentRequestsBasePath, setActiveTab],
@@ -3274,6 +3306,24 @@ const PaymentsFinancePage = ({
               language={normalizedLanguage}
               strings={strings.detail ?? {}}
               onBreadcrumbChange={onPaymentBreadcrumbChange}
+            />
+          </section>
+        </div>
+      ) : isPaymentRequestScheduleDetailRoute ? (
+        <div className="page__layout">
+          <section className="page__content">
+            <PaymentRequestScheduleDetailPage
+              scheduleId={paymentRequestScheduleDetailId}
+              language={normalizedLanguage}
+              strings={strings.requestsScheduleDetail ?? {}}
+              onBreadcrumbChange={onPaymentBreadcrumbChange}
+              onNavigateBack={() => {
+                setActiveTab('requests');
+                setRequestsView(REQUESTS_VIEW_KEYS.scheduled);
+                handlePaymentRequestListNavigation({ replace: true, subPath: 'scheduled' });
+              }}
+              onStudentDetail={onStudentDetail}
+              onPaymentRequestDetail={handlePaymentRequestDetailNavigation}
             />
           </section>
         </div>
