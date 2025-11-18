@@ -521,17 +521,13 @@ const PaymentRequestScheduleDetailPage = ({
                     <h3 className="fw-bold mt-1">#{detail.payment_request_scheduled_id ?? '—'}</h3>
                   </header>
 
-                  <dl className="schedule-field-grid m-0">
-                    <div>
-                      <dt className="text-muted small">{mergedStrings.fields.concept}</dt>
-                      <dd className="fw-medium">{detail.pt_name || detail.payment_concept || '—'}</dd>
-                    </div>
+                  <div className="execution-box">
+                      <p className="text-muted small">{mergedStrings.fields.concept}</p>
+                      <p className="fw-medium">{detail.pt_name || detail.payment_concept || '—'}</p>
 
-                    <div className=''>
-                      <dt className="text-muted small">{mergedStrings.fields.comments}</dt>
-                      <dd className="fw-medium schedule-detail__amount-box">{detail.comments || '—'}</dd>
-                    </div>
-                  </dl>
+                      <p className="text-muted small mt-2">{mergedStrings.fields.comments}</p>
+                      <p className="fw-medium schedule-detail__amount-box">{detail.comments || '—'}</p>
+                  </div>
                 </UiCard>
               </div>
 
@@ -569,26 +565,22 @@ const PaymentRequestScheduleDetailPage = ({
                   </header>
 
                   <dl className="schedule-field-grid schedule-field-grid--columns m-0">
-                    <div>
-                      <dt className="text-muted small">{mergedStrings.fields.periodName}</dt>
-                      <dd className="fw-medium">{detail.period_name || '—'}</dd>
+                    <div className='execution-box'>
+                      <p className="text-muted small">{mergedStrings.fields.periodName}</p>
+                      <p className="fw-medium">{detail.period_name || '—'}</p>
+
+                      <p className="text-muted small mt-2">{mergedStrings.fields.paymentWindow}</p>
+                      <p className="fw-medium">{detail.payment_window ?? '—'}</p>
                     </div>
 
-                    <div>
-                      <dt className="text-muted small">{mergedStrings.fields.paymentWindow}</dt>
-                      <dd className="fw-medium">{detail.payment_window ?? '—'}</dd>
-                    </div>
+                    <div className='execution-box'>
+                      <p className="text-muted small">{mergedStrings.fields.startDate}</p>
+                      <p className="fw-medium">{formatDate(detail.start_date, language) || '—'}</p>
 
-                    <div>
-                      <dt className="text-muted small">{mergedStrings.fields.startDate}</dt>
-                      <dd className="fw-medium">{formatDate(detail.start_date, language) || '—'}</dd>
-                    </div>
-
-                    <div>
-                      <dt className="text-muted small">{mergedStrings.fields.endDate}</dt>
-                      <dd className="fw-medium">
+                      <p className="text-muted small mt-2">{mergedStrings.fields.endDate}</p>
+                      <p className="fw-medium">
                         {formatDate(detail.end_date, language) || mergedStrings.fields.indefinite}
-                      </dd>
+                      </p>
                     </div>
                   </dl>
                 </UiCard>
