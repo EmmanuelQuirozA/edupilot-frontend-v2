@@ -32,9 +32,6 @@
   height: 100%;
 }
 
-.schedule-detail__card--wide {
-  grid-column: span 2;
-}
 
 .schedule-detail__card--stacked {
   grid-column: span 2;
@@ -287,9 +284,47 @@ details[open] .schedule-detail__log-chevron {
   .schedule-detail__log summary {
     align-items: flex-start;
   }
+}
 
-  .schedule-detail__card--wide,
-  .schedule-detail__card--stacked {
-    grid-column: span 1;
-  }
+
+.schedule-card {
+  border-radius: 12px;
+  background: #fff;
+}
+
+.schedule-field-grid {
+  display: grid;
+  row-gap: 0.75rem;
+}
+
+.schedule-field-grid--columns {
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 1.2rem;
+}
+
+.schedule-badge {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.schedule-badge--success {
+  background: #e8f7ee;
+  color: #37a55c;
+}
+
+.schedule-badge--warning {
+  background: #fff7e6;
+  color: #c09524;
+}
+
+.execution-date {
+  font-size: 1.25rem;
+  color: #4a4de7;
+  font-weight: 700;
+}
+
+.execution-box p {
+  margin: 0;
 }
