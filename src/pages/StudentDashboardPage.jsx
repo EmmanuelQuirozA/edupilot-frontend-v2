@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import LanguageSelector from '../components/LanguageSelector';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { getTranslation } from '../i18n/translations';
 import { handleExpiredToken } from '../utils/auth';
+import { buildMenuItemsForRole, getRoleLabel, normalizeRoleName } from '../utils/menuItems';
+import '../components/HomePage.css';
 import './StudentDashboardPage.css';
 
 const formatCurrency = (value, locale = 'es-MX') => {
@@ -53,11 +55,26 @@ const normalizeArray = (data) => {
   return [];
 };
 
+const COLLAPSE_BREAKPOINT = 1200;
+const getIsDesktop = () => (typeof window === 'undefined' ? true : window.innerWidth >= COLLAPSE_BREAKPOINT);
+
 const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
   const { token, user, logout } = useAuth();
   const t = getTranslation(language);
   const strings = t.home?.studentDashboard ?? {};
   const locale = language === 'en' ? 'en-US' : 'es-MX';
+  const roleName = user?.role_name ?? user?.role ?? user?.roleName ?? '';
+  const normalizedRole = normalizeRoleName(roleName);
+  const roleLabel = getRoleLabel(t, roleName);
+  const menuItems = useMemo(() => buildMenuItemsForRole(normalizedRole, t.home.menu.items), [normalizedRole, t.home.menu.items]);
+  const displayName = user?.first_name ?? user?.name ?? user?.username ?? roleLabel;
+  const initials = displayName
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join('');
+  const headerTitle = strings.title ?? t.home.header.title;
+  const headerSubtitle = strings.subtitle ?? t.home.header.subtitle;
 
   const [profile, setProfile] = useState(null);
   const [pendingAmount, setPendingAmount] = useState(null);
@@ -68,6 +85,28 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshIndex, setRefreshIndex] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(getIsDesktop);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(getIsDesktop);
+  const [activeNav, setActiveNav] = useState('dashboard');
+
+
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen((value) => !value);
+  }, []);
+
+  const closeSidebar = useCallback(() => {
+    setIsSidebarOpen(false);
+  }, []);
+
+  const handleNavClick = useCallback(
+    (key) => {
+      setActiveNav(key);
+      if (!isDesktop) {
+        setIsSidebarOpen(false);
+      }
+    },
+    [isDesktop],
+  );
 
   const headers = useMemo(
     () => ({
@@ -90,6 +129,26 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
 
     return response.json();
   };
+
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return () => {};
+    }
+
+    const handleResize = () => {
+      const desktop = getIsDesktop();
+      setIsDesktop(desktop);
+      setIsSidebarOpen(desktop);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -209,7 +268,7 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
       .slice(0, 6);
   }, [locale, recentPayments, recharges, strings.tables?.payments, strings.tables?.recharges]);
 
-  return (
+  const dashboardContent = (
     <div className="student-dashboard">
       <header className="student-dashboard__header">
         <div className="student-dashboard__hero">
@@ -226,7 +285,6 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
             </div>
           </div>
           <div className="student-dashboard__header-actions">
-            <LanguageSelector language={language} onLanguageChange={onLanguageChange} />
             <button type="button" className="student-dashboard__refresh" onClick={handleRefresh} disabled={loading}>
               {strings.actions?.refresh}
             </button>
@@ -412,5 +470,97 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
     </div>
   );
 };
+
+
+  return (
+    <div className={`dashboard${isSidebarOpen && !isDesktop ? ' has-overlay' : ''}`}>
+      <aside
+        className={`dashboard__sidebar${isSidebarOpen ? ' is-visible' : ''}${isDesktop ? '' : ' is-collapsible'}`}
+      >
+        {!isDesktop ? (
+          <button
+            type='button'
+            className='sidebar__close'
+            onClick={closeSidebar}
+            aria-label={t.home.header.closeMenu}
+          >
+            ×
+          </button>
+        ) : null}
+        <div className='sidebar__profile'>
+          <div className='sidebar__avatar' aria-hidden='true'>
+            {initials || 'AD'}
+          </div>
+          <div>
+            <p className='sidebar__name'>{displayName}</p>
+            <span className='sidebar__role'>{roleLabel}</span>
+          </div>
+        </div>
+        <nav className='sidebar__nav' aria-label={t.home.menu.main}>
+          <p className='sidebar__section'>{t.home.menu.main}</p>
+          <ul>
+            {menuItems.map((item) => (
+              <li
+                key={item.key}
+                className={activeNav === item.key ? 'is-active' : ''}
+                onClick={() => handleNavClick(item.key)}
+              >
+                {item.icon} {item.label}
+              </li>
+            ))}
+          </ul>
+          <p className='sidebar__section'>{t.home.menu.settings}</p>
+          <ul>
+            <li>{t.home.menu.paymentCenter}</li>
+            <li>{t.home.menu.configuration}</li>
+          </ul>
+        </nav>
+        <button type='button' className='sidebar__logout' onClick={logout}>
+          {t.home.logout}
+        </button>
+      </aside>
+
+      {!isDesktop ? (
+        <button
+          type='button'
+          className='dashboard__menu-toggle'
+          onClick={toggleSidebar}
+          aria-label={isSidebarOpen ? t.home.header.closeMenu : t.home.header.openMenu}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+      ) : null}
+
+      {!isDesktop && isSidebarOpen ? <div className='dashboard__overlay' onClick={closeSidebar} aria-hidden='true' /> : null}
+
+      <div className='dashboard__main'>
+        <header className='dashboard__header'>
+          <div className='dashboard__header-title'>
+            <div>
+              <h1>{headerTitle}</h1>
+              <p className='dashboard__subtitle'>{headerSubtitle}</p>
+            </div>
+          </div>
+          <div className='dashboard__actions'>
+            <LanguageSelector value={language} onChange={onLanguageChange} />
+            <div className='dashboard__user-chip'>
+              <div className='dashboard__user-initials' aria-hidden='true'>
+                {initials || 'AD'}
+              </div>
+              <div>
+                <p>{displayName}</p>
+                <span>{user?.role ?? roleLabel}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {dashboardContent}
+      </div>
+    </div>
+  );
+}
 
 export default StudentDashboardPage;
