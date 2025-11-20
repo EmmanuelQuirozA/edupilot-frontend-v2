@@ -27,7 +27,7 @@ const base64UrlDecode = (segment) => {
   }
 };
 
-const decodeJwtPayload = (token) => {
+export const decodeJwtPayload = (token) => {
   if (!token || typeof token !== 'string') {
     return null;
   }

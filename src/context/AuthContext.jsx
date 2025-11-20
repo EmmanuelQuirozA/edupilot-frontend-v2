@@ -1,6 +1,6 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../config';
-import { getRoleIdFromToken, getRoleNameFromToken } from '../utils/jwt';
+import { decodeJwtPayload, getRoleIdFromToken, getRoleNameFromToken } from '../utils/jwt';
 
 const AuthContext = createContext(null);
 
@@ -62,6 +62,44 @@ const deriveUser = (data) => {
   return null;
 };
 
+const deriveUserFromToken = (token, user) => {
+  if (!token) {
+    return user ?? null;
+  }
+
+  const claims = decodeJwtPayload(token) ?? {};
+  const roleFromUser = user?.role ?? user?.role_name ?? user?.roleName;
+  const tokenRole = getRoleNameFromToken(token);
+  const role = typeof roleFromUser === 'string' && roleFromUser.trim() ? roleFromUser : tokenRole;
+
+  const roleIdFromUser = user?.role_id ?? user?.roleId;
+  const roleId = Number.isFinite(Number(roleIdFromUser)) ? Number(roleIdFromUser) : getRoleIdFromToken(token);
+
+  const username = user?.username ?? user?.user_name ?? claims.sub ?? null;
+  const schoolId = user?.school_id ?? user?.schoolId ?? claims.school_id ?? claims.schoolId ?? null;
+  const userId = user?.id ?? user?.user_id ?? user?.userId ?? claims.user_id ?? claims.userId ?? null;
+
+  const mergedUser = {
+    ...(user ?? {}),
+    ...(role ? { role, role_name: role } : {}),
+    ...(Number.isFinite(roleId) ? { role_id: roleId } : {}),
+  };
+
+  if (username) {
+    mergedUser.username = username;
+  }
+
+  if (schoolId !== null && schoolId !== undefined) {
+    mergedUser.school_id = schoolId;
+  }
+
+  if (userId !== null && userId !== undefined) {
+    mergedUser.user_id = userId;
+  }
+
+  return Object.keys(mergedUser).length > 0 ? mergedUser : null;
+};
+
 export const AuthProvider = ({ children }) => {
   const { token: storedToken, user: storedUser } = getStoredAuth();
   const [token, setToken] = useState(storedToken);
@@ -117,12 +155,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       const userWithRole = { ...resolvedUser, role, role_id: roleId ?? resolvedUser?.role_id ?? null };
+      const enrichedUser = deriveUserFromToken(resolvedToken, userWithRole);
 
       setToken(resolvedToken ?? null);
-      setUser(userWithRole);
-      persistAuth({ token: resolvedToken ?? null, user: userWithRole });
+      setUser(enrichedUser);
+      persistAuth({ token: resolvedToken ?? null, user: enrichedUser });
 
-      return userWithRole;
+      return enrichedUser;
     } catch (error) {
       if (error instanceof Error) {
         if (error.code === 'MISSING_ROLE' || error.status) {
@@ -155,15 +194,26 @@ export const AuthProvider = ({ children }) => {
     persistAuth(null);
   };
 
+  const normalizedUser = useMemo(() => deriveUserFromToken(token, user), [token, user]);
+
+  useEffect(() => {
+    if (!token) {
+      persistAuth(null);
+      return;
+    }
+
+    persistAuth({ token, user: normalizedUser ?? null });
+  }, [token, normalizedUser]);
+
   const value = useMemo(
     () => ({
       token,
-      user,
+      user: normalizedUser,
       login,
       logout,
       loading,
     }),
-    [token, user, loading],
+    [token, normalizedUser, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
