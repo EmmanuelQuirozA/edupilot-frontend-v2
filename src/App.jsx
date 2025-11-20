@@ -4,6 +4,7 @@ import HomePage from './components/HomePage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import { useAuth } from './context/AuthContext';
 import { getTranslation } from './i18n/translations';
+import { getRoleIdFromToken } from './utils/jwt';
 import './App.css';
 
 const supportedLanguages = ['es', 'en'];
@@ -36,9 +37,18 @@ const STUDENT_HOME_PAGE = 'student-dashboard';
 const buildPath = (language, section) => `/${language}/${section}`;
 
 const App = () => {
-  const { user } = useAuth();
-  const roleId = Number(user?.role_id ?? user?.roleId);
-  const isStudentRole = Number.isFinite(roleId) && roleId === 4;
+  const { user, token } = useAuth();
+  const tokenRoleId = useMemo(() => getRoleIdFromToken(token), [token]);
+  const roleId = useMemo(() => {
+    const userRoleId = Number(user?.role_id ?? user?.roleId);
+    if (Number.isFinite(userRoleId)) {
+      return userRoleId;
+    }
+
+    const numericTokenRoleId = Number(tokenRoleId);
+    return Number.isFinite(numericTokenRoleId) ? numericTokenRoleId : null;
+  }, [tokenRoleId, user]);
+  const isStudentRole = roleId === 4;
   const [path, setPath] = useState(() => (typeof window === 'undefined' ? '/' : window.location.pathname));
   const fallbackLanguageRef = useRef(getInitialLanguage());
   const fallbackLanguage = fallbackLanguageRef.current;

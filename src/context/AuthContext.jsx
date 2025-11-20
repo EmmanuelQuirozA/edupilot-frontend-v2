@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../config';
+import { getRoleIdFromToken, getRoleNameFromToken } from '../utils/jwt';
 
 const AuthContext = createContext(null);
 
@@ -106,7 +107,8 @@ export const AuthProvider = ({ children }) => {
 
       const resolvedToken = deriveToken(payload);
       const resolvedUser = deriveUser(payload) ?? payload;
-      const role = resolvedUser?.role_name ?? payload?.role_name;
+      const roleId = resolvedUser?.role_id ?? resolvedUser?.roleId ?? getRoleIdFromToken(resolvedToken);
+      const role = resolvedUser?.role_name ?? payload?.role_name ?? getRoleNameFromToken(resolvedToken);
 
       if (!role) {
         const roleError = new Error('Unable to determine user role from the server response.');
@@ -114,7 +116,7 @@ export const AuthProvider = ({ children }) => {
         throw roleError;
       }
 
-      const userWithRole = { ...resolvedUser, role };
+      const userWithRole = { ...resolvedUser, role, role_id: roleId ?? resolvedUser?.role_id ?? null };
 
       setToken(resolvedToken ?? null);
       setUser(userWithRole);

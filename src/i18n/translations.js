@@ -159,10 +159,22 @@ export const translations = {
       },
       studentDashboard: {
         title: 'Panel del alumno',
+        greeting: 'Hola,',
         subtitle: 'Consulta tus pagos y colegiaturas en un solo lugar.',
         actions: {
           refresh: 'Actualizar',
           retry: 'Reintentar',
+        },
+        hero: {
+          ariaLabel: 'Datos rápidos del alumno',
+          referenceLabel: 'Referencia',
+          gradeLabel: 'Grupo',
+          generationLabel: 'Generación',
+        },
+        quickActions: {
+          title: 'Acciones rápidas',
+          seeHistory: 'Ver historial',
+          contact: 'Contactar soporte',
         },
         cards: {
           pending: 'Adeudo pendiente',
@@ -171,6 +183,15 @@ export const translations = {
           balanceHint: 'Saldo a favor en tu cuenta.',
           requests: 'Solicitudes pendientes',
           requestsHint: 'Pagos por completar.',
+          available: 'Disponible',
+          payNow: 'Pagar ahora',
+          pendingTag: 'Pendiente',
+          tuitionStatus: {
+            title: 'Estatus colegiatura',
+            amount: 'Monto aplicado: {amount}',
+            empty: 'Sin registros recientes',
+            unknown: 'Sin validar',
+          },
         },
         sections: {
           studentInfo: {
@@ -186,6 +207,8 @@ export const translations = {
           pendingRequests: {
             title: 'Solicitudes de pago pendientes',
             description: 'Revisa los cargos que requieren tu atención.',
+            viewAll: 'Ver todo',
+            dueLabel: 'Vence',
             empty: 'No tienes solicitudes pendientes.',
           },
           tuition: {
@@ -206,6 +229,19 @@ export const translations = {
             description: 'Movimientos de saldo en tu cuenta.',
             empty: 'No hay recargas registradas.',
           },
+          history: {
+            title: 'Historial reciente',
+            description: 'Movimientos de pagos y recargas.',
+            viewAll: 'Ver historial completo',
+            empty: 'Sin movimientos aún.',
+          },
+        },
+        support: {
+          title: '¿Dudas con un pago?',
+          headline: 'Estamos aquí para ayudarte',
+          description: 'Contacta a soporte para validar tus pagos o recargas.',
+          contact: 'Contactar soporte',
+          refresh: 'Actualizar datos',
         },
         tables: {
           pending: {
@@ -229,6 +265,8 @@ export const translations = {
             date: 'Fecha',
             receipt: 'Recibo',
             noTicket: 'Sin folio',
+            rechargeLabel: 'Recarga de saldo',
+            completed: 'Completado',
           },
         },
         loading: 'Cargando información...',
@@ -1336,10 +1374,22 @@ export const translations = {
       },
       studentDashboard: {
         title: 'Student dashboard',
+        greeting: 'Hi,',
         subtitle: 'Review your tuition, balance, and payments in one place.',
         actions: {
           refresh: 'Refresh',
           retry: 'Try again',
+        },
+        hero: {
+          ariaLabel: 'Quick student data',
+          referenceLabel: 'Reference',
+          gradeLabel: 'Class',
+          generationLabel: 'Generation',
+        },
+        quickActions: {
+          title: 'Quick actions',
+          seeHistory: 'View history',
+          contact: 'Contact support',
         },
         cards: {
           pending: 'Outstanding balance',
@@ -1348,6 +1398,15 @@ export const translations = {
           balanceHint: 'Positive balance in your account.',
           requests: 'Open requests',
           requestsHint: 'Payments that are still pending.',
+          available: 'Available',
+          payNow: 'Pay now',
+          pendingTag: 'Pending',
+          tuitionStatus: {
+            title: 'Tuition status',
+            amount: 'Applied amount: {amount}',
+            empty: 'No recent records',
+            unknown: 'Unvalidated',
+          },
         },
         sections: {
           studentInfo: {
@@ -1363,6 +1422,8 @@ export const translations = {
           pendingRequests: {
             title: 'Pending payment requests',
             description: 'Charges that need your attention.',
+            viewAll: 'View all',
+            dueLabel: 'Due',
             empty: 'You have no pending requests.',
           },
           tuition: {
@@ -1383,6 +1444,19 @@ export const translations = {
             description: 'History of balance recharges.',
             empty: 'No balance recharges have been recorded.',
           },
+          history: {
+            title: 'Recent activity',
+            description: 'Payment and top-up movements.',
+            viewAll: 'View full history',
+            empty: 'No activity yet.',
+          },
+        },
+        support: {
+          title: 'Questions about a payment?',
+          headline: 'We are here to help',
+          description: 'Reach out to support to validate your payments or top-ups.',
+          contact: 'Contact support',
+          refresh: 'Refresh data',
         },
         tables: {
           pending: {
@@ -1406,6 +1480,8 @@ export const translations = {
             date: 'Date',
             receipt: 'Receipt',
             noTicket: 'No receipt',
+            rechargeLabel: 'Balance recharge',
+            completed: 'Completed',
           },
         },
         loading: 'Loading your information...',
