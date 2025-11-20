@@ -1,0 +1,206 @@
+.student-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  background: #f6f8fb;
+  min-height: 100vh;
+  color: #0f172a;
+}
+
+.student-dashboard__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.student-dashboard__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #2563eb;
+  font-size: 12px;
+  margin: 0 0 4px;
+}
+
+.student-dashboard__subtitle {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.student-dashboard__header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.student-dashboard__refresh {
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.student-dashboard__refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.student-dashboard__refresh:not(:disabled):hover {
+  background: #dbeafe;
+  transform: translateY(-1px);
+}
+
+.student-dashboard__grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.student-dashboard__card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e2e8f0;
+}
+
+.student-dashboard__card-label {
+  color: #475569;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.student-dashboard__muted {
+  color: #64748b;
+  margin: 0;
+}
+
+.student-dashboard__section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e2e8f0;
+}
+
+.student-dashboard__section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.student-dashboard__info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.student-dashboard__table {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.student-dashboard__table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 12px 14px;
+  gap: 8px;
+  align-items: center;
+}
+
+.student-dashboard__table-row:nth-child(odd):not(.student-dashboard__table-head) {
+  background: #f8fafc;
+}
+
+.student-dashboard__table-head {
+  background: #f1f5f9;
+  font-weight: 700;
+  color: #475569;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #ecfeff;
+  color: #0ea5e9;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.status-chip--warning {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.student-dashboard__tuition-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.student-dashboard__tuition-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, #fff, #f8fafc);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-dashboard__tuition-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.student-dashboard__tuition-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.student-dashboard__alert {
+  background: #fef2f2;
+  border: 1px solid #fecdd3;
+  color: #b91c1c;
+  padding: 12px 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .student-dashboard {
+    padding: 20px;
+  }
+
+  .student-dashboard__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .student-dashboard__table-row {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+
+  .student-dashboard__tuition-row {
+    flex-direction: column;
+  }
+}

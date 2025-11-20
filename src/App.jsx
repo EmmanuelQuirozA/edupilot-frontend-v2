@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import LoginPage from './components/LoginPage';
 import HomePage from './components/HomePage';
+import StudentDashboardPage from './pages/StudentDashboardPage';
 import { useAuth } from './context/AuthContext';
 import { getTranslation } from './i18n/translations';
 import './App.css';
@@ -21,12 +22,23 @@ const getInitialLanguage = () => {
   return supportedLanguages.includes(browserLanguage) ? browserLanguage : 'es';
 };
 
-const HOME_PAGES = new Set(['dashboard', 'payments', 'students', 'teachers', 'schedules', 'grades', 'communications']);
+const HOME_PAGES = new Set([
+  'dashboard',
+  'payments',
+  'students',
+  'teachers',
+  'schedules',
+  'grades',
+  'communications',
+]);
+const STUDENT_HOME_PAGE = 'student-dashboard';
 
 const buildPath = (language, section) => `/${language}/${section}`;
 
 const App = () => {
   const { user } = useAuth();
+  const roleId = Number(user?.role_id ?? user?.roleId);
+  const isStudentRole = Number.isFinite(roleId) && roleId === 4;
   const [path, setPath] = useState(() => (typeof window === 'undefined' ? '/' : window.location.pathname));
   const fallbackLanguageRef = useRef(getInitialLanguage());
   const fallbackLanguage = fallbackLanguageRef.current;
@@ -83,12 +95,16 @@ const App = () => {
       return 'login';
     }
 
+    if (isStudentRole) {
+      return STUDENT_HOME_PAGE;
+    }
+
     if (!rawSection || rawSection === 'login') {
       return 'dashboard';
     }
 
     return HOME_PAGES.has(rawSection) ? rawSection : 'dashboard';
-  }, [rawSection, user]);
+  }, [isStudentRole, rawSection, user]);
 
   const normalizedPath = useMemo(() => {
     if (!user) {
@@ -96,6 +112,13 @@ const App = () => {
         return null;
       }
       return buildPath(language, resolvedSection);
+    }
+
+    if (isStudentRole) {
+      if (rawSection !== STUDENT_HOME_PAGE) {
+        return buildPath(language, STUDENT_HOME_PAGE);
+      }
+      return null;
     }
 
     if (!rawSection) {
@@ -107,7 +130,7 @@ const App = () => {
     }
 
     return null;
-  }, [language, rawSection, resolvedSection, user]);
+  }, [isStudentRole, language, rawSection, resolvedSection, user]);
 
   useEffect(() => {
     if (normalizedPath && path !== normalizedPath) {
@@ -256,6 +279,10 @@ const App = () => {
 
   if (!user && resolvedSection === 'login') {
     return <LoginPage language={language} onLanguageChange={handleLanguageChange} />;
+  }
+
+  if (user && isStudentRole) {
+    return <StudentDashboardPage language={language} onLanguageChange={handleLanguageChange} />;
   }
 
   if (user && HOME_PAGES.has(resolvedSection)) {
