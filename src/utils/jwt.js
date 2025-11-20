@@ -60,5 +60,13 @@ export const getRoleIdFromToken = (token) => {
 
 export const getRoleNameFromToken = (token) => {
   const claims = decodeJwtPayload(token);
-  return claims?.role_name ?? claims?.roleName ?? claims?.role?.name ?? null;
+  if (!claims) {
+    return null;
+  }
+
+  if (typeof claims.role === 'string' && claims.role.trim()) {
+    return claims.role;
+  }
+
+  return claims.role_name ?? claims.roleName ?? claims.role?.name ?? null;
 };

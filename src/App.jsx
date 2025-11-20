@@ -4,7 +4,7 @@ import HomePage from './components/HomePage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import { useAuth } from './context/AuthContext';
 import { getTranslation } from './i18n/translations';
-import { getRoleIdFromToken } from './utils/jwt';
+import { getRoleNameFromToken } from './utils/jwt';
 import './App.css';
 
 const supportedLanguages = ['es', 'en'];
@@ -38,17 +38,20 @@ const buildPath = (language, section) => `/${language}/${section}`;
 
 const App = () => {
   const { user, token } = useAuth();
-  const tokenRoleId = useMemo(() => getRoleIdFromToken(token), [token]);
-  const roleId = useMemo(() => {
-    const userRoleId = Number(user?.role_id ?? user?.roleId);
-    if (Number.isFinite(userRoleId)) {
-      return userRoleId;
+  const tokenRoleName = useMemo(() => getRoleNameFromToken(token), [token]);
+  const roleName = useMemo(() => {
+    const userRoleName = user?.role_name ?? user?.role ?? user?.roleName;
+    if (typeof userRoleName === 'string' && userRoleName.trim()) {
+      return userRoleName;
     }
 
-    const numericTokenRoleId = Number(tokenRoleId);
-    return Number.isFinite(numericTokenRoleId) ? numericTokenRoleId : null;
-  }, [tokenRoleId, user]);
-  const isStudentRole = roleId === 4;
+    if (typeof tokenRoleName === 'string' && tokenRoleName.trim()) {
+      return tokenRoleName;
+    }
+
+    return null;
+  }, [tokenRoleName, user]);
+  const isStudentRole = roleName?.toUpperCase?.() === 'STUDENT';
   const [path, setPath] = useState(() => (typeof window === 'undefined' ? '/' : window.location.pathname));
   const fallbackLanguageRef = useRef(getInitialLanguage());
   const fallbackLanguage = fallbackLanguageRef.current;
