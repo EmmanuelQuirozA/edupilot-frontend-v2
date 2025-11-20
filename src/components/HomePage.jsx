@@ -9,6 +9,7 @@ import TeachersPage from '../pages/TeachersPage';
 import SchedulesTasksPage from '../pages/SchedulesTasksPage';
 import GradesPage from '../pages/GradesPage';
 import CommunicationsPage from '../pages/CommunicationsPage';
+import { buildMenuItemsForRole, getRoleLabel, normalizeRoleName } from '../utils/menuItems';
 import Breadcrumbs from './Breadcrumbs';
 import StudentDetailPage from '../pages/StudentDetailPage';
 import './HomePage.css';
@@ -49,6 +50,9 @@ const HomePage = ({
 }) => {
   const { user, logout } = useAuth();
   const t = getTranslation(language);
+  const roleName = user?.role_name ?? user?.role ?? user?.roleName ?? '';
+  const normalizedRole = normalizeRoleName(roleName);
+  const roleLabel = getRoleLabel(t, roleName);
 
   const [activePage, setActivePage] = useState(activePageProp);
   const [isDesktop, setIsDesktop] = useState(getIsDesktop);
@@ -164,7 +168,7 @@ const HomePage = ({
     };
   }, []);
 
-  const displayName = user?.first_name ?? user?.name ?? user?.username ?? t.home.roleLabel;
+  const displayName = user?.first_name ?? user?.name ?? user?.username ?? roleLabel;
   const initials = displayName
     .split(' ')
     .map((part) => part.charAt(0).toUpperCase())
@@ -172,77 +176,8 @@ const HomePage = ({
     .join('');
 
   const menuItems = useMemo(
-    () => [
-      { key: 'dashboard',
-        label: t.home.menu.items.dashboard,
-        icon : 
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor"/>
-          <rect x="13" y="3" width="8" height="5" rx="2" fill="currentColor"/>
-          <rect x="13" y="10" width="8" height="11" rx="2" fill="currentColor"/>
-          <rect x="3" y="13" width="8" height="8" rx="2" fill="currentColor"/>
-        </svg> 
-      },
-      { key: 'payments', 
-        label: t.home.menu.items.payments, 
-        icon : 
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="2" y="6" width="20" height="12" rx="2" fill="currentColor" opacity="0.2"/>
-          <rect x="2" y="8" width="20" height="3" fill="currentColor"/>
-          <rect x="4" y="14" width="6" height="2" rx="1" fill="currentColor"/>
-          <rect x="12" y="14" width="4" height="2" rx="1" fill="currentColor"/>
-        </svg>
-      },
-      { key: 'students', 
-        label: t.home.menu.items.students, 
-        icon : 
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3 2 8l10 5 7-3.5V15a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-2" fill="currentColor" opacity="0.2"/>
-          <path d="M12 3 2 8l10 5 10-5-10-5Z" fill="currentColor"/>
-          <path d="M19 10v6a2 2 0 0 0 2 2h1" fill="currentColor"/>
-        </svg> 
-      },
-      { key: 'teachers', 
-        label: t.home.menu.items.teachers, 
-        icon : 
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="9" y="4" width="12" height="8" rx="1.5" fill="currentColor"/>
-          <circle cx="6.5" cy="9" r="2.5" fill="currentColor"/>
-          <path d="M2 18a4.5 4.5 0 0 1 9 0v2H2v-2Z" fill="currentColor"/>
-          <rect x="11" y="13" width="8" height="2" rx="1" fill="currentColor"/>
-        </svg>
-      },
-      { key: 'schedules', 
-        label: t.home.menu.items.schedules, 
-        icon : 
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="5" width="18" height="16" rx="2" fill="currentColor" opacity="0.2"/>
-          <rect x="3" y="8" width="18" height="3" fill="currentColor"/>
-          <rect x="7" y="3" width="2" height="4" rx="1" fill="currentColor"/>
-          <rect x="15" y="3" width="2" height="4" rx="1" fill="currentColor"/>
-          <path d="M9 16l2 2 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      },
-      { key: 'grades', 
-        label: t.home.menu.items.grades, 
-        icon : 
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 3h8l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" fill="currentColor" opacity="0.2"/>
-          <path d="M14 3v5h5" fill="currentColor"/>
-          <rect x="8" y="12" width="8" height="2" rx="1" fill="currentColor"/>
-          <rect x="8" y="16" width="6" height="2" rx="1" fill="currentColor"/>
-        </svg>
-      },
-      { key: 'communications', 
-        label: t.home.menu.items.communications, 
-        icon :
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 4h10a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-4 3V7a3 3 0 0 1 3-3Z" fill="currentColor"/>
-          <path d="M10 12h6a2 2 0 0 1 2 2v5l3-2" fill="currentColor" opacity="0.3"/>
-        </svg>
-      },
-    ],
-    [t.home.menu.items],
+    () => buildMenuItemsForRole(normalizedRole, t.home.menu.items),
+    [normalizedRole, t.home.menu.items],
   );
 
   const studentsPageStrings = t.home.studentsPage;
@@ -739,7 +674,7 @@ const HomePage = ({
           </div>
           <div>
             <p className="sidebar__name">{displayName}</p>
-            <span className="sidebar__role">{t.home.roleLabel}</span>
+            <span className="sidebar__role">{roleLabel}</span>
           </div>
         </div>
         <nav className="sidebar__nav" aria-label={t.home.menu.main}>
@@ -816,7 +751,7 @@ const HomePage = ({
               </div>
               <div>
                 <p>{displayName}</p>
-                <span>{user?.role ?? t.home.roleLabel}</span>
+                <span>{user?.role ?? roleLabel}</span>
               </div>
             </div>
           </div>
