@@ -103,7 +103,7 @@ const deriveUserFromToken = (token, user) => {
 export const AuthProvider = ({ children }) => {
   const { token: storedToken, user: storedUser } = getStoredAuth();
   const [token, setToken] = useState(storedToken);
-  const [user, setUser] = useState(storedUser);
+  const [user, setUser] = useState(() => deriveUserFromToken(storedToken, storedUser));
   const [loading, setLoading] = useState(false);
 
   const login = async (usernameOrEmail, password) => {

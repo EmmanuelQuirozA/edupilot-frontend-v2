@@ -39,19 +39,19 @@ const buildPath = (language, section) => `/${language}/${section}`;
 const App = () => {
   const { user, token } = useAuth();
   const tokenRoleName = useMemo(() => getRoleNameFromToken(token), [token]);
-  const roleName = useMemo(() => {
-    const userRoleName = user?.role_name ?? user?.role ?? user?.roleName;
-    if (typeof userRoleName === 'string' && userRoleName.trim()) {
-      return userRoleName;
-    }
+  // const roleName = useMemo(() => {
+  //   const userRoleName = user?.role_name ?? user?.role ?? user?.roleName;
+  //   if (typeof userRoleName === 'string' && userRoleName.trim()) {
+  //     return userRoleName;
+  //   }
 
-    if (typeof tokenRoleName === 'string' && tokenRoleName.trim()) {
-      return tokenRoleName;
-    }
+  //   if (typeof tokenRoleName === 'string' && tokenRoleName.trim()) {
+  //     return tokenRoleName;
+  //   }
 
-    return null;
-  }, [tokenRoleName, user]);
-  const isStudentRole = roleName?.toUpperCase?.() === 'STUDENT';
+  //   return null;
+  // }, [tokenRoleName, user]);
+  const isStudentRole = tokenRoleName?.toUpperCase?.() === 'STUDENT';
   const [path, setPath] = useState(() => (typeof window === 'undefined' ? '/' : window.location.pathname));
   const fallbackLanguageRef = useRef(getInitialLanguage());
   const fallbackLanguage = fallbackLanguageRef.current;
