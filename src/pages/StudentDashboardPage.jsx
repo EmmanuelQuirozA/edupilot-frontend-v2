@@ -469,8 +469,6 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
       </section>
     </div>
   );
-};
-
 
   return (
     <div className={`dashboard${isSidebarOpen && !isDesktop ? ' has-overlay' : ''}`}>
