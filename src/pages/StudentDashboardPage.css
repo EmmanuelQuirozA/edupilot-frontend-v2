@@ -15,7 +15,6 @@
 }
 
 .student-dashboard__hero {
-  flex: 1 1 540px;
   background: #ffffff;
   border-radius: 18px;
   padding: 20px;
@@ -54,7 +53,7 @@
 
 .badge {
   background: #eef2ff;
-  color: #4338ca;
+  color: #4338ca !important;
   padding: 6px 10px;
   border-radius: 999px;
   font-weight: 600;
@@ -67,25 +66,12 @@
   align-items: center;
 }
 
-.student-dashboard__quick-links {
-  flex: 0 1 280px;
-  background: #0f172a;
-  color: #f8fafc;
-  border-radius: 18px;
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
-}
-
 .student-dashboard__quick-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.student-dashboard__refresh,
 .ghost-button,
 .primary-outline,
 .primary-button {
@@ -95,12 +81,6 @@
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   border: 1px solid transparent;
-}
-
-.student-dashboard__refresh {
-  border-color: #bfdbfe;
-  background: #eff6ff;
-  color: #1d4ed8;
 }
 
 .ghost-button {
@@ -121,7 +101,6 @@
   border: none;
 }
 
-.student-dashboard__refresh:disabled,
 .ghost-button:disabled,
 .primary-outline:disabled,
 .primary-button:disabled {
@@ -129,18 +108,11 @@
   cursor: not-allowed;
 }
 
-.student-dashboard__refresh:not(:disabled):hover,
 .ghost-button:not(:disabled):hover,
 .primary-outline:not(:disabled):hover,
 .primary-button:not(:disabled):hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-}
-
-.student-dashboard__grid {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .student-dashboard__card {
@@ -153,14 +125,6 @@
   justify-content: space-between;
   gap: 10px;
   align-items: center;
-}
-
-.student-dashboard__card--success {
-  background: linear-gradient(180deg, #ecfdf3, #f0fdf4);
-}
-
-.student-dashboard__card--danger {
-  background: linear-gradient(180deg, #fff1f2, #ffe4e6);
 }
 
 .student-dashboard__card--warning {
@@ -177,6 +141,11 @@
   margin: 0 0 6px;
   text-transform: uppercase;
   font-size: 12px;
+}
+
+.student-dashboard__cardIcons{
+  width: 100px;
+  height: 100px;
 }
 
 .student-dashboard__muted {
@@ -252,12 +221,6 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.tile__title {
-  margin: 0;
-  font-weight: 700;
-  font-size: 16px;
 }
 
 .tile__meta {

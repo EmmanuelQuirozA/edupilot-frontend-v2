@@ -178,7 +178,7 @@ export const translations = {
         },
         cards: {
           pending: 'Adeudo pendiente',
-          pendingHint: 'Incluye cargos y recargos vigentes.',
+          pendingHint: 'Incluye recargos vigentes.',
           balance: 'Saldo disponible',
           balanceHint: 'Saldo a favor en tu cuenta.',
           requests: 'Solicitudes pendientes',

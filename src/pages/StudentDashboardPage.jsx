@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { getTranslation } from '../i18n/translations';
 import { handleExpiredToken } from '../utils/auth';
 import { buildMenuItemsForRole, getRoleLabel, normalizeRoleName } from '../utils/menuItems';
+import { getRoleNameFromToken } from '../utils/jwt';
 import '../components/HomePage.css';
 import './StudentDashboardPage.css';
 
@@ -63,7 +64,8 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
   const t = getTranslation(language);
   const strings = t.home?.studentDashboard ?? {};
   const locale = language === 'en' ? 'en-US' : 'es-MX';
-  const roleName = user?.role_name ?? user?.role ?? user?.roleName ?? '';
+  const tokenRoleName = useMemo(() => getRoleNameFromToken(token), [token]);
+  const roleName = tokenRoleName ?? user?.role_name ?? user?.role ?? user?.roleName ?? '';
   const normalizedRole = normalizeRoleName(roleName);
   const roleLabel = getRoleLabel(t, roleName);
   const menuItems = useMemo(() => buildMenuItemsForRole(normalizedRole, t.home.menu.items), [normalizedRole, t.home.menu.items]);
@@ -269,9 +271,8 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
   }, [locale, recentPayments, recharges, strings.tables?.payments, strings.tables?.recharges]);
 
   const dashboardContent = (
-    <div className="student-dashboard">
-      <header className="student-dashboard__header">
-        <div className="student-dashboard__hero">
+    <div className="page">
+        <div className="student-dashboard__hero col-md-12">
           <div>
             <p className="student-dashboard__eyebrow">{strings.title}</p>
             <h1>
@@ -284,189 +285,171 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
               <span className="badge">{strings.hero?.generationLabel}: {generation}</span>
             </div>
           </div>
-          <div className="student-dashboard__header-actions">
-            <button type="button" className="student-dashboard__refresh" onClick={handleRefresh} disabled={loading}>
-              {strings.actions?.refresh}
+        </div>
+
+        {error ? (
+          <div className="student-dashboard__alert" role="alert">
+            <p>{error}</p>
+            <button type="button" onClick={handleRefresh}>
+              {strings.actions?.retry}
             </button>
           </div>
-        </div>
-        <div className="student-dashboard__quick-links">
-          <p className="student-dashboard__muted">{strings.quickActions?.title}</p>
-          <div className="student-dashboard__quick-actions">
-            <button type="button" className="ghost-button" onClick={handleRefresh} disabled={loading}>
-              {strings.quickActions?.seeHistory}
-            </button>
-            <button type="button" className="primary-outline" disabled={loading}>
-              {strings.quickActions?.contact}
-            </button>
-          </div>
-        </div>
-      </header>
+        ) : null}
 
-      {error ? (
-        <div className="student-dashboard__alert" role="alert">
-          <p>{error}</p>
-          <button type="button" onClick={handleRefresh}>
-            {strings.actions?.retry}
-          </button>
+        <div className="card bg-transparent border-0">
+          <div className="row row-cols-1 gy-3">
+            <div className="col-md-4">
+            <article className="student-dashboard__card h-100">
+              <div>
+                <p className="student-dashboard__card-label">{strings.cards?.balance}</p>
+                <h2 className='text-success'>{formatCurrency(profile?.balance ?? 0, locale)}</h2>
+                <p className="student-dashboard__muted">{strings.cards?.balanceHint}</p>
+              </div>
+              <div className="text-success p-2">
+                <svg className='student-dashboard__cardIcons opacity-25' xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="wallet"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+              </div>          
+            </article>
+            </div>
+            <div className="col-md-4">
+            <article className="student-dashboard__card h-100">
+              <div>
+                <p className="student-dashboard__card-label">{strings.cards?.pending}</p>
+                <h2 className='text-danger'>{pendingAmount == null ? '—' : formatCurrency(pendingAmount, locale)}</h2>
+                <p className="student-dashboard__muted">{strings.cards?.pendingHint}</p>
+              </div>
+              <div className="text-danger p-2">
+                  <svg className='student-dashboard__cardIcons opacity-25' xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>
+              </div>
+            </article>
+            </div>
+            <div className="col-md-4">
+            <article className="student-dashboard__card student-dashboard__card--warning h-100">
+              <div>
+                <p className="student-dashboard__card-label">{strings.cards?.requests}</p>
+                <h2>{pendingRequests.length}</h2>
+                <p className="student-dashboard__muted">{strings.cards?.requestsHint}</p>
+              </div>
+              <span className="pill pill--warning">{strings.cards?.pendingTag}</span>
+            </article>
+            </div>
+          </div>
         </div>
-      ) : null}
 
-      <section className="student-dashboard__grid">
-        <article className="student-dashboard__card student-dashboard__card--success">
-          <div>
-            <p className="student-dashboard__card-label">{strings.cards?.balance}</p>
-            <h2>{formatCurrency(profile?.balance ?? 0, locale)}</h2>
-            <p className="student-dashboard__muted">{strings.cards?.balanceHint}</p>
-          </div>
-          <span className="pill pill--success">{strings.cards?.available}</span>
-        </article>
-        <article className="student-dashboard__card student-dashboard__card--danger">
-          <div>
-            <p className="student-dashboard__card-label">{strings.cards?.pending}</p>
-            <h2>{pendingAmount == null ? '—' : formatCurrency(pendingAmount, locale)}</h2>
-            <p className="student-dashboard__muted">{strings.cards?.pendingHint}</p>
-          </div>
-          <button type="button" className="primary-button" disabled={pendingAmount === 0 || pendingAmount == null}>
-            {strings.cards?.payNow}
-          </button>
-        </article>
-        <article className="student-dashboard__card student-dashboard__card--warning">
-          <div>
-            <p className="student-dashboard__card-label">{strings.cards?.requests}</p>
-            <h2>{pendingRequests.length}</h2>
-            <p className="student-dashboard__muted">{strings.cards?.requestsHint}</p>
-          </div>
-          <span className="pill pill--warning">{strings.cards?.pendingTag}</span>
-        </article>
-        <article className="student-dashboard__card student-dashboard__card--info">
-          <div>
-            <p className="student-dashboard__card-label">{strings.cards?.tuitionStatus?.title}</p>
-            <h2>{tuitionStatus?.label || strings.cards?.tuitionStatus?.empty}</h2>
-            <p className="student-dashboard__muted">{tuitionAmountText}</p>
-          </div>
-          <span className="pill">{tuitionStatus?.status || strings.cards?.tuitionStatus?.unknown}</span>
-        </article>
-      </section>
+        <section className="student-dashboard__two-column">
+          <article className="student-dashboard__section">
+            <div className="student-dashboard__section-header">
+              <div>
+                <h3>{strings.sections?.pendingRequests?.title}</h3>
+                <p className="student-dashboard__muted">{strings.sections?.pendingRequests?.description}</p>
+              </div>
+              <button type="button" className="ghost-button" onClick={handleRefresh} disabled={loading}>
+                {strings.sections?.pendingRequests?.viewAll}
+              </button>
+            </div>
+            {loading && pendingRequests.length === 0 ? <p className="student-dashboard__muted">{strings.loading}</p> : null}
+            {!loading && pendingRequests.length === 0 ? (
+              <p className="student-dashboard__muted">{strings.sections?.pendingRequests?.empty}</p>
+            ) : null}
+            {pendingRequests.length > 0 ? (
+              <div className="student-dashboard__tiles">
+                {pendingRequests.map((request) => (
+                  <div className="tile" key={request.paymentRequestId || request.payment_request_id}>
+                    <div>
+                      <p className="student-dashboard__muted">{strings.tables?.pending?.concept}</p>
+                      <p className="fw-bold m-0">{request.pt_name || request.ptName || strings.tables?.pending?.unknown}</p>
+                      <p className="student-dashboard__muted">
+                        {strings.sections?.pendingRequests?.dueLabel}: {formatDate(request.pr_pay_by || request.prPayBy, locale)}
+                      </p>
+                    </div>
+                    <div className="tile__meta">
+                      <span className="pill pill--warning">{request.ps_pr_name || request.psPrName || strings.tables?.pending?.statusPending}</span>
+                      <strong>{formatCurrency(request.pr_amount ?? request.prAmount ?? 0, locale)}</strong>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </article>
 
-      <section className="student-dashboard__two-column">
-        <article className="student-dashboard__section">
+          <article className="student-dashboard__section">
+            <div className="student-dashboard__section-header">
+              <div>
+                <h3>{strings.sections?.studentInfo?.title}</h3>
+                <p className="student-dashboard__muted">{strings.sections?.studentInfo?.description}</p>
+              </div>
+            </div>
+            <div className="student-dashboard__info-grid">
+              <div>
+                <p className="student-dashboard__muted">{strings.sections?.studentInfo?.registerId}</p>
+                <p className='fw-bold text-muted'>{profile?.registerId || '—'}</p>
+              </div>
+              <div>
+                <p className="student-dashboard__muted">{strings.sections?.studentInfo?.paymentReference}</p>
+                <p className='fw-bold text-muted'>{reference}</p>
+              </div>
+              <div>
+                <p className="student-dashboard__muted">{strings.sections?.studentInfo?.school}</p>
+                <p className='fw-bold text-muted'>{profile?.commercialName || '—'}</p>
+              </div>
+              <div>
+                <p className="student-dashboard__muted">{strings.sections?.studentInfo?.generation}</p>
+                <p className='fw-bold text-muted'>{generation}</p>
+              </div>
+              <div>
+                <p className="student-dashboard__muted">{strings.sections?.studentInfo?.grade}</p>
+                <p className='fw-bold text-muted'>{grade}</p>
+              </div>
+              <div>
+                <p className="student-dashboard__muted">{strings.sections?.studentInfo?.status}</p>
+                <p className='fw-bold text-muted'>{profile?.userStatus || '—'}</p>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section className="student-dashboard__section">
           <div className="student-dashboard__section-header">
             <div>
-              <h3>{strings.sections?.pendingRequests?.title}</h3>
-              <p className="student-dashboard__muted">{strings.sections?.pendingRequests?.description}</p>
+              <h3>{strings.sections?.history?.title}</h3>
+              <p className="student-dashboard__muted">{strings.sections?.history?.description}</p>
             </div>
-            <button type="button" className="ghost-button" onClick={handleRefresh} disabled={loading}>
-              {strings.sections?.pendingRequests?.viewAll}
+            <button type="button" className="ghost-button" disabled={loading}>
+              {strings.sections?.history?.viewAll}
             </button>
           </div>
-          {loading && pendingRequests.length === 0 ? <p className="student-dashboard__muted">{strings.loading}</p> : null}
-          {!loading && pendingRequests.length === 0 ? (
-            <p className="student-dashboard__muted">{strings.sections?.pendingRequests?.empty}</p>
-          ) : null}
-          {pendingRequests.length > 0 ? (
-            <div className="student-dashboard__tiles">
-              {pendingRequests.map((request) => (
-                <div className="tile" key={request.paymentRequestId || request.payment_request_id}>
-                  <div>
-                    <p className="student-dashboard__muted">{strings.tables?.pending?.concept}</p>
-                    <p className="tile__title">{request.pt_name || request.ptName || strings.tables?.pending?.unknown}</p>
-                    <p className="student-dashboard__muted">
-                      {strings.sections?.pendingRequests?.dueLabel}: {formatDate(request.pr_pay_by || request.prPayBy, locale)}
-                    </p>
-                  </div>
-                  <div className="tile__meta">
-                    <span className="pill pill--warning">{request.ps_pr_name || request.psPrName || strings.tables?.pending?.statusPending}</span>
-                    <strong>{formatCurrency(request.pr_amount ?? request.prAmount ?? 0, locale)}</strong>
+          {recentEvents.length === 0 ? (
+            <p className="student-dashboard__muted">{strings.sections?.history?.empty}</p>
+          ) : (
+            <div className="student-dashboard__timeline">
+              {recentEvents.map((event) => (
+                <div className="timeline-item" key={`${event.type}-${event.id}`}>
+                  <div className={`timeline-icon timeline-icon--${event.type}`}>{event.type === 'recharge' ? '+' : '$'}</div>
+                  <div className="timeline-content">
+                    <div className="timeline-header">
+                      <p className="timeline-title">{event.concept}</p>
+                      <span className="pill pill--ghost">{event.status}</span>
+                    </div>
+                    <p className="timeline-amount">{event.amount}</p>
+                    <p className="student-dashboard__muted">{formatDate(event.date, locale, { timeStyle: 'short' })}</p>
                   </div>
                 </div>
               ))}
             </div>
-          ) : null}
-        </article>
+          )}
+        </section>
 
-        <article className="student-dashboard__section">
-          <div className="student-dashboard__section-header">
-            <div>
-              <h3>{strings.sections?.studentInfo?.title}</h3>
-              <p className="student-dashboard__muted">{strings.sections?.studentInfo?.description}</p>
-            </div>
-          </div>
-          <div className="student-dashboard__info-grid">
-            <div>
-              <p className="student-dashboard__muted">{strings.sections?.studentInfo?.registerId}</p>
-              <p>{profile?.registerId || '—'}</p>
-            </div>
-            <div>
-              <p className="student-dashboard__muted">{strings.sections?.studentInfo?.paymentReference}</p>
-              <p>{reference}</p>
-            </div>
-            <div>
-              <p className="student-dashboard__muted">{strings.sections?.studentInfo?.school}</p>
-              <p>{profile?.commercialName || '—'}</p>
-            </div>
-            <div>
-              <p className="student-dashboard__muted">{strings.sections?.studentInfo?.generation}</p>
-              <p>{generation}</p>
-            </div>
-            <div>
-              <p className="student-dashboard__muted">{strings.sections?.studentInfo?.grade}</p>
-              <p>{grade}</p>
-            </div>
-            <div>
-              <p className="student-dashboard__muted">{strings.sections?.studentInfo?.status}</p>
-              <p>{profile?.userStatus || '—'}</p>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section className="student-dashboard__section">
-        <div className="student-dashboard__section-header">
+        <section className="student-dashboard__section student-dashboard__support">
           <div>
-            <h3>{strings.sections?.history?.title}</h3>
-            <p className="student-dashboard__muted">{strings.sections?.history?.description}</p>
+            <p className="student-dashboard__eyebrow">{strings.support?.title}</p>
+            <h3>{strings.support?.headline}</h3>
+            <p className="student-dashboard__muted">{strings.support?.description}</p>
           </div>
-          <button type="button" className="ghost-button" disabled={loading}>
-            {strings.sections?.history?.viewAll}
-          </button>
-        </div>
-        {recentEvents.length === 0 ? (
-          <p className="student-dashboard__muted">{strings.sections?.history?.empty}</p>
-        ) : (
-          <div className="student-dashboard__timeline">
-            {recentEvents.map((event) => (
-              <div className="timeline-item" key={`${event.type}-${event.id}`}>
-                <div className={`timeline-icon timeline-icon--${event.type}`}>{event.type === 'recharge' ? '+' : '$'}</div>
-                <div className="timeline-content">
-                  <div className="timeline-header">
-                    <p className="timeline-title">{event.concept}</p>
-                    <span className="pill pill--ghost">{event.status}</span>
-                  </div>
-                  <p className="timeline-amount">{event.amount}</p>
-                  <p className="student-dashboard__muted">{formatDate(event.date, locale, { timeStyle: 'short' })}</p>
-                </div>
-              </div>
-            ))}
+          <div className="student-dashboard__support-actions">
+            <button type="button" className="primary-button" disabled={loading}>
+              {strings.support?.contact}
+            </button>
           </div>
-        )}
-      </section>
-
-      <section className="student-dashboard__section student-dashboard__support">
-        <div>
-          <p className="student-dashboard__eyebrow">{strings.support?.title}</p>
-          <h3>{strings.support?.headline}</h3>
-          <p className="student-dashboard__muted">{strings.support?.description}</p>
-        </div>
-        <div className="student-dashboard__support-actions">
-          <button type="button" className="primary-button" disabled={loading}>
-            {strings.support?.contact}
-          </button>
-          <button type="button" className="ghost-button" onClick={handleRefresh} disabled={loading}>
-            {strings.support?.refresh}
-          </button>
-        </div>
-      </section>
+        </section>
     </div>
   );
 

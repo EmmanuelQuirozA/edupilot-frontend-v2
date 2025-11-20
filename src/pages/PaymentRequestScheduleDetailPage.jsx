@@ -511,93 +511,94 @@ const PaymentRequestScheduleDetailPage = ({
             </ActionButton>
           </div>
         ) : detail ? (
-          <div className="schedule-detail"><div className="card bg-transparent border-0">
-            <div className="row row-cols-1 row-cols-md-2 g-3">
+          <div className="schedule-detail">
+            <div className="card bg-transparent border-0">
+              <div className="row row-cols-1 row-cols-md-2 g-3">
 
-              <div className="col-md-6">
-                <UiCard className="schedule-card h-100">
-                  <header>
-                    <h6 className="text-muted fw-semibold m-0">{mergedStrings.generalTitle}</h6>
-                    <h3 className="fw-bold mt-1">#{detail.payment_request_scheduled_id ?? '—'}</h3>
-                  </header>
+                <div className="col-md-6">
+                  <UiCard className="schedule-card h-100">
+                    <header>
+                      <h6 className="text-muted fw-semibold m-0">{mergedStrings.generalTitle}</h6>
+                      <h3 className="fw-bold mt-1">#{detail.payment_request_scheduled_id ?? '—'}</h3>
+                    </header>
 
-                  <div className="execution-box">
-                      <p className="text-muted small">{mergedStrings.fields.concept}</p>
-                      <p className="fw-medium">{detail.pt_name || detail.payment_concept || '—'}</p>
+                    <div className="execution-box">
+                        <p className="text-muted small">{mergedStrings.fields.concept}</p>
+                        <p className="fw-medium">{detail.pt_name || detail.payment_concept || '—'}</p>
 
-                      <p className="text-muted small mt-2">{mergedStrings.fields.comments}</p>
-                      <p className="fw-medium schedule-detail__amount-box">{detail.comments || '—'}</p>
-                  </div>
-                </UiCard>
-              </div>
+                        <p className="text-muted small mt-2">{mergedStrings.fields.comments}</p>
+                        <p className="fw-medium schedule-detail__amount-box">{detail.comments || '—'}</p>
+                    </div>
+                  </UiCard>
+                </div>
 
-              <div className="col-md-6">
-                <UiCard className="schedule-card h-100">
-                  <header>
-                    <h6 className="text-muted fw-semibold m-0">{mergedStrings.executionTitle}</h6>
-                  </header>
+                <div className="col-md-6">
+                  <UiCard className="schedule-card h-100">
+                    <header>
+                      <h6 className="text-muted fw-semibold m-0">{mergedStrings.executionTitle}</h6>
+                    </header>
 
-                  <div className="execution-box">
-                    <p className="text-muted small">{mergedStrings.fields.nextExecutionDate}</p>
-                    <p className="fw-medium">{formatDate(detail.next_execution_date, language) || '—'}</p>
+                    <div className="execution-box">
+                      <p className="text-muted small">{mergedStrings.fields.nextExecutionDate}</p>
+                      <p className="fw-medium">{formatDate(detail.next_execution_date, language) || '—'}</p>
 
-                    <p className="text-muted small mt-2">{mergedStrings.fields.lastExecutionDate}</p>
-                    <p className="fw-medium">{formatDate(detail.last_executed_at, language) || '—'}</p>
-                  </div>
-
-                  <div>
-                    <dt className="text-muted small">{mergedStrings.fields.status}</dt>
-                    <dd className="fw-medium">
-                      <span
-                        className={`schedule-badge ${detail.active ? 'schedule-badge--success' : 'schedule-badge--warning'}`}
-                      >
-                        {detail.active ? mergedStrings.statusActive : mergedStrings.statusInactive}
-                      </span>
-                    </dd>
-                  </div>
-                </UiCard>
-              </div>
-
-              <div className="col-md-6">
-                <UiCard className="schedule-card h-100">
-                  <header>
-                    <h6 className="text-muted fw-semibold m-0">{mergedStrings.fields.frequency}</h6>
-                  </header>
-
-                  <dl className="schedule-field-grid schedule-field-grid--columns m-0">
-                    <div className='execution-box'>
-                      <p className="text-muted small">{mergedStrings.fields.periodName}</p>
-                      <p className="fw-medium">{detail.period_name || '—'}</p>
-
-                      <p className="text-muted small mt-2">{mergedStrings.fields.paymentWindow}</p>
-                      <p className="fw-medium">{detail.payment_window ?? '—'}</p>
+                      <p className="text-muted small mt-2">{mergedStrings.fields.lastExecutionDate}</p>
+                      <p className="fw-medium">{formatDate(detail.last_executed_at, language) || '—'}</p>
                     </div>
 
-                    <div className='execution-box'>
-                      <p className="text-muted small">{mergedStrings.fields.startDate}</p>
-                      <p className="fw-medium">{formatDate(detail.start_date, language) || '—'}</p>
-
-                      <p className="text-muted small mt-2">{mergedStrings.fields.endDate}</p>
-                      <p className="fw-medium">
-                        {formatDate(detail.end_date, language) || mergedStrings.fields.indefinite}
-                      </p>
+                    <div>
+                      <dt className="text-muted small">{mergedStrings.fields.status}</dt>
+                      <dd className="fw-medium">
+                        <span
+                          className={`schedule-badge ${detail.active ? 'schedule-badge--success' : 'schedule-badge--warning'}`}
+                        >
+                          {detail.active ? mergedStrings.statusActive : mergedStrings.statusInactive}
+                        </span>
+                      </dd>
                     </div>
-                  </dl>
-                </UiCard>
+                  </UiCard>
+                </div>
+
+                <div className="col-md-6">
+                  <UiCard className="schedule-card h-100">
+                    <header>
+                      <h6 className="text-muted fw-semibold m-0">{mergedStrings.fields.frequency}</h6>
+                    </header>
+
+                    <dl className="schedule-field-grid schedule-field-grid--columns m-0">
+                      <div className='execution-box'>
+                        <p className="text-muted small">{mergedStrings.fields.periodName}</p>
+                        <p className="fw-medium">{detail.period_name || '—'}</p>
+
+                        <p className="text-muted small mt-2">{mergedStrings.fields.paymentWindow}</p>
+                        <p className="fw-medium">{detail.payment_window ?? '—'}</p>
+                      </div>
+
+                      <div className='execution-box'>
+                        <p className="text-muted small">{mergedStrings.fields.startDate}</p>
+                        <p className="fw-medium">{formatDate(detail.start_date, language) || '—'}</p>
+
+                        <p className="text-muted small mt-2">{mergedStrings.fields.endDate}</p>
+                        <p className="fw-medium">
+                          {formatDate(detail.end_date, language) || mergedStrings.fields.indefinite}
+                        </p>
+                      </div>
+                    </dl>
+                  </UiCard>
+                </div>
+
+                <div className="col-md-6">
+                  <UiCard className="schedule-card h-100">
+                    <header>
+                      <h6 className="text-muted fw-semibold m-0">{mergedStrings.targetTitle}</h6>
+                    </header>
+
+                    <div className="mt-3">{renderTarget()}</div>
+                  </UiCard>
+                </div>
+
               </div>
-
-              <div className="col-md-6">
-                <UiCard className="schedule-card h-100">
-                  <header>
-                    <h6 className="text-muted fw-semibold m-0">{mergedStrings.targetTitle}</h6>
-                  </header>
-
-                  <div className="mt-3">{renderTarget()}</div>
-                </UiCard>
-              </div>
-
             </div>
-          </div>
 
             <UiCard className="schedule-detail__card schedule-detail__card--stacked">
               <header className="card__header">

@@ -13,6 +13,7 @@ import { buildMenuItemsForRole, getRoleLabel, normalizeRoleName } from '../utils
 import Breadcrumbs from './Breadcrumbs';
 import StudentDetailPage from '../pages/StudentDetailPage';
 import './HomePage.css';
+import { getRoleNameFromToken } from '../utils/jwt';
 
 const COLLAPSE_BREAKPOINT = 1200;
 
@@ -48,9 +49,10 @@ const HomePage = ({
   onNavigateToPaymentRequestScheduleDetail,
   onNavigateToPaymentRequestResult,
 }) => {
-  const { user, logout } = useAuth();
+  const { token, user, logout } = useAuth();
   const t = getTranslation(language);
-  const roleName = user?.role_name ?? user?.role ?? user?.roleName ?? '';
+  const tokenRoleName = useMemo(() => getRoleNameFromToken(token), [token]);
+  const roleName = tokenRoleName ?? user?.role_name ?? user?.role ?? user?.roleName ?? '';
   const normalizedRole = normalizeRoleName(roleName);
   const roleLabel = getRoleLabel(t, roleName);
 

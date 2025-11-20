@@ -359,7 +359,7 @@ button.nav-link.global-tabs__link {
 .page {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 1rem;
 }
 
 .tabs {
