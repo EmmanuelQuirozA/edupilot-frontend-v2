@@ -495,7 +495,7 @@ const PaymentRequestScheduleDetailPage = ({
             <div>
               <p className="schedule-detail__subtitle">{mergedStrings.generalTitle}</p>
               <h2 className="schedule-detail__title">
-                {detail?.rule_name_es || detail?.rule_name_en || mergedStrings.breadcrumbFallback}
+                {detail?.rule_name || detail?.rule_name_en || mergedStrings.breadcrumbFallback}
               </h2>
             </div>
           </div>
@@ -515,7 +515,7 @@ const PaymentRequestScheduleDetailPage = ({
             <div className="row row-cols-1 row-cols-md-2 g-3">
 
               <div className="col-md-6">
-                <UiCard className="shadow-sm schedule-card h-100">
+                <UiCard className="schedule-card h-100">
                   <header>
                     <h6 className="text-muted fw-semibold m-0">{mergedStrings.generalTitle}</h6>
                     <h3 className="fw-bold mt-1">#{detail.payment_request_scheduled_id ?? '—'}</h3>
@@ -532,7 +532,7 @@ const PaymentRequestScheduleDetailPage = ({
               </div>
 
               <div className="col-md-6">
-                <UiCard className="shadow-sm schedule-card h-100">
+                <UiCard className="schedule-card h-100">
                   <header>
                     <h6 className="text-muted fw-semibold m-0">{mergedStrings.executionTitle}</h6>
                   </header>
@@ -559,7 +559,7 @@ const PaymentRequestScheduleDetailPage = ({
               </div>
 
               <div className="col-md-6">
-                <UiCard className="shadow-sm schedule-card h-100">
+                <UiCard className="schedule-card h-100">
                   <header>
                     <h6 className="text-muted fw-semibold m-0">{mergedStrings.fields.frequency}</h6>
                   </header>
@@ -587,7 +587,7 @@ const PaymentRequestScheduleDetailPage = ({
               </div>
 
               <div className="col-md-6">
-                <UiCard className="shadow-sm schedule-card h-100">
+                <UiCard className="schedule-card h-100">
                   <header>
                     <h6 className="text-muted fw-semibold m-0">{mergedStrings.targetTitle}</h6>
                   </header>
