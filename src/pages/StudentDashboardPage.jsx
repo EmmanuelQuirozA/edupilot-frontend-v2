@@ -273,7 +273,7 @@ const extractTuitionCellDetails = (value) => {
 const DEFAULT_PAYMENTS_PAGE_STRINGS = {
   title: 'Pagos',
   tuition: {
-    title: 'Colegaturas',
+    title: 'Colegiaturas',
     description: 'Filtra por rango de fechas para consultar tus colegiaturas.',
     filters: {
       startDate: 'Fecha inicio',
@@ -920,8 +920,6 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
   }, [tuitionRows, tuitionEndDate, tuitionStartDate]);
   const paymentColumns = useMemo(
     () => [
-      { key: 'student', header: tableColumns.student ?? 'Alumno' },
-      { key: 'generation', header: tableColumns.generation ?? 'Generación' },
       ...monthColumns.map((month) => ({ key: month, header: month })),
     ],
     [monthColumns, tableColumns.generation, tableColumns.student],
@@ -1272,25 +1270,9 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
             renderRow={(row, index) => {
               const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
               const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
-              const canNavigateToStudent = Boolean(studentId);
-              const studentName = row.student ?? tableStrings.studentFallback;
-              const studentMetaValue = row.payment_reference ?? '';
 
               return (
                 <tr key={rowKey}>
-                  <td data-title={tableStrings.columns.student}>
-                    <StudentTableCell
-                      name={row.student}
-                      fallbackName={tableStrings.studentFallback}
-                      gradeGroup={row.class ?? row.grade_group}
-                      scholarLevel={row.scholar_level_name}
-                      enrollment={studentMetaValue}
-                      onClick={() => handleStudentDetailClick(row)}
-                      disabled={!canNavigateToStudent}
-                      nameButtonProps={{ 'aria-label': studentName }}
-                    />
-                  </td>
-                  <td data-title={tableStrings.columns.generation}>{row.generation ?? '--'}</td>
                   {monthColumns.map((month) => {
                     const value = row?.[month];
                     const details = extractTuitionCellDetails(value);

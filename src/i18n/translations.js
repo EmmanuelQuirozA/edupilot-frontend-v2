@@ -206,7 +206,7 @@ export const translations = {
           },
           pendingRequests: {
             title: 'Solicitudes de pago pendientes',
-            description: 'Revisa los cargos que requieren tu atención.',
+            description: 'Revisa tus pagos pendientes.',
             viewAll: 'Ver todo',
             dueLabel: 'Vence',
             dueLabelToday: 'Vence hoy',
@@ -274,7 +274,7 @@ export const translations = {
         paymentsPage: {
           title: 'Pagos',
           tuition: {
-            title: 'Colegaturas',
+            title: 'Colegiaturas',
             description: 'Filtra por rango de fechas para consultar tus colegiaturas.',
             filters: {
               startDate: 'Fecha inicio',
@@ -1472,7 +1472,7 @@ export const translations = {
           },
           pendingRequests: {
             title: 'Pending payment requests',
-            description: 'Charges that need your attention.',
+            description: 'See your payment requests.',
             viewAll: 'View all',
             dueLabel: 'Due',
             dueLabelToday: 'Due today',
