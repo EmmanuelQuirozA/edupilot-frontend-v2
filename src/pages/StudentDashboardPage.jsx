@@ -94,8 +94,6 @@ const formatMonthRangeDate = (date) => {
   return `${year}-${month}-01`;
 };
 
-const buildMonthInputValue = (year, month) => `${year}-${String(month).padStart(2, '0')}`;
-
 const parseMonthInputValue = (value) => {
   if (!value || typeof value !== 'string') {
     return null;
@@ -563,6 +561,8 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     const controller = new AbortController();
     const { signal } = controller;
     const monthRange = buildTuitionMonthRange(locale);
+    const selectedStartDate = parseMonthInputValue(tuitionStartDate);
+    const selectedEndDate = parseMonthInputValue(tuitionEndDate);
 
     setTuitionReportLoading(true);
     setTuitionReportError(null);
@@ -576,9 +576,15 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
           lang: language,
           limit: String(tuitionLimit),
           offset: String(tuitionOffset),
-          start_date: monthRange.startDate,
-          end_date: monthRange.endDate,
         });
+
+        if (selectedStartDate) {
+          params.set('start_date', formatMonthRangeDate(selectedStartDate));
+        }
+
+        if (selectedEndDate) {
+          params.set('end_date', formatMonthRangeDate(selectedEndDate));
+        }
 
         const data = await fetchJson(`${API_BASE_URL}/reports/payments/report?${params.toString()}`, { signal });
         const content = Array.isArray(data?.content) ? data.content : [];
@@ -653,8 +659,10 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     refreshIndex,
     strings.cards?.tuitionStatus?.unknown,
     strings.loadError,
+    tuitionEndDate,
     tuitionLimit,
     tuitionOffset,
+    tuitionStartDate,
   ]);
 
   const handleRefresh = () => {
@@ -839,24 +847,6 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     setActiveNav('dashboard');
     setSelectedPaymentRequestId(null);
   }, [routeSegments]);
-
-  useEffect(() => {
-    if (tuitionReportMonths.length === 0 || (tuitionStartDate && tuitionEndDate)) {
-      return;
-    }
-
-    const sortedMonths = [...tuitionReportMonths].sort((a, b) => {
-      const aDate = new Date(a.year, a.month - 1, 1);
-      const bDate = new Date(b.year, b.month - 1, 1);
-      return aDate.getTime() - bDate.getTime();
-    });
-
-    const firstMonth = sortedMonths[0];
-    const lastMonth = sortedMonths[sortedMonths.length - 1];
-
-    setTuitionStartDate(buildMonthInputValue(firstMonth.year, firstMonth.month));
-    setTuitionEndDate(buildMonthInputValue(lastMonth.year, lastMonth.month));
-  }, [tuitionEndDate, tuitionReportMonths, tuitionStartDate]);
 
   useEffect(() => {
     if (!selectedPaymentRequestId) {
