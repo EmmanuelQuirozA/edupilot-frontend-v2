@@ -463,6 +463,13 @@
   margin-bottom: 16px;
 }
 
+.student-dashboard__filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
 .student-dashboard__filter-field {
   display: flex;
   flex-direction: column;
