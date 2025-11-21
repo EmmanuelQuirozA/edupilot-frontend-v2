@@ -59,7 +59,6 @@ const formatDate = (value, locale = 'es-MX', options = {}) => {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
-    ...options,
   }).format(date);
 };
 
@@ -524,51 +523,6 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
           </div>
         ) : null}
 
-        <section className="student-dashboard__tuition-status" aria-live="polite">
-          <div className="tuition-status-card">
-            <div className="tuition-status-card__header">
-              <p className="student-dashboard__eyebrow text-light">{strings.cards?.tuitionStatus?.title}</p>
-              <h2 className="tuition-status-card__title">{tuitionStatusText}</h2>
-              {hasTuitionReportDetails ? (
-                <p className="tuition-status-card__caption">{activeTuitionAmountText}</p>
-              ) : null}
-              {tuitionReportLoading ? (
-                <p className="tuition-status-card__caption">{strings.loading}</p>
-              ) : null}
-            </div>
-            <div className="tuition-status-card__timeline" role="list">
-              {tuitionReportMonths.map((month) => {
-                const isDisabled = !month.details || tuitionReportLoading;
-                const monthLabel = month.shortLabel
-                  ? `${month.shortLabel.charAt(0).toUpperCase()}${month.shortLabel.slice(1)}`
-                  : month.key;
-
-                return (
-                  <button
-                    key={month.key}
-                    type="button"
-                    className={`tuition-status-card__month${month.isCurrent ? ' is-current' : ''}${
-                      month.details ? ' has-details' : ''
-                    }`}
-                    onClick={() => handleTuitionMonthClick(month)}
-                    disabled={isDisabled}
-                    aria-label={`${monthLabel} ${month.details?.statusName ?? ''}`.trim()}
-                    role="listitem"
-                  >
-                    <span className="tuition-status-card__month-label">{monthLabel}</span>
-                    <span className="tuition-status-card__marker" aria-hidden="true">
-                      {month.details ? '✓' : ''}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {tuitionReportError ? (
-              <p className="tuition-status-card__error" role="alert">{tuitionReportError}</p>
-            ) : null}
-          </div>
-        </section>
-
         <div className="card bg-transparent border-0">
           <div className="row row-cols-1 gy-3">
             <div className="col-md-4">
@@ -579,7 +533,7 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
                 <p className="student-dashboard__muted">{strings.cards?.balanceHint}</p>
               </div>
               <div className="text-success p-2">
-                <svg className='student-dashboard__cardIcons opacity-25' xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="wallet"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+                <svg className='student-dashboard__cardIcons opacity-25' xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" data-lucide="wallet"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
               </div>          
             </article>
             </div>
@@ -591,19 +545,53 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
                 <p className="student-dashboard__muted">{strings.cards?.pendingHint}</p>
               </div>
               <div className="text-danger p-2">
-                  <svg className='student-dashboard__cardIcons opacity-25' xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>
+                  <svg className='student-dashboard__cardIcons opacity-25' xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" data-lucide="alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>
               </div>
             </article>
             </div>
             <div className="col-md-4">
-            <article className="student-dashboard__card student-dashboard__card--warning h-100">
-              <div>
-                <p className="student-dashboard__card-label">{strings.cards?.requests}</p>
-                <h2>{pendingRequests.length}</h2>
-                <p className="student-dashboard__muted">{strings.cards?.requestsHint}</p>
+              <div className="tuition-status-card">
+                <div className="tuition-status-card__header">
+                  <p className="student-dashboard__eyebrow text-light">{strings.cards?.tuitionStatus?.title}</p>
+                  <h2 className="tuition-status-card__title">{tuitionStatusText}</h2>
+                  {hasTuitionReportDetails ? (
+                    <p className="tuition-status-card__caption">{activeTuitionAmountText}</p>
+                  ) : null}
+                  {tuitionReportLoading ? (
+                    <p className="tuition-status-card__caption">{strings.loading}</p>
+                  ) : null}
+                </div>
+                <div className="tuition-status-card__timeline justify-content-between" role="list">
+                  {tuitionReportMonths.map((month) => {
+                    const isDisabled = !month.details || tuitionReportLoading;
+                    const monthLabel = month.shortLabel
+                      ? `${month.shortLabel.charAt(0).toUpperCase()}${month.shortLabel.slice(1)}`
+                      : month.key;
+
+                    return (
+                      <button
+                        key={month.key}
+                        type="button"
+                        className={`tuition-status-card__month${month.isCurrent ? ' is-current' : ''}${
+                          month.details ? ' has-details' : ''
+                        }`}
+                        onClick={() => handleTuitionMonthClick(month)}
+                        disabled={isDisabled}
+                        aria-label={`${monthLabel} ${month.details?.statusName ?? ''}`.trim()}
+                        role="listitem"
+                      >
+                        <span className="tuition-status-card__month-label">{monthLabel}</span>
+                        <span className="tuition-status-card__marker" aria-hidden="true">
+                          {month.details ? '✓' : ''}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {tuitionReportError ? (
+                  <p className="tuition-status-card__error" role="alert">{tuitionReportError}</p>
+                ) : null}
               </div>
-              <span className="pill pill--warning">{strings.cards?.pendingTag}</span>
-            </article>
             </div>
           </div>
         </div>

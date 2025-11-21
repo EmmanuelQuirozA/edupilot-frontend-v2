@@ -235,10 +235,6 @@
   align-items: center;
 }
 
-.student-dashboard__card--warning {
-  background: linear-gradient(180deg, #fffbeb, #fef3c7);
-}
-
 .student-dashboard__card--info {
   background: linear-gradient(180deg, #eff6ff, #e0f2fe);
 }
