@@ -7,6 +7,7 @@ import { getTranslation } from '../i18n/translations';
 import { handleExpiredToken } from '../utils/auth';
 import { buildMenuItemsForRole, getRoleLabel, normalizeRoleName } from '../utils/menuItems';
 import { getRoleNameFromToken } from '../utils/jwt';
+import Breadcrumbs from '../components/Breadcrumbs';
 import '../components/HomePage.css';
 import './StudentDashboardPage.css';
 
@@ -726,6 +727,23 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
     </div>
   );
 
+  const breadcrumbs = useMemo(() => {
+    const dashboardLabel = menuItems.find((item) => item.key === 'dashboard')?.label ?? headerTitle;
+    const items = [
+      {
+        label: dashboardLabel,
+        onClick: activeNav === 'dashboard' ? undefined : () => handleNavClick('dashboard'),
+      },
+    ];
+
+    if (activeNav !== 'dashboard') {
+      const activeLabel = menuItems.find((item) => item.key === activeNav)?.label ?? headerTitle;
+      items.push({ label: activeLabel });
+    }
+
+    return items;
+  }, [activeNav, handleNavClick, headerTitle, menuItems]);
+
   return (
     <div className={`dashboard${isSidebarOpen && !isDesktop ? ' has-overlay' : ''}`}>
       <aside
@@ -810,6 +828,8 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
             </div>
           </div>
         </header>
+
+        <Breadcrumbs items={breadcrumbs} />
 
         {dashboardContent}
       </div>
