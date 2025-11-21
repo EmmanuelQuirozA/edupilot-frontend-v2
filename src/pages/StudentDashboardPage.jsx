@@ -8,6 +8,9 @@ import { handleExpiredToken } from '../utils/auth';
 import { buildMenuItemsForRole, getRoleLabel, normalizeRoleName } from '../utils/menuItems';
 import { getRoleNameFromToken } from '../utils/jwt';
 import Breadcrumbs from '../components/Breadcrumbs';
+import GlobalTable from '../components/ui/GlobalTable.jsx';
+import StudentTableCell from '../components/ui/StudentTableCell.jsx';
+import UiCard from '../components/ui/UiCard.jsx';
 import '../components/HomePage.css';
 import './StudentDashboardPage.css';
 
@@ -77,6 +80,7 @@ const normalizeArray = (data) => {
 
 const COLLAPSE_BREAKPOINT = 1200;
 const getIsDesktop = () => (typeof window === 'undefined' ? true : window.innerWidth >= COLLAPSE_BREAKPOINT);
+const MONTH_KEY_REGEX = /^[A-Za-z]{3}-\d{2}$/;
 
 const formatMonthKey = (date) => {
   const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date);
@@ -108,36 +112,18 @@ const parseMonthInputValue = (value) => {
   return new Date(year, month - 1, 1);
 };
 
-const formatMonthLabel = (month) => {
-  const label = month?.longLabel ?? month?.shortLabel ?? month?.key ?? '';
+const parseMonthKeyToDate = (key) => {
+  const match = MONTH_KEY_REGEX.exec(key ?? '');
 
-  if (!label) {
-    return '';
-  }
-
-  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
-};
-
-const getMonthAmount = (month) => {
-  if (!month?.details) {
+  if (!match) {
     return null;
   }
 
-  const totalAmount = Number(month.details.totalAmount);
-  if (Number.isFinite(totalAmount)) {
-    return totalAmount;
-  }
+  const [monthLabel, yearLabel] = match[0].split('-');
+  const year = Number(`20${yearLabel}`);
+  const date = new Date(`${monthLabel} 1, ${year}`);
 
-  if (Array.isArray(month.details.payments) && month.details.payments.length > 0) {
-    const total = month.details.payments.reduce(
-      (sum, payment) => sum + (Number(payment.amount) || 0),
-      0,
-    );
-
-    return Number.isFinite(total) ? total : null;
-  }
-
-  return null;
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 
 const buildTuitionMonthRange = (locale) => {
@@ -183,6 +169,107 @@ const safeParseTuitionValue = (value) => {
   }
 };
 
+const parseTuitionCellValue = (value) => {
+  if (value == null || value === '') {
+    return null;
+  }
+
+  if (typeof value === 'object') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (parseError) {
+      console.warn('Unable to parse tuition cell value', parseError);
+      return null;
+    }
+  }
+
+  return null;
+};
+
+const normalizeAmount = (candidate) => {
+  if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+    return candidate;
+  }
+
+  if (typeof candidate === 'string') {
+    const parsed = Number(candidate);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  if (candidate && typeof candidate === 'object') {
+    const amount = candidate.amount ?? candidate.totalAmount ?? candidate.total_amount;
+    const parsed = Number(amount);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+};
+
+const normalizePaymentList = (payments) => {
+  if (!Array.isArray(payments)) {
+    return [];
+  }
+
+  return payments.map((payment) => {
+    const rawId =
+      payment?.payment_id ?? payment?.paymentId ?? payment?.id ?? null;
+
+    const rawAmount = payment?.amount ?? payment?.total ?? null;
+    const createdAt =
+      typeof payment?.created_at === 'string'
+        ? payment.created_at
+        : typeof payment?.date === 'string'
+        ? payment.date
+        : null;
+    const statusName =
+      typeof payment?.payment_status_name === 'string'
+        ? payment.payment_status_name
+        : typeof payment?.status_name === 'string'
+        ? payment.status_name
+        : typeof payment?.payment_status === 'string'
+        ? payment.payment_status
+        : typeof payment?.status === 'string'
+        ? payment.status
+        : null;
+
+    return {
+      paymentId: rawId != null ? rawId : null,
+      amount: normalizeAmount(rawAmount),
+      createdAt,
+      statusName,
+    };
+  });
+};
+
+const extractTuitionCellDetails = (value) => {
+  const parsed = parseTuitionCellValue(value);
+  if (!parsed) {
+    return null;
+  }
+
+  const totalAmount = normalizeAmount(parsed.total_amount ?? parsed.totalAmount);
+  const paymentMonth =
+    typeof parsed.payment_month === 'string'
+      ? parsed.payment_month
+      : typeof parsed.paymentMonth === 'string'
+      ? parsed.paymentMonth
+      : null;
+  const paymentRequestId =
+    parsed.payment_request_id ?? parsed.paymentRequestId ?? null;
+  const payments = normalizePaymentList(parsed.payments);
+
+  return {
+    totalAmount,
+    paymentMonth,
+    paymentRequestId,
+    payments,
+  };
+};
+
 const DEFAULT_PAYMENTS_PAGE_STRINGS = {
   title: 'Pagos',
   tuition: {
@@ -193,11 +280,22 @@ const DEFAULT_PAYMENTS_PAGE_STRINGS = {
       endDate: 'Fecha fin',
     },
     table: {
+      columns: {
+        student: 'Alumno',
+        generation: 'Generación',
+      },
+      studentIdLabel: 'Matrícula',
+      studentFallback: 'Alumno sin nombre',
+      loading: 'Cargando...',
       month: 'Mes',
       status: 'Estatus',
       amount: 'Monto',
       view: 'Ver detalle',
       empty: 'No hay colegiaturas registradas para este periodo.',
+      pagination: {
+        previous: 'Anterior',
+        next: 'Siguiente',
+      },
     },
   },
   requests: {
@@ -280,6 +378,12 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
   const [tuitionReportMonths, setTuitionReportMonths] = useState([]);
   const [tuitionReportLoading, setTuitionReportLoading] = useState(true);
   const [tuitionReportError, setTuitionReportError] = useState(null);
+  const [tuitionRows, setTuitionRows] = useState([]);
+  const [tuitionTotalElements, setTuitionTotalElements] = useState(0);
+  const [tuitionLoading, setTuitionLoading] = useState(false);
+  const [tuitionError, setTuitionError] = useState(null);
+  const [tuitionOffset, setTuitionOffset] = useState(0);
+  const [tuitionLimit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshIndex, setRefreshIndex] = useState(0);
@@ -463,18 +567,25 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     setTuitionReportLoading(true);
     setTuitionReportError(null);
     setTuitionReportMonths(monthRange.months.map((month) => ({ ...month, details: null })));
+    setTuitionLoading(true);
+    setTuitionError(null);
 
     const loadTuitionReport = async () => {
       try {
         const params = new URLSearchParams({
           lang: language,
-          limit: '10',
+          limit: String(tuitionLimit),
+          offset: String(tuitionOffset),
           start_date: monthRange.startDate,
           end_date: monthRange.endDate,
         });
 
         const data = await fetchJson(`${API_BASE_URL}/reports/payments/report?${params.toString()}`, { signal });
-        const firstEntry = Array.isArray(data?.content) ? data.content[0] ?? null : null;
+        const content = Array.isArray(data?.content) ? data.content : [];
+        const firstEntry = content[0] ?? null;
+
+        setTuitionRows(content);
+        setTuitionTotalElements(Number(data?.totalElements) || content.length || 0);
 
         const months = monthRange.months.map((month) => {
           const parsed = firstEntry ? safeParseTuitionValue(firstEntry?.[month.key]) : null;
@@ -523,8 +634,10 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
         }
         setTuitionReportMonths(monthRange.months.map((month) => ({ ...month, details: null })));
         setTuitionReportError(strings.loadError ?? 'No fue posible cargar la información.');
+        setTuitionError(strings.loadError ?? 'No fue posible cargar la información.');
       } finally {
         setTuitionReportLoading(false);
+        setTuitionLoading(false);
       }
     };
 
@@ -533,7 +646,16 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     return () => {
       controller.abort();
     };
-  }, [fetchJson, language, locale, refreshIndex, strings.cards?.tuitionStatus?.unknown, strings.loadError]);
+  }, [
+    fetchJson,
+    language,
+    locale,
+    refreshIndex,
+    strings.cards?.tuitionStatus?.unknown,
+    strings.loadError,
+    tuitionLimit,
+    tuitionOffset,
+  ]);
 
   const handleRefresh = () => {
     setRefreshIndex((value) => value + 1);
@@ -750,23 +872,94 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     setSelectedPaymentRequest(matchingRequest ?? null);
   }, [getRequestId, pendingRequests, selectedPaymentRequestId]);
 
-  const filteredTuitionMonths = useMemo(() => {
-    return tuitionReportMonths.filter((month) => {
-      const monthDate = new Date(month.year, month.month - 1, 1);
+  const tableStrings = paymentsPageStrings.tuition.table;
+  const tableColumns = tableStrings.columns ?? {};
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: 'MXN',
+        minimumFractionDigits: 2,
+      }),
+    [locale],
+  );
+  const monthColumns = useMemo(() => {
+    const columns = [];
+
+    for (const row of tuitionRows) {
+      if (!row || typeof row !== 'object') {
+        continue;
+      }
+
+      for (const key of Object.keys(row)) {
+        if (!MONTH_KEY_REGEX.test(key)) {
+          continue;
+        }
+
+        if (!columns.includes(key)) {
+          columns.push(key);
+        }
+      }
+    }
+
+    return columns.filter((column) => {
+      const monthDate = parseMonthKeyToDate(column);
       const startDate = parseMonthInputValue(tuitionStartDate);
       const endDate = parseMonthInputValue(tuitionEndDate);
 
-      if (startDate && monthDate.getTime() < startDate.getTime()) {
+      if (startDate && monthDate && monthDate.getTime() < startDate.getTime()) {
         return false;
       }
 
-      if (endDate && monthDate.getTime() > endDate.getTime()) {
+      if (endDate && monthDate && monthDate.getTime() > endDate.getTime()) {
         return false;
       }
 
       return true;
     });
-  }, [tuitionEndDate, tuitionReportMonths, tuitionStartDate]);
+  }, [tuitionRows, tuitionEndDate, tuitionStartDate]);
+  const paymentColumns = useMemo(
+    () => [
+      { key: 'student', header: tableColumns.student ?? 'Alumno' },
+      { key: 'generation', header: tableColumns.generation ?? 'Generación' },
+      ...monthColumns.map((month) => ({ key: month, header: month })),
+    ],
+    [monthColumns, tableColumns.generation, tableColumns.student],
+  );
+  const tuitionTotalPages = Math.max(1, Math.ceil(Math.max(tuitionTotalElements, 1) / tuitionLimit));
+  const tuitionCurrentPage = Math.min(tuitionTotalPages, Math.floor(tuitionOffset / tuitionLimit) + 1);
+  const paymentSummary = useCallback(
+    ({ from, to, total }) => {
+      const template = tableStrings.pagination?.summary;
+      const startLabel = from.toLocaleString(locale);
+      const endLabel = to.toLocaleString(locale);
+      const totalLabel = total.toLocaleString(locale);
+
+      if (typeof template === 'string') {
+        return template
+          .replace('{start}', startLabel)
+          .replace('{end}', endLabel)
+          .replace('{total}', totalLabel);
+      }
+
+      return `Mostrando ${startLabel}-${endLabel} de ${totalLabel}`;
+    },
+    [locale, tableStrings.pagination],
+  );
+  const paymentPageLabel = useCallback(
+    ({ page, totalPages }) => {
+      const template = tableStrings.pagination?.page;
+      const currentLabel = page.toLocaleString(locale);
+      const totalLabel = totalPages.toLocaleString(locale);
+
+      if (typeof template === 'string') {
+        return template.replace('{current}', currentLabel).replace('{total}', totalLabel);
+      }
+
+      return `${currentLabel} / ${totalLabel}`;
+    },
+    [locale, tableStrings.pagination],
+  );
 
   const handlePaymentRequestSelect = useCallback(
     (request) => {
@@ -800,6 +993,23 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
       }
     },
     [handleNavClick, onNavigate, studentDashboardBasePath],
+  );
+  const handleStudentDetailClick = useCallback((row) => {
+    if (!row) {
+      return;
+    }
+
+    const studentId = row.student_id ?? row.studentId ?? row.student_uuid;
+    if (studentId && onNavigate) {
+      onNavigate(`${studentDashboardBasePath}/students/${encodeURIComponent(String(studentId))}`);
+    }
+  }, [onNavigate, studentDashboardBasePath]);
+  const handlePageChange = useCallback(
+    (nextPage) => {
+      const safePage = Math.min(Math.max(nextPage, 1), tuitionTotalPages);
+      setTuitionOffset((safePage - 1) * tuitionLimit);
+    },
+    [tuitionLimit, tuitionTotalPages],
   );
 
   const dashboardContent = (
@@ -1049,57 +1259,113 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
           </label>
         </form>
 
-        {filteredTuitionMonths.length === 0 ? (
-          <p className="student-dashboard__muted">{paymentsPageStrings.tuition.table.empty}</p>
-        ) : (
-          <div className="student-dashboard__table-wrapper">
-            <table className="student-dashboard__table student-dashboard__table--months">
-              <thead>
-                <tr>
-                  {filteredTuitionMonths.map((month) => (
-                    <th key={month.key}>{formatMonthLabel(month)}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {filteredTuitionMonths.map((month) => {
-                    const monthAmount = getMonthAmount(month);
-                    const hasDetails = Boolean(month.details);
-                    const statusLabel =
-                      month.details?.statusName ??
-                      strings.cards?.tuitionStatus?.unknown ??
-                      paymentsPageStrings.tuition.table.empty;
-                    const amountLabel = monthAmount != null ? formatCurrency(monthAmount, locale) : '—';
-                    const monthLabel = formatMonthLabel(month);
+        <UiCard className="page__table-card">
+          <GlobalTable
+            className="page__table-wrapper"
+            tableClassName="page__table mb-0"
+            columns={paymentColumns}
+            data={tuitionRows}
+            getRowId={(row, index) => {
+              const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
+              return studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+            }}
+            renderRow={(row, index) => {
+              const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
+              const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+              const canNavigateToStudent = Boolean(studentId);
+              const studentName = row.student ?? tableStrings.studentFallback;
+              const studentMetaValue = row.payment_reference ?? '';
+
+              return (
+                <tr key={rowKey}>
+                  <td data-title={tableStrings.columns.student}>
+                    <StudentTableCell
+                      name={row.student}
+                      fallbackName={tableStrings.studentFallback}
+                      gradeGroup={row.class ?? row.grade_group}
+                      scholarLevel={row.scholar_level_name}
+                      enrollment={studentMetaValue}
+                      onClick={() => handleStudentDetailClick(row)}
+                      disabled={!canNavigateToStudent}
+                      nameButtonProps={{ 'aria-label': studentName }}
+                    />
+                  </td>
+                  <td data-title={tableStrings.columns.generation}>{row.generation ?? '--'}</td>
+                  {monthColumns.map((month) => {
+                    const value = row?.[month];
+                    const details = extractTuitionCellDetails(value);
+                    const hasDetails =
+                      details &&
+                      (details.totalAmount != null ||
+                        (details.payments && details.payments.length > 0) ||
+                        details.paymentRequestId != null);
+                    const displayAmount =
+                      details?.totalAmount != null
+                        ? currencyFormatter.format(details.totalAmount)
+                        : null;
+                    const fallbackAmount = normalizeAmount(value);
+                    const fallbackContent =
+                      fallbackAmount != null
+                        ? currencyFormatter.format(fallbackAmount)
+                        : (
+                            <span className="ui-table__empty-indicator">--</span>
+                          );
+                    const cellClassName = !hasDetails && fallbackAmount == null ? 'page__amount-null' : '';
+                    const monthDate = parseMonthKeyToDate(month);
+                    const monthDetails =
+                      monthDate || hasDetails
+                        ? {
+                            key: month,
+                            year: monthDate?.getFullYear() ?? null,
+                            month: monthDate ? monthDate.getMonth() + 1 : null,
+                            longLabel: monthDate
+                              ? new Intl.DateTimeFormat(locale, { month: 'long' }).format(monthDate)
+                              : month,
+                            details: details ?? null,
+                          }
+                        : null;
 
                     return (
-                      <td key={`${month.key}-value`}>
-                        <div className="student-dashboard__month-cell">
+                      <td
+                        key={`${rowKey}-${month}`}
+                        data-title={month}
+                        className={cellClassName}
+                      >
+                        {hasDetails ? (
                           <button
                             type="button"
-                            className="student-dashboard__amount-button"
-                            onClick={() => handleTuitionMonthClick(month)}
-                            disabled={!hasDetails}
-                            aria-label={`${paymentsPageStrings.tuition.table.view} ${monthLabel}`.trim()}
+                            className="page__amount-button"
+                            onClick={() => monthDetails && handleTuitionMonthClick(monthDetails)}
                           >
-                            <span>{amountLabel}</span>
-                            {hasDetails ? (
-                              <span className="student-dashboard__amount-button__cta">
-                                {paymentsPageStrings.tuition.table.view}
-                              </span>
-                            ) : null}
+                            {displayAmount ?? (
+                              <span className="ui-table__empty-indicator">--</span>
+                            )}
                           </button>
-                          <p className="student-dashboard__muted">{statusLabel}</p>
-                        </div>
+                        ) : (
+                          fallbackContent
+                        )}
                       </td>
                     );
                   })}
                 </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
+              );
+            }}
+            loading={tuitionLoading}
+            loadingMessage={tableStrings.loading}
+            error={tuitionError || null}
+            emptyMessage={tableStrings.empty}
+            pagination={{
+              currentPage: tuitionCurrentPage,
+              pageSize: tuitionLimit,
+              totalItems: tuitionTotalElements,
+              onPageChange: handlePageChange,
+              previousLabel: tableStrings.pagination.previous ?? '←',
+              nextLabel: tableStrings.pagination.next ?? '→',
+              summary: paymentSummary,
+              pageLabel: paymentPageLabel,
+            }}
+          />
+        </UiCard>
       </section>
 
       <section className="student-dashboard__section">
