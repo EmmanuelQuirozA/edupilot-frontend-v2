@@ -51,6 +51,114 @@
   margin-top: 8px;
 }
 
+.student-dashboard__tuition-status {
+  margin-top: 12px;
+}
+
+.tuition-status-card {
+  background: linear-gradient(135deg, #4c51bf, #6b21a8);
+  color: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tuition-status-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tuition-status-card__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.tuition-status-card__caption {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.tuition-status-card__timeline {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.tuition-status-card__month {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.tuition-status-card__month:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tuition-status-card__month:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.tuition-status-card__month.is-current {
+  border-color: #34d399;
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
+}
+
+.tuition-status-card__month.has-details .tuition-status-card__marker {
+  background: #22c55e;
+  color: #0f172a;
+  border-color: #22c55e;
+}
+
+.tuition-status-card__month-label {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.tuition-status-card__marker {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tuition-status-card__error {
+  margin: 12px 0 0;
+  color: #fee2e2;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .tuition-status-card__timeline {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tuition-status-card__month {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
 .badge {
   background: #eef2ff;
   color: #4338ca !important;
