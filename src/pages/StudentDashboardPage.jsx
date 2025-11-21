@@ -133,7 +133,57 @@ const safeParseTuitionValue = (value) => {
   }
 };
 
-const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
+const DEFAULT_PAYMENTS_PAGE_STRINGS = {
+  title: 'Pagos',
+  tuition: {
+    title: 'Colegaturas',
+    description: 'Filtra por rango de fechas para consultar tus colegiaturas.',
+    filters: {
+      startDate: 'Fecha inicio',
+      endDate: 'Fecha fin',
+    },
+    table: {
+      month: 'Mes',
+      status: 'Estatus',
+      amount: 'Monto',
+      view: 'Ver detalle',
+      empty: 'No hay colegiaturas registradas para este periodo.',
+    },
+  },
+  requests: {
+    title: 'Solicitudes de pago',
+    columns: {
+      id: 'ID',
+      concept: 'Concepto',
+      amount: 'Monto solicitado',
+      status: 'Estatus',
+      dueDate: 'Fecha límite',
+      view: 'Ver detalle',
+    },
+    empty: 'No hay solicitudes registradas.',
+  },
+  payments: {
+    title: 'Pagos',
+    columns: {
+      id: 'ID',
+      concept: 'Concepto',
+      amount: 'Monto',
+      status: 'Estatus',
+      date: 'Fecha creada',
+      view: 'Ver detalle',
+    },
+    empty: 'No hay pagos registrados.',
+  },
+  requestDetail: {
+    title: 'Detalle de solicitud',
+    amount: 'Monto solicitado',
+    dueDate: 'Fecha límite',
+    status: 'Estatus',
+    concept: 'Concepto',
+  },
+};
+
+const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments = [], onNavigate }) => {
   const { token, user, logout } = useAuth();
   const { openModal } = useModal();
   const t = getTranslation(language);
@@ -185,8 +235,18 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
   const [refreshIndex, setRefreshIndex] = useState(0);
   const [isDesktop, setIsDesktop] = useState(getIsDesktop);
   const [isSidebarOpen, setIsSidebarOpen] = useState(getIsDesktop);
-  const [activeNav, setActiveNav] = useState('dashboard');
+  const [activeNav, setActiveNav] = useState(routeSegments[0] === 'payments' ? 'payments' : 'dashboard');
+  const [selectedPaymentRequestId, setSelectedPaymentRequestId] = useState(
+    routeSegments[0] === 'payments' && routeSegments[1] === 'requests'
+      ? routeSegments[2] ?? null
+      : null,
+  );
+  const [selectedPaymentRequest, setSelectedPaymentRequest] = useState(null);
+  const [tuitionStartDate, setTuitionStartDate] = useState('');
+  const [tuitionEndDate, setTuitionEndDate] = useState('');
 
+
+  const studentDashboardBasePath = useMemo(() => `/${language}/student-dashboard`, [language]);
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen((value) => !value);
@@ -197,13 +257,23 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
   }, []);
 
   const handleNavClick = useCallback(
-    (key) => {
+    (key, { preserveRequest } = {}) => {
       setActiveNav(key);
       if (!isDesktop) {
         setIsSidebarOpen(false);
       }
+
+      if (!preserveRequest) {
+        setSelectedPaymentRequest(null);
+        setSelectedPaymentRequestId(null);
+      }
+
+      if (onNavigate) {
+        const suffix = key === 'dashboard' ? '' : `/${key}`;
+        onNavigate(`${studentDashboardBasePath}${suffix}`, { replace: true });
+      }
     },
-    [isDesktop],
+    [isDesktop, onNavigate, studentDashboardBasePath],
   );
 
   const headers = useMemo(
@@ -233,6 +303,46 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
 
   const paymentDetailBasePath = useMemo(() => `/${language}/payments/payments`, [language]);
   const paymentRequestDetailBasePath = useMemo(() => `/${language}/payments/requests`, [language]);
+
+  const paymentsPageStrings = useMemo(() => {
+    const overrides = strings.paymentsPage ?? {};
+    return {
+      ...DEFAULT_PAYMENTS_PAGE_STRINGS,
+      ...overrides,
+      tuition: {
+        ...DEFAULT_PAYMENTS_PAGE_STRINGS.tuition,
+        ...(overrides.tuition ?? {}),
+        filters: {
+          ...DEFAULT_PAYMENTS_PAGE_STRINGS.tuition.filters,
+          ...(overrides.tuition?.filters ?? {}),
+        },
+        table: {
+          ...DEFAULT_PAYMENTS_PAGE_STRINGS.tuition.table,
+          ...(overrides.tuition?.table ?? {}),
+        },
+      },
+      requests: {
+        ...DEFAULT_PAYMENTS_PAGE_STRINGS.requests,
+        ...(overrides.requests ?? {}),
+        columns: {
+          ...DEFAULT_PAYMENTS_PAGE_STRINGS.requests.columns,
+          ...(overrides.requests?.columns ?? {}),
+        },
+      },
+      payments: {
+        ...DEFAULT_PAYMENTS_PAGE_STRINGS.payments,
+        ...(overrides.payments ?? {}),
+        columns: {
+          ...DEFAULT_PAYMENTS_PAGE_STRINGS.payments.columns,
+          ...(overrides.payments?.columns ?? {}),
+        },
+      },
+      requestDetail: {
+        ...DEFAULT_PAYMENTS_PAGE_STRINGS.requestDetail,
+        ...(overrides.requestDetail ?? {}),
+      },
+    };
+  }, [strings.paymentsPage]);
 
 
   useEffect(() => {
@@ -498,6 +608,153 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
       .slice(0, 6);
   }, [locale, recentPayments, recharges, strings.tables?.payments, strings.tables?.recharges]);
 
+  const getRequestId = useCallback((request) => {
+    if (!request) {
+      return null;
+    }
+
+    return (
+      request.paymentRequestId ||
+      request.payment_request_id ||
+      request.pr_id ||
+      request.id ||
+      request.payment_requestId ||
+      null
+    );
+  }, []);
+
+  const getDueLabel = useCallback(
+    (dateValue) => {
+      const baseLabel = strings.sections?.pendingRequests?.dueLabel ?? 'Vence';
+      const expiredLabel = strings.sections?.pendingRequests?.dueLabelExpired ?? 'Venció';
+      const todayLabel = strings.sections?.pendingRequests?.dueLabelToday ?? 'Vence hoy';
+      if (!dateValue) {
+        return baseLabel;
+      }
+
+      const dueDate = new Date(dateValue);
+      if (Number.isNaN(dueDate.getTime())) {
+        return baseLabel;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const normalizedDueDate = new Date(dueDate);
+      normalizedDueDate.setHours(0, 0, 0, 0);
+
+      if (normalizedDueDate.getTime() < today.getTime()) {
+        return expiredLabel;
+      }
+
+      if (normalizedDueDate.getTime() === today.getTime()) {
+        return todayLabel;
+      }
+
+      return baseLabel;
+    },
+    [strings.sections?.pendingRequests?.dueLabel, strings.sections?.pendingRequests?.dueLabelExpired, strings.sections?.pendingRequests?.dueLabelToday],
+  );
+
+  useEffect(() => {
+    if (routeSegments[0] === 'payments') {
+      setActiveNav('payments');
+      if (routeSegments[1] === 'requests' && routeSegments[2]) {
+        setSelectedPaymentRequestId(routeSegments[2]);
+      }
+      return;
+    }
+
+    setActiveNav('dashboard');
+    setSelectedPaymentRequestId(null);
+  }, [routeSegments]);
+
+  useEffect(() => {
+    if (tuitionReportMonths.length === 0 || (tuitionStartDate && tuitionEndDate)) {
+      return;
+    }
+
+    const sortedMonths = [...tuitionReportMonths].sort((a, b) => {
+      const aDate = new Date(a.year, a.month - 1, 1);
+      const bDate = new Date(b.year, b.month - 1, 1);
+      return aDate.getTime() - bDate.getTime();
+    });
+
+    const firstMonth = sortedMonths[0];
+    const lastMonth = sortedMonths[sortedMonths.length - 1];
+
+    const firstDate = new Date(firstMonth.year, firstMonth.month - 1, 1);
+    const lastDate = new Date(lastMonth.year, lastMonth.month - 1, 1);
+
+    setTuitionStartDate(firstDate.toISOString().slice(0, 10));
+    setTuitionEndDate(lastDate.toISOString().slice(0, 10));
+  }, [tuitionEndDate, tuitionReportMonths, tuitionStartDate]);
+
+  useEffect(() => {
+    if (!selectedPaymentRequestId) {
+      setSelectedPaymentRequest(null);
+      return;
+    }
+
+    const matchingRequest = pendingRequests.find((request) => {
+      const id = getRequestId(request);
+      return id && String(id) === String(selectedPaymentRequestId);
+    });
+
+    setSelectedPaymentRequest(matchingRequest ?? null);
+  }, [getRequestId, pendingRequests, selectedPaymentRequestId]);
+
+  const filteredTuitionMonths = useMemo(() => {
+    return tuitionReportMonths.filter((month) => {
+      const monthDate = new Date(month.year, month.month - 1, 1);
+      const startDate = tuitionStartDate ? new Date(tuitionStartDate) : null;
+      const endDate = tuitionEndDate ? new Date(tuitionEndDate) : null;
+
+      if (startDate && monthDate.getTime() < startDate.getTime()) {
+        return false;
+      }
+
+      if (endDate && monthDate.getTime() > endDate.getTime()) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [tuitionEndDate, tuitionReportMonths, tuitionStartDate]);
+
+  const handlePaymentRequestSelect = useCallback(
+    (request) => {
+      const requestId = getRequestId(request);
+      setSelectedPaymentRequest(request ?? null);
+      setSelectedPaymentRequestId(requestId ? String(requestId) : null);
+      handleNavClick('payments', { preserveRequest: true });
+
+      if (onNavigate) {
+        const suffix = requestId ? `/payments/requests/${encodeURIComponent(String(requestId))}` : '/payments';
+        onNavigate(`${studentDashboardBasePath}${suffix}`, { replace: true });
+      }
+    },
+    [getRequestId, handleNavClick, onNavigate, studentDashboardBasePath],
+  );
+
+  const handleViewAllPayments = useCallback(() => {
+    handleNavClick('payments');
+  }, [handleNavClick]);
+
+  const handlePaymentDetailClick = useCallback(
+    (paymentId) => {
+      if (!paymentId) {
+        return;
+      }
+
+      handleNavClick('payments', { preserveRequest: true });
+
+      if (onNavigate) {
+        onNavigate(`${studentDashboardBasePath}/payments/payments/${encodeURIComponent(String(paymentId))}`, { replace: true });
+      }
+    },
+    [handleNavClick, onNavigate, studentDashboardBasePath],
+  );
+
   const dashboardContent = (
     <div className="page">
         <div className="student-dashboard__hero col-md-12">
@@ -604,7 +861,7 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
                 <h3>{strings.sections?.pendingRequests?.title}</h3>
                 <p className="student-dashboard__muted">{strings.sections?.pendingRequests?.description}</p>
               </div>
-              <button type="button" className="ghost-button" onClick={handleRefresh} disabled={loading}>
+              <button type="button" className="ghost-button" onClick={handleViewAllPayments} disabled={loading}>
                 {strings.sections?.pendingRequests?.viewAll}
               </button>
             </div>
@@ -615,19 +872,24 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
             {pendingRequests.length > 0 ? (
               <div className="student-dashboard__tiles">
                 {pendingRequests.map((request) => (
-                  <div className="tile" key={request.paymentRequestId || request.payment_request_id}>
+                  <button
+                    type="button"
+                    className="tile tile--button"
+                    key={request.paymentRequestId || request.payment_request_id}
+                    onClick={() => handlePaymentRequestSelect(request)}
+                  >
                     <div>
                       <p className="student-dashboard__muted">{strings.tables?.pending?.concept}</p>
                       <p className="fw-bold m-0">{request.pt_name || request.ptName || strings.tables?.pending?.unknown}</p>
                       <p className="student-dashboard__muted">
-                        {strings.sections?.pendingRequests?.dueLabel}: {formatDate(request.pr_pay_by || request.prPayBy, locale)}
+                        {getDueLabel(request.pr_pay_by || request.prPayBy)}: {formatDate(request.pr_pay_by || request.prPayBy, locale)}
                       </p>
                     </div>
                     <div className="tile__meta">
                       <span className="pill pill--warning">{request.ps_pr_name || request.psPrName || strings.tables?.pending?.statusPending}</span>
                       <strong>{formatCurrency(request.pr_amount ?? request.prAmount ?? 0, locale)}</strong>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             ) : null}
@@ -715,6 +977,233 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
     </div>
   );
 
+  const paymentsContent = (
+    <div className="page">
+      <section className="student-dashboard__section">
+        <div className="student-dashboard__section-header">
+          <div>
+            <h3>{paymentsPageStrings.tuition.title}</h3>
+            <p className="student-dashboard__muted">{paymentsPageStrings.tuition.description}</p>
+          </div>
+        </div>
+
+        <form className="student-dashboard__filters" onSubmit={(event) => event.preventDefault()}>
+          <label className="student-dashboard__filter-field">
+            <span>{paymentsPageStrings.tuition.filters.startDate}</span>
+            <input
+              type="date"
+              value={tuitionStartDate}
+              onChange={(event) => setTuitionStartDate(event.target.value)}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{paymentsPageStrings.tuition.filters.endDate}</span>
+            <input type="date" value={tuitionEndDate} onChange={(event) => setTuitionEndDate(event.target.value)} />
+          </label>
+        </form>
+
+        {filteredTuitionMonths.length === 0 ? (
+          <p className="student-dashboard__muted">{paymentsPageStrings.tuition.table.empty}</p>
+        ) : (
+          <div className="student-dashboard__table-wrapper">
+            <table className="student-dashboard__table student-dashboard__table--months">
+              <thead>
+                <tr>
+                  {filteredTuitionMonths.map((month) => {
+                    const monthLabel = month.shortLabel
+                      ? `${month.shortLabel.charAt(0).toUpperCase()}${month.shortLabel.slice(1)}`
+                      : month.key;
+
+                    return <th key={month.key}>{monthLabel}</th>;
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {filteredTuitionMonths.map((month) => (
+                    <td key={`${month.key}-value`}>
+                      <div className="student-dashboard__month-cell">
+                        <p className="student-dashboard__muted">{month.details?.statusName ?? strings.cards?.tuitionStatus?.unknown}</p>
+                        {month.details ? (
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() => handleTuitionMonthClick(month)}
+                          >
+                            {paymentsPageStrings.tuition.table.view}
+                          </button>
+                        ) : (
+                          <span className="student-dashboard__muted">{paymentsPageStrings.tuition.table.empty}</span>
+                        )}
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="student-dashboard__section">
+        <div className="student-dashboard__section-header">
+          <div>
+            <h3>{paymentsPageStrings.requests.title}</h3>
+            <p className="student-dashboard__muted">{strings.sections?.pendingRequests?.description}</p>
+          </div>
+        </div>
+
+        {pendingRequests.length === 0 ? (
+          <p className="student-dashboard__muted">{paymentsPageStrings.requests.empty}</p>
+        ) : (
+          <div className="student-dashboard__table-wrapper">
+            <table className="student-dashboard__table">
+              <thead>
+                <tr>
+                  <th>{paymentsPageStrings.requests.columns.id}</th>
+                  <th>{paymentsPageStrings.requests.columns.concept}</th>
+                  <th>{paymentsPageStrings.requests.columns.amount}</th>
+                  <th>{paymentsPageStrings.requests.columns.status}</th>
+                  <th>{paymentsPageStrings.requests.columns.dueDate}</th>
+                  <th>{paymentsPageStrings.requests.columns.view}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingRequests.map((request) => {
+                  const requestId = getRequestId(request);
+                  return (
+                    <tr key={requestId ?? request.pt_name}>
+                      <td>{requestId ?? '—'}</td>
+                      <td>{request.pt_name || request.ptName || paymentsPageStrings.requests.columns.concept}</td>
+                      <td>{formatCurrency(request.pr_amount ?? request.prAmount ?? 0, locale)}</td>
+                      <td>{request.ps_pr_name || request.psPrName || paymentsPageStrings.requests.columns.status}</td>
+                      <td>
+                        <div className="student-dashboard__due-label">
+                          <span className="pill pill--ghost">{getDueLabel(request.pr_pay_by || request.prPayBy)}</span>
+                          <span>{formatDate(request.pr_pay_by || request.prPayBy, locale)}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => handlePaymentRequestSelect(request)}
+                        >
+                          {paymentsPageStrings.requests.columns.view}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="student-dashboard__section">
+        <div className="student-dashboard__section-header">
+          <div>
+            <h3>{paymentsPageStrings.payments.title}</h3>
+            <p className="student-dashboard__muted">{strings.sections?.payments?.description ?? strings.sections?.history?.description}</p>
+          </div>
+        </div>
+
+        {recentPayments.length === 0 ? (
+          <p className="student-dashboard__muted">{paymentsPageStrings.payments.empty}</p>
+        ) : (
+          <div className="student-dashboard__table-wrapper">
+            <table className="student-dashboard__table">
+              <thead>
+                <tr>
+                  <th>{paymentsPageStrings.payments.columns.id}</th>
+                  <th>{paymentsPageStrings.payments.columns.concept}</th>
+                  <th>{paymentsPageStrings.payments.columns.amount}</th>
+                  <th>{paymentsPageStrings.payments.columns.status}</th>
+                  <th>{paymentsPageStrings.payments.columns.date}</th>
+                  <th>{paymentsPageStrings.payments.columns.view}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentPayments.map((payment) => {
+                  const paymentIdValue = payment.payment_id ?? payment.paymentId ?? payment.id ?? '';
+                  return (
+                    <tr key={paymentIdValue || payment.pt_name}>
+                      <td>{paymentIdValue || '—'}</td>
+                      <td>{payment.pt_name || payment.partConceptName || paymentsPageStrings.payments.columns.concept}</td>
+                      <td>{formatCurrency(payment.amount ?? 0, locale)}</td>
+                      <td>{payment.payment_status_name || payment.paymentStatusName || paymentsPageStrings.payments.columns.status}</td>
+                      <td>{formatDate(payment.payment_created_at || payment.paymentCreatedAt, locale)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => handlePaymentDetailClick(paymentIdValue)}
+                          disabled={!paymentIdValue}
+                        >
+                          {paymentsPageStrings.payments.columns.view}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {selectedPaymentRequest ? (
+        <section className="student-dashboard__section">
+          <div className="student-dashboard__section-header">
+            <div>
+              <h3>{paymentsPageStrings.requestDetail.title}</h3>
+              <p className="student-dashboard__muted">{paymentsPageStrings.requests.columns.id}: {getRequestId(selectedPaymentRequest)}</p>
+            </div>
+          </div>
+          <div className="student-dashboard__detail-grid">
+            <div>
+              <p className="student-dashboard__muted">{paymentsPageStrings.requestDetail.concept}</p>
+              <p className="fw-bold">{selectedPaymentRequest.pt_name || selectedPaymentRequest.ptName || paymentsPageStrings.requests.columns.concept}</p>
+            </div>
+            <div>
+              <p className="student-dashboard__muted">{paymentsPageStrings.requestDetail.amount}</p>
+              <p className="fw-bold">{formatCurrency(selectedPaymentRequest.pr_amount ?? selectedPaymentRequest.prAmount ?? 0, locale)}</p>
+            </div>
+            <div>
+              <p className="student-dashboard__muted">{paymentsPageStrings.requestDetail.dueDate}</p>
+              <p className="fw-bold">{formatDate(selectedPaymentRequest.pr_pay_by || selectedPaymentRequest.prPayBy, locale)}</p>
+            </div>
+            <div>
+              <p className="student-dashboard__muted">{paymentsPageStrings.requestDetail.status}</p>
+              <p className="fw-bold">{selectedPaymentRequest.ps_pr_name || selectedPaymentRequest.psPrName || paymentsPageStrings.requests.columns.status}</p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="student-dashboard__section student-dashboard__support">
+        <div>
+          <p className="student-dashboard__eyebrow">{strings.support?.title}</p>
+          <h3>{strings.support?.headline}</h3>
+          <p className="student-dashboard__muted">{strings.support?.description}</p>
+        </div>
+        <div className="student-dashboard__support-actions">
+          <button type="button" className="primary-button" disabled={loading}>
+            {strings.support?.contact}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+
+  const pageTitle = activeNav === 'payments' ? paymentsPageStrings.title : headerTitle;
+  const pageSubtitle =
+    activeNav === 'payments'
+      ? strings.sections?.payments?.description ?? headerSubtitle
+      : headerSubtitle;
+  const mainContent = activeNav === 'payments' ? paymentsContent : dashboardContent;
+
   const breadcrumbs = useMemo(() => {
     const dashboardLabel = menuItems.find((item) => item.key === 'dashboard')?.label ?? headerTitle;
     const items = [
@@ -729,8 +1218,19 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
       items.push({ label: activeLabel });
     }
 
+    if (activeNav === 'payments' && selectedPaymentRequestId) {
+      items.push({ label: `${paymentsPageStrings.requests.columns.id} ${selectedPaymentRequestId}` });
+    }
+
     return items;
-  }, [activeNav, handleNavClick, headerTitle, menuItems]);
+  }, [
+    activeNav,
+    handleNavClick,
+    headerTitle,
+    menuItems,
+    paymentsPageStrings.requests.columns.id,
+    selectedPaymentRequestId,
+  ]);
 
   return (
     <div className={`dashboard${isSidebarOpen && !isDesktop ? ' has-overlay' : ''}`}>
@@ -799,8 +1299,8 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
         <header className='dashboard__header'>
           <div className='dashboard__header-title'>
             <div>
-              <h1>{headerTitle}</h1>
-              <p className='dashboard__subtitle'>{headerSubtitle}</p>
+              <h1>{pageTitle}</h1>
+              <p className='dashboard__subtitle'>{pageSubtitle}</p>
             </div>
           </div>
           <div className='dashboard__actions'>
@@ -819,7 +1319,7 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange }) => {
 
         <Breadcrumbs items={breadcrumbs} />
 
-        {dashboardContent}
+        {mainContent}
       </div>
     </div>
   );

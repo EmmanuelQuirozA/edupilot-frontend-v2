@@ -295,7 +295,14 @@ const App = () => {
   }
 
   if (user && isStudentRole) {
-    return <StudentDashboardPage language={language} onLanguageChange={handleLanguageChange} />;
+    return (
+      <StudentDashboardPage
+        language={language}
+        onLanguageChange={handleLanguageChange}
+        routeSegments={detailSegments}
+        onNavigate={navigate}
+      />
+    );
   }
 
   if (user && HOME_PAGES.has(resolvedSection)) {

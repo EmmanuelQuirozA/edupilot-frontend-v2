@@ -327,6 +327,20 @@
   gap: 10px;
 }
 
+.tile--button {
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  color: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.tile--button:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  transform: translateY(-2px);
+}
+
 .tile__meta {
   display: flex;
   align-items: center;
@@ -440,6 +454,77 @@
 .student-dashboard__support .ghost-button {
   color: #f8fafc;
   border-color: rgba(255, 255, 255, 0.4);
+}
+
+.student-dashboard__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.student-dashboard__filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.student-dashboard__filter-field input {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.student-dashboard__table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.student-dashboard__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+.student-dashboard__table th,
+.student-dashboard__table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.student-dashboard__table th {
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.student-dashboard__table--months {
+  min-width: 0;
+  text-align: center;
+}
+
+.student-dashboard__month-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.student-dashboard__due-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.student-dashboard__detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
 @media (max-width: 1024px) {
