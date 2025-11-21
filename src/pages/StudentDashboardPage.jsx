@@ -90,6 +90,56 @@ const formatMonthRangeDate = (date) => {
   return `${year}-${month}-01`;
 };
 
+const buildMonthInputValue = (year, month) => `${year}-${String(month).padStart(2, '0')}`;
+
+const parseMonthInputValue = (value) => {
+  if (!value || typeof value !== 'string') {
+    return null;
+  }
+
+  const [yearPart, monthPart] = value.split('-');
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return null;
+  }
+
+  return new Date(year, month - 1, 1);
+};
+
+const formatMonthLabel = (month) => {
+  const label = month?.longLabel ?? month?.shortLabel ?? month?.key ?? '';
+
+  if (!label) {
+    return '';
+  }
+
+  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+};
+
+const getMonthAmount = (month) => {
+  if (!month?.details) {
+    return null;
+  }
+
+  const totalAmount = Number(month.details.totalAmount);
+  if (Number.isFinite(totalAmount)) {
+    return totalAmount;
+  }
+
+  if (Array.isArray(month.details.payments) && month.details.payments.length > 0) {
+    const total = month.details.payments.reduce(
+      (sum, payment) => sum + (Number(payment.amount) || 0),
+      0,
+    );
+
+    return Number.isFinite(total) ? total : null;
+  }
+
+  return null;
+};
+
 const buildTuitionMonthRange = (locale) => {
   const today = new Date();
   const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
@@ -682,11 +732,8 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     const firstMonth = sortedMonths[0];
     const lastMonth = sortedMonths[sortedMonths.length - 1];
 
-    const firstDate = new Date(firstMonth.year, firstMonth.month - 1, 1);
-    const lastDate = new Date(lastMonth.year, lastMonth.month - 1, 1);
-
-    setTuitionStartDate(firstDate.toISOString().slice(0, 10));
-    setTuitionEndDate(lastDate.toISOString().slice(0, 10));
+    setTuitionStartDate(buildMonthInputValue(firstMonth.year, firstMonth.month));
+    setTuitionEndDate(buildMonthInputValue(lastMonth.year, lastMonth.month));
   }, [tuitionEndDate, tuitionReportMonths, tuitionStartDate]);
 
   useEffect(() => {
@@ -706,8 +753,8 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
   const filteredTuitionMonths = useMemo(() => {
     return tuitionReportMonths.filter((month) => {
       const monthDate = new Date(month.year, month.month - 1, 1);
-      const startDate = tuitionStartDate ? new Date(tuitionStartDate) : null;
-      const endDate = tuitionEndDate ? new Date(tuitionEndDate) : null;
+      const startDate = parseMonthInputValue(tuitionStartDate);
+      const endDate = parseMonthInputValue(tuitionEndDate);
 
       if (startDate && monthDate.getTime() < startDate.getTime()) {
         return false;
@@ -991,14 +1038,14 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
           <label className="student-dashboard__filter-field">
             <span>{paymentsPageStrings.tuition.filters.startDate}</span>
             <input
-              type="date"
+              type="month"
               value={tuitionStartDate}
               onChange={(event) => setTuitionStartDate(event.target.value)}
             />
           </label>
           <label className="student-dashboard__filter-field">
             <span>{paymentsPageStrings.tuition.filters.endDate}</span>
-            <input type="date" value={tuitionEndDate} onChange={(event) => setTuitionEndDate(event.target.value)} />
+            <input type="month" value={tuitionEndDate} onChange={(event) => setTuitionEndDate(event.target.value)} />
           </label>
         </form>
 
@@ -1009,35 +1056,45 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
             <table className="student-dashboard__table student-dashboard__table--months">
               <thead>
                 <tr>
-                  {filteredTuitionMonths.map((month) => {
-                    const monthLabel = month.shortLabel
-                      ? `${month.shortLabel.charAt(0).toUpperCase()}${month.shortLabel.slice(1)}`
-                      : month.key;
-
-                    return <th key={month.key}>{monthLabel}</th>;
-                  })}
+                  {filteredTuitionMonths.map((month) => (
+                    <th key={month.key}>{formatMonthLabel(month)}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  {filteredTuitionMonths.map((month) => (
-                    <td key={`${month.key}-value`}>
-                      <div className="student-dashboard__month-cell">
-                        <p className="student-dashboard__muted">{month.details?.statusName ?? strings.cards?.tuitionStatus?.unknown}</p>
-                        {month.details ? (
+                  {filteredTuitionMonths.map((month) => {
+                    const monthAmount = getMonthAmount(month);
+                    const hasDetails = Boolean(month.details);
+                    const statusLabel =
+                      month.details?.statusName ??
+                      strings.cards?.tuitionStatus?.unknown ??
+                      paymentsPageStrings.tuition.table.empty;
+                    const amountLabel = monthAmount != null ? formatCurrency(monthAmount, locale) : '—';
+                    const monthLabel = formatMonthLabel(month);
+
+                    return (
+                      <td key={`${month.key}-value`}>
+                        <div className="student-dashboard__month-cell">
                           <button
                             type="button"
-                            className="ghost-button"
+                            className="student-dashboard__amount-button"
                             onClick={() => handleTuitionMonthClick(month)}
+                            disabled={!hasDetails}
+                            aria-label={`${paymentsPageStrings.tuition.table.view} ${monthLabel}`.trim()}
                           >
-                            {paymentsPageStrings.tuition.table.view}
+                            <span>{amountLabel}</span>
+                            {hasDetails ? (
+                              <span className="student-dashboard__amount-button__cta">
+                                {paymentsPageStrings.tuition.table.view}
+                              </span>
+                            ) : null}
                           </button>
-                        ) : (
-                          <span className="student-dashboard__muted">{paymentsPageStrings.tuition.table.empty}</span>
-                        )}
-                      </div>
-                    </td>
-                  ))}
+                          <p className="student-dashboard__muted">{statusLabel}</p>
+                        </div>
+                      </td>
+                    );
+                  })}
                 </tr>
               </tbody>
             </table>
