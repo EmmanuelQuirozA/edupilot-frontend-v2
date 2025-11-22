@@ -671,8 +671,15 @@ const HomePage = ({
           <span className="sidebar__brand-badge">EduPilot</span>
         </div> */}
         <div className="sidebar__profile">
-          <div className="sidebar__avatar" aria-hidden="true">
-            {initials || 'AD'}
+          <div className="sidebar__avatar-wrapper">
+            <div className="sidebar__avatar" aria-hidden="true">
+              {initials || 'AD'}
+            </div>
+            {!isDesktop ? (
+              <div className="sidebar__language-badge">
+                <LanguageSelector value={language} onChange={onLanguageChange} />
+              </div>
+            ) : null}
           </div>
           <div>
             <p className="sidebar__name">{displayName}</p>
@@ -703,41 +710,51 @@ const HomePage = ({
         </button>
       </aside>
 
-      {!isDesktop ? (
-        <button
-          type="button"
-          className="dashboard__menu-toggle"
-          onClick={toggleSidebar}
-          aria-label={isSidebarOpen ? t.home.header.closeMenu : t.home.header.openMenu}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-      ) : null}
-
       {!isDesktop && isSidebarOpen ? <div className="dashboard__overlay" onClick={closeSidebar} aria-hidden="true" /> : null}
 
       <div className="dashboard__main">
         <header className="dashboard__header">
           <div className="dashboard__header-title">
+            {!isDesktop ? (
+              <button
+                type="button"
+                className="dashboard__menu-toggle"
+                onClick={toggleSidebar}
+                aria-label={isSidebarOpen ? t.home.header.closeMenu : t.home.header.openMenu}
+              >
+                <span />
+                <span />
+                <span />
+              </button>
+            ) : null}
             <div>
               <h1>{headerTitle}</h1>
               <p className="dashboard__subtitle">{t.home.header.subtitle}</p>
             </div>
           </div>
-          <div className="d-flex justify-content-between">
-            <label className="dashboard__search" htmlFor="dashboard-search">
-              <span className="visually-hidden">{t.home.header.searchPlaceholder}</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.471 6.471 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.505 4.505 0 0 1 9.5 14Z"
-                  fill="currentColor"
-                />
-              </svg>
-              <input id="dashboard-search" type="search" placeholder={t.home.header.searchPlaceholder} />
-            </label>
-            <LanguageSelector value={language} onChange={onLanguageChange} />
+          <div className="dashboard__actions">
+            {isDesktop ? (
+              <label className="dashboard__search" htmlFor="dashboard-search">
+                <span className="visually-hidden">{t.home.header.searchPlaceholder}</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.471 6.471 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.505 4.505 0 0 1 9.5 14Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                <input id="dashboard-search" type="search" placeholder={t.home.header.searchPlaceholder} />
+              </label>
+            ) : (
+              <button type="button" className="dashboard__search-button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.471 6.471 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.505 4.505 0 0 1 9.5 14Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                <span>{t.home.header.searchPlaceholder}</span>
+              </button>
+            )}
             <button type="button" className="dashboard__notification" aria-label={t.home.header.notifications}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -747,15 +764,20 @@ const HomePage = ({
               </svg>
               <span />
             </button>
-            <div className="dashboard__user-chip">
-              <div className="dashboard__user-initials" aria-hidden="true">
-                {initials || 'AD'}
+            {isDesktop ? (
+              <LanguageSelector value={language} onChange={onLanguageChange} />
+            ) : null}
+            {isDesktop ? (
+              <div className="dashboard__user-chip">
+                <div className="dashboard__user-initials" aria-hidden="true">
+                  {initials || 'AD'}
+                </div>
+                <div>
+                  <p>{displayName}</p>
+                  <span>{user?.role ?? roleLabel}</span>
+                </div>
               </div>
-              <div>
-                <p>{displayName}</p>
-                <span>{user?.role ?? roleLabel}</span>
-              </div>
-            </div>
+            ) : null}
           </div>
         </header>
 
