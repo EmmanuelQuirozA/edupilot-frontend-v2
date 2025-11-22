@@ -1322,6 +1322,13 @@ const StudentDashboardPage = ({
     [requestsLimit],
   );
 
+  const handlePaymentsPageChange = useCallback(
+    (page) => {
+      setPaymentsOffset((page - 1) * paymentsLimit);
+    },
+    [paymentsLimit],
+  );
+
   const requestsTotalPages = Math.max(1, Math.ceil(Math.max(requestsTotalElements, 1) / requestsLimit));
   const requestsCurrentPage = Math.min(requestsTotalPages, Math.floor(requestsOffset / requestsLimit) + 1);
   const paymentsTotalPages = Math.max(1, Math.ceil(Math.max(paymentsTotalElements, 1) / paymentsLimit));
@@ -1734,12 +1741,6 @@ const StudentDashboardPage = ({
     recentPayments,
     tableStrings.loading,
   ]);
-  const handlePaymentsPageChange = useCallback(
-    (page) => {
-      setPaymentsOffset((page - 1) * paymentsLimit);
-    },
-    [paymentsLimit],
-  );
   const requestsColumns = useMemo(
     () => [
       { key: 'payment_request_id', header: paymentsPageStrings.requests.columns.id },
