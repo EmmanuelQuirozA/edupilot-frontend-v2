@@ -1164,6 +1164,32 @@ const StudentDashboardPage = ({
     [strings.sections?.pendingRequests?.dueLabel, strings.sections?.pendingRequests?.dueLabelExpired, strings.sections?.pendingRequests?.dueLabelToday],
   );
 
+  const getDueStatus = useCallback((dateValue) => {
+    if (!dateValue) {
+      return { isExpired: false, isToday: false };
+    }
+
+    const parsedDate = new Date(dateValue);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return { isExpired: false, isToday: false };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const normalizedDate = new Date(parsedDate);
+    normalizedDate.setHours(0, 0, 0, 0);
+
+    if (normalizedDate.getTime() < today.getTime()) {
+      return { isExpired: true, isToday: false };
+    }
+
+    if (normalizedDate.getTime() === today.getTime()) {
+      return { isExpired: false, isToday: true };
+    }
+
+    return { isExpired: false, isToday: false };
+  }, []);
+
   const pendingRequestsLimit = canShowThreePendingRequests ? 3 : 4;
   const visiblePendingRequests = useMemo(
     () => pendingRequests.slice(0, pendingRequestsLimit),
@@ -1295,6 +1321,211 @@ const StudentDashboardPage = ({
     },
     [requestsLimit],
   );
+
+  const renderRequestsPagination = useCallback(() => {
+    const totalPages = Math.max(1, Math.ceil(Math.max(requestsTotalElements, 1) / requestsLimit));
+    const hasItems = requestsTotalElements > 0;
+    const safePage = Math.min(Math.max(requestsCurrentPage, 1), totalPages);
+    const from = hasItems ? (safePage - 1) * requestsLimit + 1 : 0;
+    const to = hasItems ? Math.min(safePage * requestsLimit, requestsTotalElements) : 0;
+    const summaryContent = paymentSummary
+      ? paymentSummary({ from, to, total: requestsTotalElements, page: safePage, totalPages })
+      : hasItems
+      ? `Mostrando ${from}-${to} de ${requestsTotalElements} registros`
+      : 'Mostrando 0 de 0 registros';
+
+    const handlePageChange = (nextPage) => {
+      if (nextPage < 1 || nextPage > totalPages || nextPage === safePage) {
+        return;
+      }
+
+      handleRequestsPageChange(nextPage);
+    };
+
+    return (
+      <div className="payment-request-card__pagination">
+        <div className="global-table__summary text-muted">{summaryContent}</div>
+        <nav aria-label="Table pagination">
+          <ul className="pagination justify-content-lg-end mb-0">
+            <li className={`page-item ${safePage <= 1 ? 'disabled' : ''}`}>
+              <button
+                type="button"
+                className="page-link"
+                onClick={() => handlePageChange(safePage - 1)}
+                aria-label={tableStrings.pagination.previous ?? 'Página anterior'}
+              >
+                {tableStrings.pagination.previous ?? '←'}
+              </button>
+            </li>
+            <li className="page-item disabled">
+              <span className="page-link">
+                {paymentPageLabel
+                  ? paymentPageLabel({ page: safePage, totalPages })
+                  : `${safePage} / ${totalPages}`}
+              </span>
+            </li>
+            <li className={`page-item ${safePage >= totalPages ? 'disabled' : ''}`}>
+              <button
+                type="button"
+                className="page-link"
+                onClick={() => handlePageChange(safePage + 1)}
+                aria-label={tableStrings.pagination.next ?? 'Página siguiente'}
+              >
+                {tableStrings.pagination.next ?? '→'}
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    );
+  }, [
+    handleRequestsPageChange,
+    paymentPageLabel,
+    paymentSummary,
+    requestsCurrentPage,
+    requestsLimit,
+    requestsTotalElements,
+    tableStrings.pagination,
+  ]);
+
+  const renderMobileRequests = useCallback(() => {
+    if (requestsLoading) {
+      return (
+        <div className="payment-request-card__state text-center">
+          <div className="spinner-border text-primary" role="status" aria-hidden="true" />
+          <span className="d-block mt-3">{tableStrings.loading}</span>
+        </div>
+      );
+    }
+
+    if (requestsError) {
+      return (
+        <p className="payment-request-card__state text-center text-danger">
+          {typeof requestsError === 'string' ? requestsError : requestsError?.message}
+        </p>
+      );
+    }
+
+    if (!pendingRequests || pendingRequests.length === 0) {
+      return (
+        <p className="payment-request-card__state text-center text-muted">
+          {paymentsPageStrings.requests.empty}
+        </p>
+      );
+    }
+
+    return pendingRequests.map((request, index) => {
+      const requestId = getRequestId(request);
+      const concept = request.pt_name || request.ptName || paymentsPageStrings.requests.columns.concept;
+      const statusLabel = request.ps_pr_name || request.psPrName || paymentsPageStrings.requests.columns.status;
+      const dueDateValue = request.pr_pay_by || request.prPayBy;
+      const dueLabel = getDueLabel(dueDateValue);
+      const dueStatus = getDueStatus(dueDateValue);
+      const dueDateText = formatDate(dueDateValue, locale);
+      const baseAmount = Number(request.pr_amount ?? request.prAmount ?? 0);
+      const lateFee = Number(
+        request.late_fee_total ?? request.lateFeeTotal ?? request.late_fee ?? request.lateFee ?? 0,
+      );
+      const totalAmount = baseAmount + lateFee;
+      const gradeLabel = [
+        request.scholar_level_name || request.scholarLevelName,
+        request.grade_group || request.gradeGroup,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      const paymentReference = request.payment_reference || request.paymentReference || '—';
+      const generationLabel = request.generation || request.student_generation || '—';
+      const paymentMonth = request.payment_month || request.paymentMonth;
+      const paymentMonthLabel = paymentMonth ? formatDate(paymentMonth, locale) : null;
+
+      return (
+        <details
+          key={requestId ?? concept ?? `request-${index}`}
+          className="payment-request-card"
+          data-request-id={requestId ?? undefined}
+        >
+          <summary>
+            <div className="payment-request-card__badges">
+              <span className="pill pill--ghost payment-request-card__pill">{concept?.toUpperCase?.() ?? concept}</span>
+              <span
+                className={[
+                  'pill',
+                  'payment-request-card__pill',
+                  dueStatus.isExpired ? 'pill--warning' : 'pill--success',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                {statusLabel}
+              </span>
+            </div>
+            <div className="payment-request-card__summary-row">
+              <div>
+                <p className="payment-request-card__title">Ciclo {generationLabel}</p>
+                <p className="payment-request-card__subtitle">{gradeLabel || request.student_full_name}</p>
+              </div>
+              <span className="payment-request-card__chevron" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </span>
+            </div>
+            <div className="payment-request-card__meta">
+              <span className="payment-request-card__reference">Ref: {paymentReference}</span>
+              <span className={`payment-request-card__due ${dueStatus.isExpired ? 'is-expired' : ''}`}>
+                {dueLabel}: {dueDateText || '—'}
+              </span>
+            </div>
+          </summary>
+          <div className="payment-request-card__content">
+            <div className="payment-request-card__detail-row">
+              <div className="payment-request-card__label">Monto Base</div>
+              <div className="payment-request-card__value">{formatCurrency(baseAmount, locale)}</div>
+            </div>
+            <div className="payment-request-card__detail-row">
+              <div className="payment-request-card__label">Recargo Mora</div>
+              <div className="payment-request-card__value payment-request-card__value--warning">
+                {lateFee > 0 ? `+${formatCurrency(lateFee, locale)}` : formatCurrency(lateFee, locale)}
+              </div>
+            </div>
+            <div className="payment-request-card__divider" />
+            <div className="payment-request-card__detail-row payment-request-card__detail-row--total">
+              <div className="payment-request-card__label">Total</div>
+              <div className="payment-request-card__value payment-request-card__value--total">
+                {formatCurrency(totalAmount, locale)}
+              </div>
+            </div>
+            <div className="payment-request-card__footer">
+              <div className="payment-request-card__footer-meta">
+                {paymentMonthLabel ? (
+                  <span className="payment-request-card__subtitle">Mes: {paymentMonthLabel}</span>
+                ) : null}
+              </div>
+              <div className="payment-request-card__actions">
+                <button type="button" className="ghost-button" onClick={() => handlePaymentRequestSelect(request)}>
+                  {paymentsPageStrings.requests.columns.view}
+                </button>
+              </div>
+            </div>
+          </div>
+        </details>
+      );
+    });
+  }, [
+    getDueLabel,
+    getDueStatus,
+    getRequestId,
+    handlePaymentRequestSelect,
+    locale,
+    paymentsPageStrings.requests.columns.concept,
+    paymentsPageStrings.requests.columns.status,
+    paymentsPageStrings.requests.columns.view,
+    paymentsPageStrings.requests.empty,
+    pendingRequests,
+    requestsError,
+    requestsLoading,
+    tableStrings.loading,
+  ]);
   const handlePaymentsPageChange = useCallback(
     (page) => {
       setPaymentsOffset((page - 1) * paymentsLimit);
@@ -1887,61 +2118,68 @@ const StudentDashboardPage = ({
           </div>
 
           <UiCard className="page__table-card">
-            <GlobalTable
-              className="page__table-wrapper"
-              tableClassName="page__table mb-0"
-              columns={requestsColumns}
-              data={pendingRequests}
-              getRowId={(request, index) => request.payment_request_id ?? request.paymentRequestId ?? request.pt_name ?? `request-${index}`}
-              renderRow={(request, index) => {
-                const requestId = getRequestId(request);
-                const rowKey = requestId ?? request.pt_name ?? `request-${index}`;
+            {isDesktop ? (
+              <GlobalTable
+                className="page__table-wrapper"
+                tableClassName="page__table mb-0"
+                columns={requestsColumns}
+                data={pendingRequests}
+                getRowId={(request, index) => request.payment_request_id ?? request.paymentRequestId ?? request.pt_name ?? `request-${index}`}
+                renderRow={(request, index) => {
+                  const requestId = getRequestId(request);
+                  const rowKey = requestId ?? request.pt_name ?? `request-${index}`;
 
-                return (
-                  <tr key={rowKey}>
-                    <td data-title={paymentsPageStrings.requests.columns.id}>{requestId ?? '—'}</td>
-                    <td data-title={paymentsPageStrings.requests.columns.concept}>
-                      {request.pt_name || request.ptName || paymentsPageStrings.requests.columns.concept}
-                    </td>
-                    <td data-title={paymentsPageStrings.requests.columns.amount} className="text-end">
-                      {formatCurrency(request.pr_amount ?? request.prAmount ?? 0, locale)}
-                    </td>
-                    <td data-title={paymentsPageStrings.requests.columns.status}>
-                      {request.ps_pr_name || request.psPrName || paymentsPageStrings.requests.columns.status}
-                    </td>
-                    <td data-title={paymentsPageStrings.requests.columns.dueDate}>
-                      <div className="student-dashboard__due-label">
-                        <span className="pill pill--ghost">{getDueLabel(request.pr_pay_by || request.prPayBy)}</span>
-                        <span className='d-flex justify-content-center'>{formatDate(request.pr_pay_by || request.prPayBy, locale)}</span>
-                      </div>
-                    </td>
-                    <td data-title={paymentsPageStrings.requests.columns.view} className="text-end">
-                      <button
-                        type="button"
-                        className="ghost-button"
-                        onClick={() => handlePaymentRequestSelect(request)}
-                      >
-                        {paymentsPageStrings.requests.columns.view}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              }}
-              loading={requestsLoading}
-              loadingMessage={tableStrings.loading}
-              error={requestsError || null}
-              emptyMessage={paymentsPageStrings.requests.empty}
-              pagination={{
-                currentPage: requestsCurrentPage,
-                pageSize: requestsLimit,
-                totalItems: requestsTotalElements,
-                onPageChange: handleRequestsPageChange,
-                previousLabel: tableStrings.pagination.previous ?? '←',
-                nextLabel: tableStrings.pagination.next ?? '→',
-                summary: paymentSummary,
-                pageLabel: paymentPageLabel,
-              }}
-            />
+                  return (
+                    <tr key={rowKey}>
+                      <td data-title={paymentsPageStrings.requests.columns.id}>{requestId ?? '—'}</td>
+                      <td data-title={paymentsPageStrings.requests.columns.concept}>
+                        {request.pt_name || request.ptName || paymentsPageStrings.requests.columns.concept}
+                      </td>
+                      <td data-title={paymentsPageStrings.requests.columns.amount} className="text-end">
+                        {formatCurrency(request.pr_amount ?? request.prAmount ?? 0, locale)}
+                      </td>
+                      <td data-title={paymentsPageStrings.requests.columns.status}>
+                        {request.ps_pr_name || request.psPrName || paymentsPageStrings.requests.columns.status}
+                      </td>
+                      <td data-title={paymentsPageStrings.requests.columns.dueDate}>
+                        <div className="student-dashboard__due-label">
+                          <span className="pill pill--ghost">{getDueLabel(request.pr_pay_by || request.prPayBy)}</span>
+                          <span className='d-flex justify-content-center'>{formatDate(request.pr_pay_by || request.prPayBy, locale)}</span>
+                        </div>
+                      </td>
+                      <td data-title={paymentsPageStrings.requests.columns.view} className="text-end">
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => handlePaymentRequestSelect(request)}
+                        >
+                          {paymentsPageStrings.requests.columns.view}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                }}
+                loading={requestsLoading}
+                loadingMessage={tableStrings.loading}
+                error={requestsError || null}
+                emptyMessage={paymentsPageStrings.requests.empty}
+                pagination={{
+                  currentPage: requestsCurrentPage,
+                  pageSize: requestsLimit,
+                  totalItems: requestsTotalElements,
+                  onPageChange: handleRequestsPageChange,
+                  previousLabel: tableStrings.pagination.previous ?? '←',
+                  nextLabel: tableStrings.pagination.next ?? '→',
+                  summary: paymentSummary,
+                  pageLabel: paymentPageLabel,
+                }}
+              />
+            ) : (
+              <div className="payment-requests-mobile">
+                {renderMobileRequests()}
+                {pendingRequests && pendingRequests.length > 0 ? renderRequestsPagination() : null}
+              </div>
+            )}
           </UiCard>
         </section>
       ) : null}
