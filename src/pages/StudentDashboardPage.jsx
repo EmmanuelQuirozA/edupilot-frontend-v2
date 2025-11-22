@@ -13,6 +13,7 @@ import ActionButton from '../components/ui/ActionButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
 import SidebarModal from '../components/ui/SidebarModal.jsx';
 import FilterButton from '../components/ui/buttons/FilterButton.jsx';
+import StudentTableCell from '../components/ui/StudentTableCell.jsx';
 import PaymentDetailPage from './PaymentDetailPage.jsx';
 import PaymentRequestDetailPage from './PaymentRequestDetailPage.jsx';
 import '../components/HomePage.css';
@@ -1353,6 +1354,51 @@ const StudentDashboardPage = ({
       onNavigate(`${dashboardBasePath}/students/${encodeURIComponent(String(studentId))}`);
     }
   }, [dashboardBasePath, onNavigate]);
+  const handleTuitionTableMonthClick = useCallback(
+    (row, monthKey, details) => {
+      if (!details) {
+        return;
+      }
+
+      const { totalAmount, payments, paymentMonth, paymentRequestId } = details;
+      const hasDetails =
+        totalAmount != null || (payments && payments.length > 0) || paymentRequestId != null;
+
+      if (!hasDetails) {
+        return;
+      }
+
+      const studentName = row?.student ?? tableStrings.studentFallback;
+
+      openModal({
+        key: 'TuitionPaymentDetails',
+        props: {
+          studentName,
+          className: row?.class ?? row?.grade_group ?? null,
+          generation: row?.generation ?? null,
+          scholarLevel: row?.scholar_level_name ?? null,
+          monthKey,
+          paymentMonth: paymentMonth ?? monthKey,
+          totalAmount,
+          paymentRequestId,
+          payments,
+          locale,
+          currency: 'MXN',
+          strings: tuitionModalStrings,
+          paymentDetailBasePath,
+          paymentRequestDetailBasePath,
+        },
+      });
+    },
+    [
+      locale,
+      openModal,
+      paymentDetailBasePath,
+      paymentRequestDetailBasePath,
+      tableStrings.studentFallback,
+      tuitionModalStrings,
+    ],
+  );
   const handlePageChange = useCallback(
     (nextPage) => {
       const safePage = Math.min(Math.max(nextPage, 1), tuitionTotalPages);
@@ -1641,9 +1687,28 @@ const StudentDashboardPage = ({
               renderRow={(row, index) => {
                 const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
                 const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+                const canNavigateToStudent = Boolean(studentId);
+                const studentIdLabel = tableStrings.studentIdLabel;
+                const studentName = row.student ?? tableStrings.studentFallback;
+                const studentMetaValue = row.payment_reference ?? '';
 
                 return (
                   <tr key={rowKey}>
+                    <td data-title={tableStrings.columns.student}>
+                      <StudentTableCell
+                        name={row.student}
+                        fallbackName={tableStrings.studentFallback}
+                        gradeGroup={row.class ?? row.grade_group}
+                        scholarLevel={row.scholar_level_name}
+                        enrollment={studentMetaValue}
+                        onClick={() => handleStudentDetailClick(row)}
+                        disabled={!canNavigateToStudent}
+                        nameButtonProps={{ 'aria-label': studentName }}
+                        metaLabel={studentIdLabel}
+                        metaValue={studentId ?? undefined}
+                      />
+                    </td>
+                    <td data-title={tableStrings.columns.generation}>{row.generation ?? '--'}</td>
                     {monthColumns.map((month) => {
                       const value = row?.[month];
                       const details = extractTuitionCellDetails(value);
@@ -1664,26 +1729,26 @@ const StudentDashboardPage = ({
                               <span className="ui-table__empty-indicator">--</span>
                             );
                       const cellClassName = !hasDetails && fallbackAmount == null ? 'page__amount-null' : '';
-                      const monthDate = parseMonthKeyToDate(month);
-                      const monthDetails =
-                        monthDate || hasDetails
-                          ? {
-                              key: month,
-                              year: monthDate?.getFullYear() ?? null,
-                              month: monthDate ? monthDate.getMonth() + 1 : null,
-                              longLabel: monthDate
-                                ? new Intl.DateTimeFormat(locale, { month: 'long' }).format(monthDate)
-                                : month,
-                              details: details ?? null,
-                            }
-                          : null;
 
                       return (
                         <td
                           key={`${rowKey}-${month}`}
-                          data-title={tableStrings.months?.[month]?.label ?? month}
-                          className={`student-dashboard__month-cell ${cellClassName}`}
+                          data-title={month}
+                          className={cellClassName}
                         >
+                          {hasDetails ? (
+                            <button
+                              type="button"
+                              className="page__amount-button"
+                              onClick={() => handleTuitionTableMonthClick(row, month, details)}
+                            >
+                              {displayAmount ?? (
+                                <span className="ui-table__empty-indicator">--</span>
+                              )}
+                            </button>
+                          ) : (
+                            fallbackContent
+                          )}
                         </td>
                       );
                     })}
