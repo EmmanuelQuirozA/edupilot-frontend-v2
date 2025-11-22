@@ -621,6 +621,171 @@
   gap: 12px;
 }
 
+.payment-requests-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-request-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.payment-request-card summary {
+  list-style: none;
+  outline: none;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.payment-request-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.payment-request-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.payment-request-card__summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.payment-request-card__title {
+  margin: 0;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.payment-request-card__subtitle {
+  margin: 0;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.payment-request-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-weight: 700;
+  color: #475569;
+}
+
+.payment-request-card__reference {
+  background: #f8fafc;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.payment-request-card__due {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #0f172a;
+}
+
+.payment-request-card__due.is-expired {
+  color: #dc2626;
+}
+
+.payment-request-card__chevron {
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.payment-request-card[open] .payment-request-card__chevron {
+  transform: rotate(180deg);
+}
+
+.payment-request-card__content {
+  border-top: 1px solid #e2e8f0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-request-card__detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.payment-request-card__label {
+  color: #475569;
+  font-weight: 700;
+}
+
+.payment-request-card__value {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.payment-request-card__value--warning {
+  color: #b91c1c;
+}
+
+.payment-request-card__value--total {
+  color: #1d4ed8;
+  font-size: 1.1rem;
+}
+
+.payment-request-card__divider {
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.payment-request-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.payment-request-card__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.payment-request-card__state {
+  padding: 12px;
+}
+
+.payment-request-card__pagination {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.payment-request-card__pill {
+  font-size: 11px;
+  padding: 6px 10px;
+}
+
+@media (min-width: 576px) {
+  .payment-request-card__pagination {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
 @media (max-width: 1024px) {
   .student-dashboard__two-column,
   .student-dashboard__support {
