@@ -49,6 +49,7 @@
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
+  z-index: 3;
 }
 
 .sidebar__close {
@@ -221,13 +222,13 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
-  z-index: 30;
+  z-index: 2;
 }
 
 .dashboard__main {
   padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem);
   position: relative;
-  z-index: 20;
+  z-index: 1;
   overflow: hidden;
 }
 

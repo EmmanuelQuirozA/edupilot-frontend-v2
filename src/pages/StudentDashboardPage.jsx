@@ -1437,6 +1437,7 @@ const StudentDashboardPage = ({
 
     return pendingRequests.map((request, index) => {
       const requestId = getRequestId(request);
+      const paymentStatusId = request.payment_status_id;
       const concept = request.pt_name || request.ptName || paymentsPageStrings.requests.columns.concept;
       const statusLabel = request.ps_pr_name || request.psPrName || paymentsPageStrings.requests.columns.status;
       const dueDateValue = request.pr_pay_by || request.prPayBy;
@@ -1455,7 +1456,6 @@ const StudentDashboardPage = ({
         .filter(Boolean)
         .join(' · ');
       const paymentReference = request.payment_reference || request.paymentReference || '—';
-      const generationLabel = request.generation || request.student_generation || '—';
       const paymentMonth = request.payment_month || request.paymentMonth;
       const paymentMonthLabel = paymentMonth ? formatDate(paymentMonth, locale) : null;
 
@@ -1466,24 +1466,20 @@ const StudentDashboardPage = ({
           data-request-id={requestId ?? undefined}
         >
           <summary>
-            <div className="payment-request-card__badges">
-              <span className="pill pill--ghost payment-request-card__pill">{concept?.toUpperCase?.() ?? concept}</span>
-              <span
-                className={[
-                  'pill',
-                  'payment-request-card__pill',
-                  dueStatus.isExpired ? 'pill--warning' : 'pill--success',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                {statusLabel}
-              </span>
-            </div>
-            <div className="payment-request-card__summary-row">
-              <div>
-                <p className="payment-request-card__title">Ciclo {generationLabel}</p>
-                <p className="payment-request-card__subtitle">{gradeLabel || request.student_full_name}</p>
+            <div className="d-flex justify-content-between"> 
+              <div className="payment-request-card__badges">
+                <span className="pill pill--ghost payment-request-card__pill">{concept?.toUpperCase?.() ?? concept}</span>
+                <span
+                  className={[
+                    'pill',
+                    'payment-request-card__pill',
+                    paymentStatusId === 7 ? 'pill--success' : 'pill--warning',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  {statusLabel}
+                </span>
               </div>
               <span className="payment-request-card__chevron" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1491,6 +1487,7 @@ const StudentDashboardPage = ({
                 </svg>
               </span>
             </div>
+              
             <div className="payment-request-card__meta">
               <span className="payment-request-card__reference">Ref: {paymentReference}</span>
               <span className={`payment-request-card__due ${dueStatus.isExpired ? 'is-expired' : ''}`}>
@@ -1501,18 +1498,18 @@ const StudentDashboardPage = ({
           <div className="payment-request-card__content">
             <div className="payment-request-card__detail-row">
               <div className="payment-request-card__label">Monto Base</div>
-              <div className="payment-request-card__value">{formatCurrency(baseAmount, locale)}</div>
+              <div className="fw-bold">{formatCurrency(baseAmount, locale)}</div>
             </div>
             <div className="payment-request-card__detail-row">
               <div className="payment-request-card__label">Recargo Mora</div>
-              <div className="payment-request-card__value payment-request-card__value--warning">
+              <div className="fw-bold text-danger">
                 {lateFee > 0 ? `+${formatCurrency(lateFee, locale)}` : formatCurrency(lateFee, locale)}
               </div>
             </div>
             <div className="payment-request-card__divider" />
             <div className="payment-request-card__detail-row payment-request-card__detail-row--total">
               <div className="payment-request-card__label">Total</div>
-              <div className="payment-request-card__value payment-request-card__value--total">
+              <div className="fw-bold text-danger">
                 {formatCurrency(totalAmount, locale)}
               </div>
             </div>
@@ -1717,7 +1714,7 @@ const StudentDashboardPage = ({
             <div className="student-dashboard__hero-tags" aria-label={strings.hero?.ariaLabel}>
               <span className="badge">{strings.hero?.referenceLabel}: {reference}</span>
               <span className="badge">{strings.hero?.gradeLabel}: {grade}</span>
-              <span className="badge">{strings.hero?.generationLabel}: {generation}</span>
+              <span className="badge">{strings.hero?.concept}: {generation}</span>
             </div>
           </div>
         </div>
@@ -1991,7 +1988,7 @@ const StudentDashboardPage = ({
       </div>
 
       {paymentsTab === 'tuition' ? (
-        <section className="student-dashboard__section" role='tabpanel' aria-label={paymentsPageStrings.tuition.title}>
+        <section role='tabpanel' aria-label={paymentsPageStrings.tuition.title}>
           <div className="student-dashboard__section-header">
             <div>
               <h3>{paymentsPageStrings.tuition.title}</h3>
@@ -2096,7 +2093,7 @@ const StudentDashboardPage = ({
       ) : null}
 
       {paymentsTab === 'requests' ? (
-        <section className="student-dashboard__section" role='tabpanel' aria-label={paymentsPageStrings.requests.title}>
+        <section role='tabpanel' aria-label={paymentsPageStrings.requests.title}>
           <div className="student-dashboard__section-header">
             <div>
               <h3>{paymentsPageStrings.requests.title}</h3>
@@ -2186,7 +2183,7 @@ const StudentDashboardPage = ({
       ) : null}
 
       {paymentsTab === 'payments' ? (
-        <section className="student-dashboard__section" role='tabpanel' aria-label={paymentsPageStrings.payments.title}>
+        <section role='tabpanel' aria-label={paymentsPageStrings.payments.title}>
           <div className="student-dashboard__section-header">
             <div>
               <h3>{paymentsPageStrings.payments.title}</h3>
