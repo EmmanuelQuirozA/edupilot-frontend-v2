@@ -176,6 +176,265 @@ const normalizePaymentList = (payments) => {
   });
 };
 
+const PaymentRequestsFiltersSidebarModal = ({
+  isOpen,
+  onClose,
+  strings,
+  actionStrings,
+  filtersDraft,
+  onChange,
+  onSubmit,
+  onReset,
+}) => (
+  <SidebarModal
+    isOpen={isOpen}
+    onClose={onClose}
+    title={strings.title}
+    description={strings.subtitle}
+    id="payment-requests-filters"
+    footer={
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <ActionButton variant="text" onClick={onReset} type="button">
+          {strings.reset}
+        </ActionButton>
+        <ActionButton type="submit" form="payment-requests-filters-form">
+          {actionStrings.filter}
+        </ActionButton>
+      </div>
+    }
+  >
+    <form id="payment-requests-filters-form" className="row g-3" onSubmit={onSubmit}>
+      <div className="col-sm-12">
+        <label htmlFor="requests-filter-id" className="form-label">
+          {strings.fields.paymentRequestId.label}
+        </label>
+        <input
+          id="requests-filter-id"
+          type="text"
+          className="form-control"
+          value={filtersDraft.payment_request_id}
+          onChange={(event) => onChange('payment_request_id', event.target.value)}
+          placeholder={strings.fields.paymentRequestId.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="requests-filter-student" className="form-label">
+          {strings.fields.student.label}
+        </label>
+        <input
+          id="requests-filter-student"
+          type="text"
+          className="form-control"
+          value={filtersDraft.student_full_name}
+          onChange={(event) => onChange('student_full_name', event.target.value)}
+          placeholder={strings.fields.student.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="requests-filter-reference" className="form-label">
+          {strings.fields.reference.label}
+        </label>
+        <input
+          id="requests-filter-reference"
+          type="text"
+          className="form-control"
+          value={filtersDraft.payment_reference}
+          onChange={(event) => onChange('payment_reference', event.target.value)}
+          placeholder={strings.fields.reference.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="requests-filter-grade" className="form-label">
+          {strings.fields.gradeGroup.label}
+        </label>
+        <input
+          id="requests-filter-grade"
+          type="text"
+          className="form-control"
+          value={filtersDraft.grade_group}
+          onChange={(event) => onChange('grade_group', event.target.value)}
+          placeholder={strings.fields.gradeGroup.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="requests-filter-concept" className="form-label">
+          {strings.fields.concept.label}
+        </label>
+        <input
+          id="requests-filter-concept"
+          type="text"
+          className="form-control"
+          value={filtersDraft.pt_name}
+          onChange={(event) => onChange('pt_name', event.target.value)}
+          placeholder={strings.fields.concept.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="requests-filter-status" className="form-label">
+          {strings.fields.status.label}
+        </label>
+        <input
+          id="requests-filter-status"
+          type="text"
+          className="form-control"
+          value={filtersDraft.ps_pr_name}
+          onChange={(event) => onChange('ps_pr_name', event.target.value)}
+          placeholder={strings.fields.status.placeholder}
+        />
+      </div>
+    </form>
+  </SidebarModal>
+);
+
+const PaymentsFiltersSidebarModal = ({
+  isOpen,
+  onClose,
+  strings,
+  actionStrings,
+  filtersDraft,
+  onChange,
+  onMonthChange,
+  onSubmit,
+  onReset,
+}) => (
+  <SidebarModal
+    isOpen={isOpen}
+    onClose={onClose}
+    title={strings.title}
+    description={strings.subtitle}
+    id="payments-table-filters"
+    footer={
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <ActionButton variant="text" onClick={onReset} type="button">
+          {strings.reset}
+        </ActionButton>
+        <ActionButton type="submit" form="payments-filters-form">
+          {actionStrings.filter}
+        </ActionButton>
+      </div>
+    }
+  >
+    <form id="payments-filters-form" className="row g-3" onSubmit={onSubmit}>
+      <div className="col-sm-12">
+        <label htmlFor="payments-filter-id" className="form-label">
+          {strings.fields.paymentId.label}
+        </label>
+        <input
+          id="payments-filter-id"
+          type="text"
+          className="form-control"
+          value={filtersDraft.payment_id}
+          onChange={(event) => onChange('payment_id', event.target.value)}
+          placeholder={strings.fields.paymentId.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="payments-filter-request" className="form-label">
+          {strings.fields.paymentRequestId.label}
+        </label>
+        <input
+          id="payments-filter-request"
+          type="text"
+          className="form-control"
+          value={filtersDraft.payment_request_id}
+          onChange={(event) => onChange('payment_request_id', event.target.value)}
+          placeholder={strings.fields.paymentRequestId.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="payments-filter-student" className="form-label">
+          {strings.fields.student.label}
+        </label>
+        <input
+          id="payments-filter-student"
+          type="text"
+          className="form-control"
+          value={filtersDraft.student_full_name}
+          onChange={(event) => onChange('student_full_name', event.target.value)}
+          placeholder={strings.fields.student.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="payments-filter-reference" className="form-label">
+          {strings.fields.reference.label}
+        </label>
+        <input
+          id="payments-filter-reference"
+          type="text"
+          className="form-control"
+          value={filtersDraft.payment_reference}
+          onChange={(event) => onChange('payment_reference', event.target.value)}
+          placeholder={strings.fields.reference.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="payments-filter-generation" className="form-label">
+          {strings.fields.generation.label}
+        </label>
+        <input
+          id="payments-filter-generation"
+          type="text"
+          className="form-control"
+          value={filtersDraft.generation}
+          onChange={(event) => onChange('generation', event.target.value)}
+          placeholder={strings.fields.generation.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="payments-filter-grade" className="form-label">
+          {strings.fields.gradeGroup.label}
+        </label>
+        <input
+          id="payments-filter-grade"
+          type="text"
+          className="form-control"
+          value={filtersDraft.grade_group}
+          onChange={(event) => onChange('grade_group', event.target.value)}
+          placeholder={strings.fields.gradeGroup.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="payments-filter-concept" className="form-label">
+          {strings.fields.concept.label}
+        </label>
+        <input
+          id="payments-filter-concept"
+          type="text"
+          className="form-control"
+          value={filtersDraft.pt_name}
+          onChange={(event) => onChange('pt_name', event.target.value)}
+          placeholder={strings.fields.concept.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="payments-filter-scholar" className="form-label">
+          {strings.fields.scholarLevel.label}
+        </label>
+        <input
+          id="payments-filter-scholar"
+          type="text"
+          className="form-control"
+          value={filtersDraft.scholar_level_name}
+          onChange={(event) => onChange('scholar_level_name', event.target.value)}
+          placeholder={strings.fields.scholarLevel.placeholder}
+        />
+      </div>
+      <div className="col-sm-12">
+        <label htmlFor="payments-filter-month" className="form-label">
+          {strings.fields.month.label}
+        </label>
+        <input
+          id="payments-filter-month"
+          type="month"
+          className="form-control"
+          value={filtersDraft.payment_month}
+          onChange={(event) => onMonthChange(event.target.value)}
+        />
+      </div>
+    </form>
+  </SidebarModal>
+);
+
 const extractTuitionCellDetails = (value) => {
   const parsed = parseTuitionCellValue(value);
   if (!parsed) {
@@ -4179,114 +4438,16 @@ const PaymentsFinancePage = ({
         </form>
       </SidebarModal>
 
-      <SidebarModal
+      <PaymentRequestsFiltersSidebarModal
         isOpen={showRequestsFilters}
         onClose={() => setShowRequestsFilters(false)}
-        title={requestsFilterStrings.title}
-        description={requestsFilterStrings.subtitle}
-        id="payment-requests-filters"
-        footer={
-          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <ActionButton variant="text" onClick={handleClearRequestsFilters} type="button">
-              {requestsFilterStrings.reset}
-            </ActionButton>
-            <ActionButton type="submit" form="payment-requests-filters-form">
-              {actionStrings.filter}
-            </ActionButton>
-          </div>
-        }
-      >
-        <form
-          id="payment-requests-filters-form"
-          className="row g-3"
-          onSubmit={handleApplyRequestsFilters}
-        >
-          <div className="col-sm-12">
-            <label htmlFor="requests-filter-id" className="form-label">
-              {requestsFilterStrings.fields.paymentRequestId.label}
-            </label>
-            <input
-              id="requests-filter-id"
-              type="text"
-              className="form-control"
-              value={requestsFiltersDraft.payment_request_id}
-              onChange={(event) =>
-                handleRequestsFilterChange('payment_request_id', event.target.value)
-              }
-              placeholder={requestsFilterStrings.fields.paymentRequestId.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="requests-filter-student" className="form-label">
-              {requestsFilterStrings.fields.student.label}
-            </label>
-            <input
-              id="requests-filter-student"
-              type="text"
-              className="form-control"
-              value={requestsFiltersDraft.student_full_name}
-              onChange={(event) =>
-                handleRequestsFilterChange('student_full_name', event.target.value)
-              }
-              placeholder={requestsFilterStrings.fields.student.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="requests-filter-reference" className="form-label">
-              {requestsFilterStrings.fields.reference.label}
-            </label>
-            <input
-              id="requests-filter-reference"
-              type="text"
-              className="form-control"
-              value={requestsFiltersDraft.payment_reference}
-              onChange={(event) =>
-                handleRequestsFilterChange('payment_reference', event.target.value)
-              }
-              placeholder={requestsFilterStrings.fields.reference.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="requests-filter-grade" className="form-label">
-              {requestsFilterStrings.fields.gradeGroup.label}
-            </label>
-            <input
-              id="requests-filter-grade"
-              type="text"
-              className="form-control"
-              value={requestsFiltersDraft.grade_group}
-              onChange={(event) => handleRequestsFilterChange('grade_group', event.target.value)}
-              placeholder={requestsFilterStrings.fields.gradeGroup.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="requests-filter-concept" className="form-label">
-              {requestsFilterStrings.fields.concept.label}
-            </label>
-            <input
-              id="requests-filter-concept"
-              type="text"
-              className="form-control"
-              value={requestsFiltersDraft.pt_name}
-              onChange={(event) => handleRequestsFilterChange('pt_name', event.target.value)}
-              placeholder={requestsFilterStrings.fields.concept.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="requests-filter-status" className="form-label">
-              {requestsFilterStrings.fields.status.label}
-            </label>
-            <input
-              id="requests-filter-status"
-              type="text"
-              className="form-control"
-              value={requestsFiltersDraft.ps_pr_name}
-              onChange={(event) => handleRequestsFilterChange('ps_pr_name', event.target.value)}
-              placeholder={requestsFilterStrings.fields.status.placeholder}
-            />
-          </div>
-        </form>
-      </SidebarModal>
+        strings={requestsFilterStrings}
+        actionStrings={actionStrings}
+        filtersDraft={requestsFiltersDraft}
+        onChange={handleRequestsFilterChange}
+        onSubmit={handleApplyRequestsFilters}
+        onReset={handleClearRequestsFilters}
+      />
 
       <SidebarModal
         isOpen={showRecurrenceFilters}
@@ -4425,150 +4586,17 @@ const PaymentsFinancePage = ({
         </form>
       </SidebarModal>
 
-      <SidebarModal
+      <PaymentsFiltersSidebarModal
         isOpen={showPaymentsFilters}
         onClose={() => setShowPaymentsFilters(false)}
-        title={paymentsFilterStrings.title}
-        description={paymentsFilterStrings.subtitle}
-        id="payments-table-filters"
-        footer={
-          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <ActionButton variant="text" onClick={handleClearPaymentsFilters} type="button">
-              {paymentsFilterStrings.reset}
-            </ActionButton>
-            <ActionButton type="submit" form="payments-filters-form">
-              {actionStrings.filter}
-            </ActionButton>
-          </div>
-        }
-      >
-        <form id="payments-filters-form" className="row g-3" onSubmit={handleApplyPaymentsFilters}>
-          <div className="col-sm-12">
-            <label htmlFor="payments-filter-id" className="form-label">
-              {paymentsFilterStrings.fields.paymentId.label}
-            </label>
-            <input
-              id="payments-filter-id"
-              type="text"
-              className="form-control"
-              value={paymentsFiltersDraft.payment_id}
-              onChange={(event) => handlePaymentsFilterChange('payment_id', event.target.value)}
-              placeholder={paymentsFilterStrings.fields.paymentId.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="payments-filter-request" className="form-label">
-              {paymentsFilterStrings.fields.paymentRequestId.label}
-            </label>
-            <input
-              id="payments-filter-request"
-              type="text"
-              className="form-control"
-              value={paymentsFiltersDraft.payment_request_id}
-              onChange={(event) =>
-                handlePaymentsFilterChange('payment_request_id', event.target.value)
-              }
-              placeholder={paymentsFilterStrings.fields.paymentRequestId.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="payments-filter-student" className="form-label">
-              {paymentsFilterStrings.fields.student.label}
-            </label>
-            <input
-              id="payments-filter-student"
-              type="text"
-              className="form-control"
-              value={paymentsFiltersDraft.student_full_name}
-              onChange={(event) =>
-                handlePaymentsFilterChange('student_full_name', event.target.value)
-              }
-              placeholder={paymentsFilterStrings.fields.student.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="payments-filter-reference" className="form-label">
-              {paymentsFilterStrings.fields.reference.label}
-            </label>
-            <input
-              id="payments-filter-reference"
-              type="text"
-              className="form-control"
-              value={paymentsFiltersDraft.payment_reference}
-              onChange={(event) =>
-                handlePaymentsFilterChange('payment_reference', event.target.value)
-              }
-              placeholder={paymentsFilterStrings.fields.reference.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="payments-filter-generation" className="form-label">
-              {paymentsFilterStrings.fields.generation.label}
-            </label>
-            <input
-              id="payments-filter-generation"
-              type="text"
-              className="form-control"
-              value={paymentsFiltersDraft.generation}
-              onChange={(event) => handlePaymentsFilterChange('generation', event.target.value)}
-              placeholder={paymentsFilterStrings.fields.generation.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="payments-filter-grade" className="form-label">
-              {paymentsFilterStrings.fields.gradeGroup.label}
-            </label>
-            <input
-              id="payments-filter-grade"
-              type="text"
-              className="form-control"
-              value={paymentsFiltersDraft.grade_group}
-              onChange={(event) => handlePaymentsFilterChange('grade_group', event.target.value)}
-              placeholder={paymentsFilterStrings.fields.gradeGroup.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="payments-filter-concept" className="form-label">
-              {paymentsFilterStrings.fields.concept.label}
-            </label>
-            <input
-              id="payments-filter-concept"
-              type="text"
-              className="form-control"
-              value={paymentsFiltersDraft.pt_name}
-              onChange={(event) => handlePaymentsFilterChange('pt_name', event.target.value)}
-              placeholder={paymentsFilterStrings.fields.concept.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="payments-filter-scholar" className="form-label">
-              {paymentsFilterStrings.fields.scholarLevel.label}
-            </label>
-            <input
-              id="payments-filter-scholar"
-              type="text"
-              className="form-control"
-              value={paymentsFiltersDraft.scholar_level_name}
-              onChange={(event) =>
-                handlePaymentsFilterChange('scholar_level_name', event.target.value)
-              }
-              placeholder={paymentsFilterStrings.fields.scholarLevel.placeholder}
-            />
-          </div>
-          <div className="col-sm-12">
-            <label htmlFor="payments-filter-month" className="form-label">
-              {paymentsFilterStrings.fields.month.label}
-            </label>
-            <input
-              id="payments-filter-month"
-              type="month"
-              className="form-control"
-              value={paymentsFiltersDraft.payment_month}
-              onChange={(event) => handlePaymentsMonthChange(event.target.value)}
-            />
-          </div>
-        </form>
-      </SidebarModal>
+        strings={paymentsFilterStrings}
+        actionStrings={actionStrings}
+        filtersDraft={paymentsFiltersDraft}
+        onChange={handlePaymentsFilterChange}
+        onMonthChange={handlePaymentsMonthChange}
+        onSubmit={handleApplyPaymentsFilters}
+        onReset={handleClearPaymentsFilters}
+      />
         </>
       )}
     </div>
