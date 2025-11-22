@@ -1213,6 +1213,7 @@ const StudentDashboardPage = ({
     },
     [locale, tableStrings.pagination],
   );
+  const tuitionSummary = paymentSummary;
   const paymentPageLabel = useCallback(
     ({ page, totalPages }) => {
       const template = tableStrings.pagination?.page;
@@ -1227,6 +1228,7 @@ const StudentDashboardPage = ({
     },
     [locale, tableStrings.pagination],
   );
+  const pageLabel = paymentPageLabel;
   const handleRequestsPageChange = useCallback(
     (page) => {
       setRequestsOffset((page - 1) * requestsLimit);
@@ -1650,54 +1652,9 @@ const StudentDashboardPage = ({
                       return (
                         <td
                           key={`${rowKey}-${month}`}
-                          data-title={tableStrings.months[month]?.label ?? month}
+                          data-title={tableStrings.months?.[month]?.label ?? month}
                           className={`student-dashboard__month-cell ${cellClassName}`}
                         >
-                          {hasDetails ? (
-                            <StudentTuitionCell
-                              month={monthDetails}
-                              tableStrings={tableStrings}
-                              paymentsPageStrings={paymentsPageStrings}
-                              onPaymentRequestDetail={(requestId) => {
-                                const selectedRequest = details?.payments?.find(
-                                  (payment) => payment.paymentRequestId === requestId,
-                                );
-
-                                if (selectedRequest) {
-                                  handlePaymentRequestSelect(selectedRequest);
-                                  return;
-                                }
-
-                                setSelectedPaymentRequest({
-                                  payment_request_id: requestId,
-                                  payment_id: details?.payments?.[0]?.paymentId,
-                                });
-                                setSelectedPaymentRequestId(String(requestId));
-                                handleNavClick('payments', { preserveRequest: true });
-                                handlePaymentsTabChange('requests', { replace: true });
-                              }}
-                              onPaymentDetail={(paymentId) => handlePaymentDetailClick(paymentId)}
-                              onDownloadInvoice={(invoiceUrl) => {
-                                if (invoiceUrl) {
-                                  window.open(invoiceUrl, '_blank', 'noopener,noreferrer');
-                                }
-                              }}
-                              renderAmount={() => (
-                                <div className="student-dashboard__amount-button">
-                                  <p className="student-dashboard__amount-button__cta">{details?.statusName}</p>
-                                  <div className="d-flex flex-column text-start">
-                                    <span className="student-dashboard__muted">{paymentsPageStrings.tuition.table.month}</span>
-                                    <button type='button' className="ghost-button">
-                                      {details?.paymentMonth || monthDetails?.longLabel || month}
-                                    </button>
-                                  </div>
-                                  <p>{displayAmount ?? fallbackContent}</p>
-                                </div>
-                              )}
-                            />
-                          ) : (
-                            <span>{fallbackContent}</span>
-                          )}
                         </td>
                       );
                     })}
@@ -1709,7 +1666,7 @@ const StudentDashboardPage = ({
               error={tuitionError || null}
               emptyMessage={paymentsPageStrings.tuition.empty}
               pagination={{
-                currentPage,
+                currentPage: tuitionCurrentPage,
                 pageSize: tuitionLimit,
                 totalItems: tuitionTotalElements,
                 onPageChange: handlePageChange,
