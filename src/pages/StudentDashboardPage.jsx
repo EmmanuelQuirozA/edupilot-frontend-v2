@@ -1687,28 +1687,9 @@ const StudentDashboardPage = ({
               renderRow={(row, index) => {
                 const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
                 const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
-                const canNavigateToStudent = Boolean(studentId);
-                const studentIdLabel = tableStrings.studentIdLabel;
-                const studentName = row.student ?? tableStrings.studentFallback;
-                const studentMetaValue = row.payment_reference ?? '';
 
                 return (
                   <tr key={rowKey}>
-                    <td data-title={tableStrings.columns.student}>
-                      <StudentTableCell
-                        name={row.student}
-                        fallbackName={tableStrings.studentFallback}
-                        gradeGroup={row.class ?? row.grade_group}
-                        scholarLevel={row.scholar_level_name}
-                        enrollment={studentMetaValue}
-                        onClick={() => handleStudentDetailClick(row)}
-                        disabled={!canNavigateToStudent}
-                        nameButtonProps={{ 'aria-label': studentName }}
-                        metaLabel={studentIdLabel}
-                        metaValue={studentId ?? undefined}
-                      />
-                    </td>
-                    <td data-title={tableStrings.columns.generation}>{row.generation ?? '--'}</td>
                     {monthColumns.map((month) => {
                       const value = row?.[month];
                       const details = extractTuitionCellDetails(value);
