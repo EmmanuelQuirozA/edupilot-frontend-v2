@@ -742,11 +742,7 @@
   font-weight: 700;
 }
 
-.payment-request-card__value,
-.payment-card__value {
-  color: #0f172a;
-  font-weight: 800;
-}
+
 
 .payment-request-card__value--warning {
   color: #b91c1c;

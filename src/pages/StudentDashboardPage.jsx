@@ -1562,7 +1562,6 @@ const StudentDashboardPage = ({
             </div>
               
             <div className="payment-request-card__meta">
-              <span className="payment-request-card__reference">Ref: {paymentReference}</span>
               <span className={`payment-request-card__due ${dueStatus.isExpired ? 'is-expired' : ''}`}>
                 {dueLabel}: {dueDateText || '—'}
               </span>
@@ -1586,7 +1585,7 @@ const StudentDashboardPage = ({
                 {formatCurrency(totalAmount, locale)}
               </div>
             </div>
-            <div className="payment-request-card__footer">
+            <div className="d-flex justify-content-between">
               <div className="payment-request-card__footer-meta">
                 {paymentMonthLabel ? (
                   <span className="payment-request-card__subtitle">Mes: {paymentMonthLabel}</span>
@@ -1617,6 +1616,22 @@ const StudentDashboardPage = ({
     requestsLoading,
     tableStrings.loading,
   ]);
+
+  const handlePaymentDetailClick = useCallback(
+    (paymentId) => {
+      if (!paymentId) {
+        return;
+      }
+
+      handleNavClick('payments', { preserveRequest: true });
+      handlePaymentsTabChange('payments', { replace: true });
+
+      if (onNavigate) {
+        onNavigate(`${paymentsBasePath}/payments/${encodeURIComponent(String(paymentId))}`, { replace: true });
+      }
+    },
+    [handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath],
+  );
 
   const renderMobilePayments = useCallback(() => {
     if (paymentsLoading) {
@@ -1658,7 +1673,9 @@ const StudentDashboardPage = ({
         payment.payment_created_at || payment.paymentCreatedAt || payment.created_at || payment.createdAt;
       const createdAtLabel = createdAtValue ? formatDate(createdAtValue, locale) : '—';
       const paymentReference = payment.payment_reference || payment.paymentReference;
-
+      const paymentStatusId = payment.payment_status_id;
+      const paymentMonth = payment.payment_month || payment.paymentMonth;
+      const paymentMonthLabel = paymentMonth ? formatDate(paymentMonth, locale) : null;
       return (
         <details
           key={paymentIdValue || concept || `payment-${index}`}
@@ -1666,59 +1683,63 @@ const StudentDashboardPage = ({
           data-payment-id={paymentIdValue || undefined}
         >
           <summary>
-            <div className="payment-card__badges">
-              <span className="pill pill--ghost payment-card__pill">{concept?.toUpperCase?.() ?? concept}</span>
-              <span className="pill payment-card__pill">{statusLabel}</span>
+            <div className="d-flex justify-content-between"> 
+              <div className="payment-request-card__badges">
+                <span className="pill pill--ghost payment-card__pill">{concept?.toUpperCase?.() ?? concept}</span>
+                <span
+                  className={[
+                    'pill',
+                    'payment-request-card__pill',
+                    paymentStatusId === 3 ? 'pill--success' : 'pill--warning',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  {statusLabel}
+                </span>
+              </div>
+              <div>
+                <span className="payment-request-card__chevron" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </span>
+              </div>
             </div>
             <div className="payment-card__summary-row">
               <div>
-                <p className="payment-card__title">
-                  {paymentsPageStrings.payments.columns.id}: {paymentIdLabel}
-                </p>
                 <p className="payment-card__subtitle">
                   {paymentsPageStrings.payments.columns.date}: {createdAtLabel}
                 </p>
               </div>
               <div className="payment-card__amount">{formatCurrency(amountValue, locale)}</div>
             </div>
-            <div className="payment-card__meta">
-              {paymentReference ? (
-                <span className="payment-card__reference">Ref: {paymentReference}</span>
-              ) : null}
-              <span className="payment-card__status">{statusLabel}</span>
-            </div>
           </summary>
           <div className="payment-card__content">
             <div className="payment-card__detail-row">
               <div className="payment-card__label">{paymentsPageStrings.payments.columns.concept}</div>
-              <div className="payment-card__value">{concept}</div>
+              <div className="fw-bold">{concept}</div>
             </div>
             <div className="payment-card__detail-row">
               <div className="payment-card__label">{paymentsPageStrings.payments.columns.amount}</div>
-              <div className="payment-card__value payment-card__value--total">
+              <div className="fw-bold payment-card__value--total">
                 {formatCurrency(amountValue, locale)}
               </div>
             </div>
             <div className="payment-card__detail-row">
               <div className="payment-card__label">{paymentsPageStrings.payments.columns.status}</div>
-              <div className="payment-card__value">{statusLabel}</div>
+              <div className="fw-bold">{statusLabel}</div>
             </div>
-            <div className="payment-card__footer">
-              <div className="payment-card__footer-meta">
-                <span className="payment-card__subtitle">
-                  {paymentsPageStrings.payments.columns.date}: {createdAtLabel}
-                </span>
+            <div className="payment-request-card__divider" />
+            <div className="d-flex justify-content-between">
+              <div className="payment-request-card__footer-meta">
+                {paymentMonthLabel ? (
+                  <span className="payment-request-card__subtitle">Mes: {paymentMonthLabel}</span>
+                ) : null}
               </div>
-              <div className="payment-card__actions">
-                <button
-                  type="button"
-                  className="ghost-button"
-                  onClick={() => handlePaymentDetailClick(paymentIdValue)}
-                  disabled={!paymentIdValue}
-                >
-                  {paymentsPageStrings.payments.columns.view}
-                </button>
-              </div>
+              <button type="button" className="ghost-button" onClick={() => handlePaymentDetailClick(paymentIdValue)} disabled={!paymentIdValue}>
+                {paymentsPageStrings.payments.columns.view}
+              </button>
             </div>
           </div>
         </details>
@@ -1777,22 +1798,6 @@ const StudentDashboardPage = ({
       onNavigate(`${paymentsBasePath}/payments`, { replace: true });
     }
   }, [handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath]);
-
-  const handlePaymentDetailClick = useCallback(
-    (paymentId) => {
-      if (!paymentId) {
-        return;
-      }
-
-      handleNavClick('payments', { preserveRequest: true });
-      handlePaymentsTabChange('payments', { replace: true });
-
-      if (onNavigate) {
-        onNavigate(`${paymentsBasePath}/payments/${encodeURIComponent(String(paymentId))}`, { replace: true });
-      }
-    },
-    [handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath],
-  );
 
   const handlePaymentsBackNavigation = useCallback(() => {
     handleNavClick('payments');
@@ -2378,7 +2383,6 @@ const StudentDashboardPage = ({
           <div className="student-dashboard__section-header">
             <div>
               <h3>{paymentsPageStrings.payments.title}</h3>
-              <p className="student-dashboard__muted">{strings.sections?.payments?.description ?? strings.sections?.history?.description}</p>
             </div>
             <div className="student-dashboard__header-actions">
               <FilterButton
