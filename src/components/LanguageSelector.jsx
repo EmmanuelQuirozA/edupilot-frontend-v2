@@ -6,7 +6,7 @@ const languages = [
 ];
 
 const LanguageSelector = ({ value, onChange }) => (
-  <div className="language-selector" role="group" aria-label="Language selector">
+  <div className="language-selector align-content-center d-inline" role="group" aria-label="Language selector">
     {languages.map(({ code, label }) => (
       <button
         key={code}

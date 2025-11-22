@@ -2792,7 +2792,7 @@ const StudentDashboardPage = ({
               <p className='dashboard__subtitle'>{pageSubtitle}</p>
             </div>
           </div>
-          <div className='dashboard__actions'>
+          <div className='d-flex justify-content-between'>
             <LanguageSelector value={language} onChange={onLanguageChange} />
             <div className='dashboard__user-chip'>
               <div className='dashboard__user-initials' aria-hidden='true'>
