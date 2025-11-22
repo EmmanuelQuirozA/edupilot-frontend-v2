@@ -2077,14 +2077,6 @@ const StudentDashboardPage = ({
                 <p className='fw-bold text-muted'>{profile?.commercialName || '—'}</p>
               </div>
               <div>
-                <p className="student-dashboard__muted">{strings.sections?.studentInfo?.generation}</p>
-                <p className='fw-bold text-muted'>{generation}</p>
-              </div>
-              <div>
-                <p className="student-dashboard__muted">{strings.sections?.studentInfo?.grade}</p>
-                <p className='fw-bold text-muted'>{grade}</p>
-              </div>
-              <div>
                 <p className="student-dashboard__muted">{strings.sections?.studentInfo?.status}</p>
                 <p className='fw-bold text-muted'>{profile?.userStatus || '—'}</p>
               </div>
@@ -2804,18 +2796,29 @@ const StudentDashboardPage = ({
             ) : null}
             <div>
               <h1>{pageTitle}</h1>
-              {schoolName ? <p className='dashboard__school'>{schoolName}</p> : null}
-              <p className='dashboard__subtitle'>{pageSubtitle}</p>
+              <p className='dashboard__subtitle'>{schoolName ? schoolName : pageSubtitle}</p>
             </div>
           </div>
-          <div className='student-dashboard__header-actions'>
-            <LanguageSelector value={language} onChange={onLanguageChange} />
-            <div className='dashboard__user-chip'>
+          {!isDesktop ? (
+            <div className='student-dashboard__header-actions'>
               <div className='dashboard__user-initials' aria-hidden='true'>
                 {initials || 'AD'}
               </div>
             </div>
-          </div>
+            ) : 
+            <div className='student-dashboard__header-actions'>
+              <LanguageSelector value={language} onChange={onLanguageChange} />
+              <div className='dashboard__user-chip'>
+                <div className='dashboard__user-initials' aria-hidden='true'>
+                  {initials || 'AD'}
+                </div>
+                <div>
+                  <p>{displayName}</p>
+                  <span>{user?.role ?? roleLabel}</span>
+                </div>
+              </div>
+            </div>
+          }
         </header>
 
         <Breadcrumbs items={breadcrumbs} />

@@ -865,7 +865,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 370px) {
   .dashboard__header {
     flex-wrap: wrap;
     align-items: center;
