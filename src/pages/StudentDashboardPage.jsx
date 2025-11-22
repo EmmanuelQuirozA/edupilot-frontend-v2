@@ -11,6 +11,8 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
 import StudentTableCell from '../components/ui/StudentTableCell.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
+import SidebarModal from '../components/ui/SidebarModal.jsx';
+import FilterButton from '../components/ui/buttons/FilterButton.jsx';
 import '../components/HomePage.css';
 import './StudentDashboardPage.css';
 
@@ -444,6 +446,8 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     scholar_level: '',
     payment_month: '',
   });
+  const [showRequestsFilters, setShowRequestsFilters] = useState(false);
+  const [showPaymentsFilters, setShowPaymentsFilters] = useState(false);
 
 
   const studentDashboardBasePath = useMemo(() => `/${language}/student-dashboard`, [language]);
@@ -746,6 +750,16 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     return params;
   }, [language, paymentsFilters, paymentsLimit, paymentsOffset]);
 
+  const requestsFiltersCount = useMemo(
+    () => Object.values(requestsFilters).filter(Boolean).length,
+    [requestsFilters],
+  );
+
+  const paymentsFiltersCount = useMemo(
+    () => Object.values(paymentsFilters).filter(Boolean).length,
+    [paymentsFilters],
+  );
+
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
@@ -821,6 +835,7 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
       event?.preventDefault();
       setRequestsFilters(requestsFiltersDraft);
       setRequestsOffset(0);
+      setShowRequestsFilters(false);
     },
     [requestsFiltersDraft],
   );
@@ -830,6 +845,7 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
       event?.preventDefault();
       setPaymentsFilters(paymentsFiltersDraft);
       setPaymentsOffset(0);
+      setShowPaymentsFilters(false);
     },
     [paymentsFiltersDraft],
   );
@@ -1582,72 +1598,23 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
             <h3>{paymentsPageStrings.requests.title}</h3>
             <p className="student-dashboard__muted">{strings.sections?.pendingRequests?.description}</p>
           </div>
-        </div>
-
-        <form className="student-dashboard__filters" onSubmit={handleApplyRequestsFilters}>
-          <label className="student-dashboard__filter-field">
-            <span>{requestsFilterStrings.fields?.paymentRequestId?.label ?? paymentsPageStrings.requests.columns.id}</span>
-            <input
-              type="text"
-              value={requestsFiltersDraft.payment_request_id}
-              onChange={(event) => handleRequestsFilterChange('payment_request_id', event.target.value)}
-              placeholder={requestsFilterStrings.fields?.paymentRequestId?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{requestsFilterStrings.fields?.concept?.label ?? paymentsPageStrings.requests.columns.concept}</span>
-            <input
-              type="text"
-              value={requestsFiltersDraft.pt_name}
-              onChange={(event) => handleRequestsFilterChange('pt_name', event.target.value)}
-              placeholder={requestsFilterStrings.fields?.concept?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{requestsFilterStrings.fields?.status?.label ?? paymentsPageStrings.requests.columns.status}</span>
-            <input
-              type="text"
-              value={requestsFiltersDraft.ps_pr_name}
-              onChange={(event) => handleRequestsFilterChange('ps_pr_name', event.target.value)}
-              placeholder={requestsFilterStrings.fields?.status?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{requestsFilterStrings.fields?.reference?.label ?? tableStrings.studentId}</span>
-            <input
-              type="text"
-              value={requestsFiltersDraft.payment_reference}
-              onChange={(event) => handleRequestsFilterChange('payment_reference', event.target.value)}
-              placeholder={requestsFilterStrings.fields?.reference?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{requestsFilterStrings.fields?.gradeGroup?.label ?? tableColumns?.generation}</span>
-            <input
-              type="text"
-              value={requestsFiltersDraft.grade_group}
-              onChange={(event) => handleRequestsFilterChange('grade_group', event.target.value)}
-              placeholder={requestsFilterStrings.fields?.gradeGroup?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{requestsFilterStrings.fields?.student?.label ?? tableColumns?.student}</span>
-            <input
-              type="text"
-              value={requestsFiltersDraft.student_full_name}
-              onChange={(event) => handleRequestsFilterChange('student_full_name', event.target.value)}
-              placeholder={requestsFilterStrings.fields?.student?.placeholder ?? ''}
-            />
-          </label>
-          <div className="student-dashboard__filter-actions">
-            <button type="submit" className="primary-button" disabled={requestsLoading}>
-              {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
-            </button>
-            <button type="button" className="ghost-button" onClick={handleResetRequestsFilters} disabled={requestsLoading}>
-              {requestsFilterStrings.reset ?? strings.actions?.reset ?? 'Borrar filtros'}
-            </button>
+          <div className="student-dashboard__header-actions">
+            <FilterButton
+              type="button"
+              onClick={() => setShowRequestsFilters(true)}
+              aria-expanded={showRequestsFilters}
+              aria-controls="student-dashboard-requests-filters"
+              className="rounded-pill d-inline-flex align-items-center gap-2"
+            >
+              <span className="fw-semibold">
+                {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
+              </span>
+              {requestsFiltersCount > 0 ? (
+                <span className="badge text-bg-primary rounded-pill">{requestsFiltersCount}</span>
+              ) : null}
+            </FilterButton>
           </div>
-        </form>
+        </div>
 
         <UiCard className="page__table-card">
           <GlobalTable
@@ -1714,72 +1681,23 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
             <h3>{paymentsPageStrings.payments.title}</h3>
             <p className="student-dashboard__muted">{strings.sections?.payments?.description ?? strings.sections?.history?.description}</p>
           </div>
-        </div>
-
-        <form className="student-dashboard__filters" onSubmit={handleApplyPaymentsFilters}>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsFilterStrings.fields?.paymentId?.label ?? paymentsPageStrings.payments.columns.id}</span>
-            <input
-              type="text"
-              value={paymentsFiltersDraft.payment_id}
-              onChange={(event) => handlePaymentsFilterChange('payment_id', event.target.value)}
-              placeholder={paymentsFilterStrings.fields?.paymentId?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsFilterStrings.fields?.paymentRequestId?.label ?? paymentsPageStrings.requests.columns.id}</span>
-            <input
-              type="text"
-              value={paymentsFiltersDraft.payment_request_id}
-              onChange={(event) => handlePaymentsFilterChange('payment_request_id', event.target.value)}
-              placeholder={paymentsFilterStrings.fields?.paymentRequestId?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsFilterStrings.fields?.concept?.label ?? paymentsPageStrings.payments.columns.concept}</span>
-            <input
-              type="text"
-              value={paymentsFiltersDraft.pt_name}
-              onChange={(event) => handlePaymentsFilterChange('pt_name', event.target.value)}
-              placeholder={paymentsFilterStrings.fields?.concept?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsFilterStrings.fields?.month?.label ?? paymentsPageStrings.tuition.table.month}</span>
-            <input
-              type="text"
-              value={paymentsFiltersDraft.payment_month}
-              onChange={(event) => handlePaymentsFilterChange('payment_month', event.target.value)}
-              placeholder={paymentsFilterStrings.fields?.month?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsFilterStrings.fields?.reference?.label ?? tableStrings.studentId}</span>
-            <input
-              type="text"
-              value={paymentsFiltersDraft.payment_reference}
-              onChange={(event) => handlePaymentsFilterChange('payment_reference', event.target.value)}
-              placeholder={paymentsFilterStrings.fields?.reference?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsFilterStrings.fields?.student?.label ?? tableColumns?.student}</span>
-            <input
-              type="text"
-              value={paymentsFiltersDraft.student_full_name}
-              onChange={(event) => handlePaymentsFilterChange('student_full_name', event.target.value)}
-              placeholder={paymentsFilterStrings.fields?.student?.placeholder ?? ''}
-            />
-          </label>
-          <div className="student-dashboard__filter-actions">
-            <button type="submit" className="primary-button" disabled={paymentsLoading}>
-              {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
-            </button>
-            <button type="button" className="ghost-button" onClick={handleResetPaymentsFilters} disabled={paymentsLoading}>
-              {paymentsFilterStrings.reset ?? strings.actions?.reset ?? 'Borrar filtros'}
-            </button>
+          <div className="student-dashboard__header-actions">
+            <FilterButton
+              type="button"
+              onClick={() => setShowPaymentsFilters(true)}
+              aria-expanded={showPaymentsFilters}
+              aria-controls="student-dashboard-payments-filters"
+              className="rounded-pill d-inline-flex align-items-center gap-2"
+            >
+              <span className="fw-semibold">
+                {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
+              </span>
+              {paymentsFiltersCount > 0 ? (
+                <span className="badge text-bg-primary rounded-pill">{paymentsFiltersCount}</span>
+              ) : null}
+            </FilterButton>
           </div>
-        </form>
+        </div>
 
         <UiCard className="page__table-card">
           <GlobalTable
@@ -1881,6 +1799,152 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
           </button>
         </div>
       </section>
+
+      <SidebarModal
+        isOpen={showRequestsFilters}
+        onClose={() => setShowRequestsFilters(false)}
+        title={requestsFilterStrings.title ?? paymentsActionsStrings.filter ?? strings.actions?.filter}
+        description={requestsFilterStrings.subtitle ?? strings.sections?.pendingRequests?.description}
+        id="student-dashboard-requests-filters"
+      >
+        <form className="student-dashboard__filters" onSubmit={handleApplyRequestsFilters}>
+          <label className="student-dashboard__filter-field">
+            <span>{requestsFilterStrings.fields?.paymentRequestId?.label ?? paymentsPageStrings.requests.columns.id}</span>
+            <input
+              type="text"
+              value={requestsFiltersDraft.payment_request_id}
+              onChange={(event) => handleRequestsFilterChange('payment_request_id', event.target.value)}
+              placeholder={requestsFilterStrings.fields?.paymentRequestId?.placeholder ?? ''}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{requestsFilterStrings.fields?.concept?.label ?? paymentsPageStrings.requests.columns.concept}</span>
+            <input
+              type="text"
+              value={requestsFiltersDraft.pt_name}
+              onChange={(event) => handleRequestsFilterChange('pt_name', event.target.value)}
+              placeholder={requestsFilterStrings.fields?.concept?.placeholder ?? ''}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{requestsFilterStrings.fields?.status?.label ?? paymentsPageStrings.requests.columns.status}</span>
+            <input
+              type="text"
+              value={requestsFiltersDraft.ps_pr_name}
+              onChange={(event) => handleRequestsFilterChange('ps_pr_name', event.target.value)}
+              placeholder={requestsFilterStrings.fields?.status?.placeholder ?? ''}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{requestsFilterStrings.fields?.reference?.label ?? tableStrings.studentId}</span>
+            <input
+              type="text"
+              value={requestsFiltersDraft.payment_reference}
+              onChange={(event) => handleRequestsFilterChange('payment_reference', event.target.value)}
+              placeholder={requestsFilterStrings.fields?.reference?.placeholder ?? ''}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{requestsFilterStrings.fields?.gradeGroup?.label ?? tableColumns?.generation}</span>
+            <input
+              type="text"
+              value={requestsFiltersDraft.grade_group}
+              onChange={(event) => handleRequestsFilterChange('grade_group', event.target.value)}
+              placeholder={requestsFilterStrings.fields?.gradeGroup?.placeholder ?? ''}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{requestsFilterStrings.fields?.student?.label ?? tableColumns?.student}</span>
+            <input
+              type="text"
+              value={requestsFiltersDraft.student_full_name}
+              onChange={(event) => handleRequestsFilterChange('student_full_name', event.target.value)}
+              placeholder={requestsFilterStrings.fields?.student?.placeholder ?? ''}
+            />
+          </label>
+          <div className="student-dashboard__filter-actions">
+            <button type="submit" className="primary-button" disabled={requestsLoading}>
+              {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
+            </button>
+            <button type="button" className="ghost-button" onClick={handleResetRequestsFilters} disabled={requestsLoading}>
+              {requestsFilterStrings.reset ?? strings.actions?.reset ?? 'Borrar filtros'}
+            </button>
+          </div>
+        </form>
+      </SidebarModal>
+
+      <SidebarModal
+        isOpen={showPaymentsFilters}
+        onClose={() => setShowPaymentsFilters(false)}
+        title={paymentsFilterStrings.title ?? paymentsActionsStrings.filter ?? strings.actions?.filter}
+        description={paymentsFilterStrings.subtitle ?? strings.sections?.payments?.description}
+        id="student-dashboard-payments-filters"
+      >
+        <form className="student-dashboard__filters" onSubmit={handleApplyPaymentsFilters}>
+          <label className="student-dashboard__filter-field">
+            <span>{paymentsFilterStrings.fields?.paymentId?.label ?? paymentsPageStrings.payments.columns.id}</span>
+            <input
+              type="text"
+              value={paymentsFiltersDraft.payment_id}
+              onChange={(event) => handlePaymentsFilterChange('payment_id', event.target.value)}
+              placeholder={paymentsFilterStrings.fields?.paymentId?.placeholder ?? ''}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{paymentsFilterStrings.fields?.paymentRequestId?.label ?? paymentsPageStrings.requests.columns.id}</span>
+            <input
+              type="text"
+              value={paymentsFiltersDraft.payment_request_id}
+              onChange={(event) => handlePaymentsFilterChange('payment_request_id', event.target.value)}
+              placeholder={paymentsFilterStrings.fields?.paymentRequestId?.placeholder ?? ''}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{paymentsFilterStrings.fields?.concept?.label ?? paymentsPageStrings.payments.columns.concept}</span>
+            <input
+              type="text"
+              value={paymentsFiltersDraft.pt_name}
+              onChange={(event) => handlePaymentsFilterChange('pt_name', event.target.value)}
+              placeholder={paymentsFilterStrings.fields?.concept?.placeholder ?? ''}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{paymentsFilterStrings.fields?.month?.label ?? paymentsPageStrings.tuition.table.month}</span>
+            <input
+              type="text"
+              value={paymentsFiltersDraft.payment_month}
+              onChange={(event) => handlePaymentsFilterChange('payment_month', event.target.value)}
+              placeholder={paymentsFilterStrings.fields?.month?.placeholder ?? ''}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{paymentsFilterStrings.fields?.reference?.label ?? tableStrings.studentId}</span>
+            <input
+              type="text"
+              value={paymentsFiltersDraft.payment_reference}
+              onChange={(event) => handlePaymentsFilterChange('payment_reference', event.target.value)}
+              placeholder={paymentsFilterStrings.fields?.reference?.placeholder ?? ''}
+            />
+          </label>
+          <label className="student-dashboard__filter-field">
+            <span>{paymentsFilterStrings.fields?.student?.label ?? tableColumns?.student}</span>
+            <input
+              type="text"
+              value={paymentsFiltersDraft.student_full_name}
+              onChange={(event) => handlePaymentsFilterChange('student_full_name', event.target.value)}
+              placeholder={paymentsFilterStrings.fields?.student?.placeholder ?? ''}
+            />
+          </label>
+          <div className="student-dashboard__filter-actions">
+            <button type="submit" className="primary-button" disabled={paymentsLoading}>
+              {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
+            </button>
+            <button type="button" className="ghost-button" onClick={handleResetPaymentsFilters} disabled={paymentsLoading}>
+              {paymentsFilterStrings.reset ?? strings.actions?.reset ?? 'Borrar filtros'}
+            </button>
+          </div>
+        </form>
+      </SidebarModal>
     </div>
   );
 
