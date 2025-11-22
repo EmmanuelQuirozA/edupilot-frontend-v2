@@ -84,7 +84,10 @@ const normalizeArray = (data) => {
 };
 
 const COLLAPSE_BREAKPOINT = 1200;
+const PENDING_REQUESTS_THREE_COLUMNS_BREAKPOINT = 992;
 const getIsDesktop = () => (typeof window === 'undefined' ? true : window.innerWidth >= COLLAPSE_BREAKPOINT);
+const getCanShowThreePendingRequests = () =>
+  typeof window === 'undefined' ? true : window.innerWidth >= PENDING_REQUESTS_THREE_COLUMNS_BREAKPOINT;
 const MONTH_KEY_REGEX = /^[A-Za-z]{3}-\d{2}$/;
 
 const formatMonthKey = (date) => {
@@ -411,6 +414,9 @@ const StudentDashboardPage = ({
   const [activeNav, setActiveNav] = useState(sectionKey === 'payments' ? 'payments' : 'dashboard');
   const [selectedPaymentRequestId, setSelectedPaymentRequestId] = useState(null);
   const [selectedPaymentRequest, setSelectedPaymentRequest] = useState(null);
+  const [canShowThreePendingRequests, setCanShowThreePendingRequests] = useState(
+    getCanShowThreePendingRequests,
+  );
   const paymentsBasePath = useMemo(() => `/${language}/payments`, [language]);
   const dashboardBasePath = useMemo(() => `/${language}/student-dashboard`, [language]);
   const paymentsRouteSegments = Array.isArray(routeSegments) ? routeSegments : [];
@@ -627,6 +633,7 @@ const StudentDashboardPage = ({
       const desktop = getIsDesktop();
       setIsDesktop(desktop);
       setIsSidebarOpen(desktop);
+      setCanShowThreePendingRequests(getCanShowThreePendingRequests());
     };
 
     handleResize();
@@ -1041,30 +1048,74 @@ const StudentDashboardPage = ({
     ],
   );
 
-  const recentEvents = useMemo(() => {
-    const payments = recentPayments.map((payment) => ({
-      id: payment.payment_id || payment.paymentId,
-      type: 'payment',
-      concept: payment.pt_name || payment.partConceptName || strings.tables?.payments?.unknown,
-      amount: formatCurrency(payment.amount ?? 0, locale),
-      status: payment.payment_status_name || payment.paymentStatusName || strings.tables?.payments?.statusPending,
-      date: payment.payment_created_at || payment.paymentCreatedAt,
-    }));
+  const getHistoryStatusVariant = useCallback((statusLabel) => {
+    const normalized = (statusLabel || '').toLowerCase();
 
-    const rechargeItems = recharges.map((recharge) => ({
-      id: recharge.balance_recharge_id || recharge.balanceRechargeId,
-      type: 'recharge',
-      concept: strings.tables?.recharges?.rechargeLabel,
-      amount: formatCurrency(recharge.amount ?? 0, locale),
-      status: strings.tables?.recharges?.completed,
-      date: recharge.created_at || recharge.createdAt,
-    }));
+    if (normalized.includes('exito') || normalized.includes('éxito') || normalized.includes('success')) {
+      return 'success';
+    }
+
+    if (normalized.includes('pend') || normalized.includes('valid') || normalized.includes('review')) {
+      return 'warning';
+    }
+
+    return 'ghost';
+  }, []);
+
+  const recentHistoryRows = useMemo(() => {
+    const payments = recentPayments.map((payment) => {
+      const amountValue = normalizeAmount(payment.amount ?? payment.total ?? 0) ?? 0;
+      return {
+        id: payment.payment_id || payment.paymentId || payment.id,
+        type: 'payment',
+        concept: payment.pt_name || payment.partConceptName || strings.tables?.payments?.unknown,
+        amount: amountValue,
+        formattedAmount: formatCurrency(amountValue, locale),
+        status: payment.payment_status_name || payment.paymentStatusName || strings.tables?.payments?.statusPending,
+        statusVariant: getHistoryStatusVariant(
+          payment.payment_status_name || payment.paymentStatusName || strings.tables?.payments?.statusPending,
+        ),
+        date: payment.payment_created_at || payment.paymentCreatedAt,
+        method:
+          payment.payment_method_name ||
+          payment.paymentMethodName ||
+          payment.payment_method ||
+          strings.sections?.history?.methodFallback,
+        link: payment.payment_id || payment.paymentId || payment.id,
+      };
+    });
+
+    const rechargeItems = recharges.map((recharge) => {
+      const amountValue = normalizeAmount(recharge.amount ?? recharge.total ?? 0) ?? 0;
+      return {
+        id: recharge.balance_recharge_id || recharge.balanceRechargeId,
+        type: 'recharge',
+        concept: strings.tables?.recharges?.rechargeLabel,
+        amount: amountValue,
+        formattedAmount: `+${formatCurrency(amountValue, locale)}`,
+        status: strings.tables?.recharges?.completed,
+        statusVariant: 'success',
+        date: recharge.created_at || recharge.createdAt,
+        method: recharge.payment_method || recharge.paymentMethod || strings.sections?.history?.methodFallback,
+        link: null,
+      };
+    });
 
     return [...payments, ...rechargeItems]
       .filter((item) => item.date)
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 6);
-  }, [locale, recentPayments, recharges, strings.tables?.payments, strings.tables?.recharges]);
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [
+    getHistoryStatusVariant,
+    locale,
+    recentPayments,
+    recharges,
+    strings.sections?.history?.methodFallback,
+    strings.tables?.payments,
+    strings.tables?.recharges,
+  ]);
+
+  const historyRowsToShow = useMemo(() => recentHistoryRows.slice(0, 4), [recentHistoryRows]);
+  const showHistoryViewMore = recentHistoryRows.length > 4;
 
   const getRequestId = useCallback((request) => {
     if (!request) {
@@ -1111,6 +1162,12 @@ const StudentDashboardPage = ({
       return baseLabel;
     },
     [strings.sections?.pendingRequests?.dueLabel, strings.sections?.pendingRequests?.dueLabelExpired, strings.sections?.pendingRequests?.dueLabelToday],
+  );
+
+  const pendingRequestsLimit = canShowThreePendingRequests ? 3 : 4;
+  const visiblePendingRequests = useMemo(
+    () => pendingRequests.slice(0, pendingRequestsLimit),
+    [pendingRequests, pendingRequestsLimit],
   );
 
   useEffect(() => {
@@ -1291,6 +1348,15 @@ const StudentDashboardPage = ({
     handleNavClick('payments');
     handlePaymentsTabChange('payments');
   }, [handleNavClick, handlePaymentsTabChange]);
+
+  const handleHistoryViewMore = useCallback(() => {
+    handleNavClick('payments');
+    handlePaymentsTabChange('payments', { replace: true });
+
+    if (onNavigate) {
+      onNavigate(`${paymentsBasePath}/payments`, { replace: true });
+    }
+  }, [handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath]);
 
   const handlePaymentDetailClick = useCallback(
     (paymentId) => {
@@ -1525,7 +1591,7 @@ const StudentDashboardPage = ({
             ) : null}
             {pendingRequests.length > 0 ? (
               <div className="student-dashboard__tiles">
-                {pendingRequests.map((request) => (
+                {visiblePendingRequests.map((request) => (
                   <button
                     type="button"
                     className="tile tile--button"
@@ -1591,27 +1657,69 @@ const StudentDashboardPage = ({
               <h3>{strings.sections?.history?.title}</h3>
               <p className="student-dashboard__muted">{strings.sections?.history?.description}</p>
             </div>
-            <button type="button" className="ghost-button" disabled={loading}>
+            <button type="button" className="ghost-button" onClick={handleHistoryViewMore} disabled={loading}>
               {strings.sections?.history?.viewAll}
             </button>
           </div>
-          {recentEvents.length === 0 ? (
+          {recentHistoryRows.length === 0 ? (
             <p className="student-dashboard__muted">{strings.sections?.history?.empty}</p>
           ) : (
-            <div className="student-dashboard__timeline">
-              {recentEvents.map((event) => (
-                <div className="timeline-item" key={`${event.type}-${event.id}`}>
-                  <div className={`timeline-icon timeline-icon--${event.type}`}>{event.type === 'recharge' ? '+' : '$'}</div>
-                  <div className="timeline-content">
-                    <div className="timeline-header">
-                      <p className="timeline-title">{event.concept}</p>
-                      <span className="pill pill--ghost">{event.status}</span>
-                    </div>
-                    <p className="timeline-amount">{event.amount}</p>
-                    <p className="student-dashboard__muted">{formatDate(event.date, locale, { timeStyle: 'short' })}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="student-dashboard__history-table-wrapper">
+              <table className="student-dashboard__history-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{strings.sections?.history?.columns?.concept}</th>
+                    <th scope="col">{strings.sections?.history?.columns?.date}</th>
+                    <th scope="col">{strings.sections?.history?.columns?.method}</th>
+                    <th scope="col">{strings.sections?.history?.columns?.status}</th>
+                    <th scope="col" className="text-end">{strings.sections?.history?.columns?.amount}</th>
+                    <th scope="col" className="text-end">{strings.sections?.history?.viewDetail}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyRowsToShow.map((event) => (
+                    <tr key={`${event.type}-${event.id ?? event.date}`}>
+                      <td data-title={strings.sections?.history?.columns?.concept}>{event.concept}</td>
+                      <td data-title={strings.sections?.history?.columns?.date}>
+                        {formatDate(event.date, locale)}
+                      </td>
+                      <td data-title={strings.sections?.history?.columns?.method}>
+                        {event.method || strings.sections?.history?.methodFallback}
+                      </td>
+                      <td data-title={strings.sections?.history?.columns?.status}>
+                        <span className={`pill pill--${event.statusVariant}`}>{event.status}</span>
+                      </td>
+                      <td data-title={strings.sections?.history?.columns?.amount} className="text-end">
+                        {event.formattedAmount || formatCurrency(event.amount ?? 0, locale)}
+                      </td>
+                      <td className="text-end">
+                        <button
+                          type="button"
+                          className="ghost-button ghost-button--small"
+                          onClick={() => handlePaymentDetailClick(event.link)}
+                          disabled={event.type !== 'payment' || !event.link}
+                        >
+                          {strings.sections?.history?.viewDetail}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {showHistoryViewMore ? (
+                    <tr className="student-dashboard__history-view-more">
+                      <td colSpan={6}>
+                        <button
+                          type="button"
+                          className="student-dashboard__link-button"
+                          onClick={handleHistoryViewMore}
+                          disabled={loading}
+                        >
+                          {strings.sections?.history?.viewMore ?? strings.sections?.history?.viewAll}
+                        </button>
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
             </div>
           )}
         </section>
