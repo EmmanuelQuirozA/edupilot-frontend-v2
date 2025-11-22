@@ -627,7 +627,8 @@
   gap: 12px;
 }
 
-.payment-request-card {
+.payment-request-card,
+.payment-card {
   border: 1px solid #e2e8f0;
   border-radius: 16px;
   background: #fff;
@@ -635,7 +636,8 @@
   overflow: hidden;
 }
 
-.payment-request-card summary {
+.payment-request-card summary,
+.payment-card summary {
   list-style: none;
   outline: none;
   padding: 16px;
@@ -645,31 +647,43 @@
   cursor: pointer;
 }
 
-.payment-request-card summary::-webkit-details-marker {
+.payment-request-card summary::-webkit-details-marker,
+.payment-card summary::-webkit-details-marker {
   display: none;
 }
 
-.payment-request-card__badges {
+.payment-request-card__badges,
+.payment-card__badges {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
 
-.payment-request-card__summary-row {
+.payment-request-card__summary-row,
+.payment-card__summary-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.payment-request-card__subtitle {
+.payment-request-card__title,
+.payment-card__title {
+  margin: 0;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.payment-request-card__subtitle,
+.payment-card__subtitle {
   margin: 0;
   color: #64748b;
   font-weight: 600;
 }
 
-.payment-request-card__meta {
+.payment-request-card__meta,
+.payment-card__meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -679,7 +693,8 @@
   color: #475569;
 }
 
-.payment-request-card__reference {
+.payment-request-card__reference,
+.payment-card__reference {
   background: #f8fafc;
   padding: 6px 10px;
   border-radius: 10px;
@@ -705,7 +720,8 @@
   transform: rotate(180deg);
 }
 
-.payment-request-card__content {
+.payment-request-card__content,
+.payment-card__content {
   border-top: 1px solid #e2e8f0;
   padding: 16px;
   display: flex;
@@ -713,19 +729,43 @@
   gap: 12px;
 }
 
-.payment-request-card__detail-row {
+.payment-request-card__detail-row,
+.payment-card__detail-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+.payment-request-card__label,
+.payment-card__label {
+  color: #475569;
+  font-weight: 700;
+}
+
+.payment-request-card__value,
+.payment-card__value {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.payment-request-card__value--warning {
+  color: #b91c1c;
+}
+
+.payment-request-card__value--total,
+.payment-card__value--total,
+.payment-card__amount {
+  color: #1d4ed8;
+  font-size: 1.1rem;
+}
 
 .payment-request-card__divider {
   height: 1px;
   background: #e2e8f0;
 }
 
-.payment-request-card__footer {
+.payment-request-card__footer,
+.payment-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -733,29 +773,45 @@
   gap: 12px;
 }
 
-.payment-request-card__actions {
+.payment-request-card__actions,
+.payment-card__actions {
   display: flex;
   gap: 8px;
 }
 
-.payment-request-card__state {
+.payment-request-card__state,
+.payment-card__state {
   padding: 12px;
 }
 
-.payment-request-card__pagination {
+.payment-request-card__pagination,
+.payment-card__pagination {
   padding: 8px 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.payment-request-card__pill {
+.payment-request-card__pill,
+.payment-card__pill {
   font-size: 11px;
   padding: 6px 10px;
 }
 
+.payment-card__status {
+  color: #475569;
+  font-weight: 700;
+}
+
+.payment-card__footer-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 @media (min-width: 576px) {
-  .payment-request-card__pagination {
+  .payment-request-card__pagination,
+  .payment-card__pagination {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;

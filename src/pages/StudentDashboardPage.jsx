@@ -1409,6 +1409,72 @@ const StudentDashboardPage = ({
     tableStrings.pagination,
   ]);
 
+  const renderPaymentsPagination = useCallback(() => {
+    const totalPages = Math.max(1, Math.ceil(Math.max(paymentsTotalElements, 1) / paymentsLimit));
+    const hasItems = paymentsTotalElements > 0;
+    const safePage = Math.min(Math.max(paymentsCurrentPage, 1), totalPages);
+    const from = hasItems ? (safePage - 1) * paymentsLimit + 1 : 0;
+    const to = hasItems ? Math.min(safePage * paymentsLimit, paymentsTotalElements) : 0;
+    const summaryContent = paymentSummary
+      ? paymentSummary({ from, to, total: paymentsTotalElements, page: safePage, totalPages })
+      : hasItems
+      ? `Mostrando ${from}-${to} de ${paymentsTotalElements} registros`
+      : 'Mostrando 0 de 0 registros';
+
+    const handlePageChange = (nextPage) => {
+      if (nextPage < 1 || nextPage > totalPages || nextPage === safePage) {
+        return;
+      }
+
+      handlePaymentsPageChange(nextPage);
+    };
+
+    return (
+      <div className="payment-request-card__pagination">
+        <div className="global-table__summary text-muted">{summaryContent}</div>
+        <nav aria-label="Table pagination">
+          <ul className="pagination justify-content-lg-end mb-0">
+            <li className={`page-item ${safePage <= 1 ? 'disabled' : ''}`}>
+              <button
+                type="button"
+                className="page-link"
+                onClick={() => handlePageChange(safePage - 1)}
+                aria-label={tableStrings.pagination.previous ?? 'Página anterior'}
+              >
+                {tableStrings.pagination.previous ?? '←'}
+              </button>
+            </li>
+            <li className="page-item disabled">
+              <span className="page-link">
+                {paymentPageLabel
+                  ? paymentPageLabel({ page: safePage, totalPages })
+                  : `${safePage} / ${totalPages}`}
+              </span>
+            </li>
+            <li className={`page-item ${safePage >= totalPages ? 'disabled' : ''}`}>
+              <button
+                type="button"
+                className="page-link"
+                onClick={() => handlePageChange(safePage + 1)}
+                aria-label={tableStrings.pagination.next ?? 'Página siguiente'}
+              >
+                {tableStrings.pagination.next ?? '→'}
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    );
+  }, [
+    handlePaymentsPageChange,
+    paymentPageLabel,
+    paymentSummary,
+    paymentsCurrentPage,
+    paymentsLimit,
+    paymentsTotalElements,
+    tableStrings.pagination,
+  ]);
+
   const renderMobileRequests = useCallback(() => {
     if (requestsLoading) {
       return (
@@ -1542,6 +1608,130 @@ const StudentDashboardPage = ({
     pendingRequests,
     requestsError,
     requestsLoading,
+    tableStrings.loading,
+  ]);
+
+  const renderMobilePayments = useCallback(() => {
+    if (paymentsLoading) {
+      return (
+        <div className="payment-request-card__state text-center">
+          <div className="spinner-border text-primary" role="status" aria-hidden="true" />
+          <span className="d-block mt-3">{tableStrings.loading}</span>
+        </div>
+      );
+    }
+
+    if (paymentsError) {
+      return (
+        <p className="payment-request-card__state text-center text-danger">
+          {typeof paymentsError === 'string' ? paymentsError : paymentsError?.message}
+        </p>
+      );
+    }
+
+    if (!recentPayments || recentPayments.length === 0) {
+      return (
+        <p className="payment-request-card__state text-center text-muted">
+          {paymentsPageStrings.payments.empty}
+        </p>
+      );
+    }
+
+    return recentPayments.map((payment, index) => {
+      const paymentIdValue = payment.payment_id ?? payment.paymentId ?? payment.id ?? '';
+      const paymentIdLabel = paymentIdValue || '—';
+      const concept =
+        payment.pt_name || payment.partConceptName || paymentsPageStrings.payments.columns.concept;
+      const amountValue = Number(payment.amount ?? 0);
+      const statusLabel =
+        payment.payment_status_name ||
+        payment.paymentStatusName ||
+        paymentsPageStrings.payments.columns.status;
+      const createdAtValue =
+        payment.payment_created_at || payment.paymentCreatedAt || payment.created_at || payment.createdAt;
+      const createdAtLabel = createdAtValue ? formatDate(createdAtValue, locale) : '—';
+      const paymentReference = payment.payment_reference || payment.paymentReference;
+
+      return (
+        <details
+          key={paymentIdValue || concept || `payment-${index}`}
+          className="payment-card"
+          data-payment-id={paymentIdValue || undefined}
+        >
+          <summary>
+            <div className="payment-card__badges">
+              <span className="pill pill--ghost payment-card__pill">{concept?.toUpperCase?.() ?? concept}</span>
+              <span className="pill payment-card__pill">{statusLabel}</span>
+            </div>
+            <div className="payment-card__summary-row">
+              <div>
+                <p className="payment-card__title">
+                  {paymentsPageStrings.payments.columns.id}: {paymentIdLabel}
+                </p>
+                <p className="payment-card__subtitle">
+                  {paymentsPageStrings.payments.columns.date}: {createdAtLabel}
+                </p>
+              </div>
+              <div className="payment-card__amount">{formatCurrency(amountValue, locale)}</div>
+            </div>
+            <div className="payment-card__meta">
+              {paymentReference ? (
+                <span className="payment-card__reference">Ref: {paymentReference}</span>
+              ) : null}
+              <span className="payment-card__status">{statusLabel}</span>
+            </div>
+          </summary>
+          <div className="payment-card__content">
+            <div className="payment-card__detail-row">
+              <div className="payment-card__label">{paymentsPageStrings.payments.columns.concept}</div>
+              <div className="payment-card__value">{concept}</div>
+            </div>
+            <div className="payment-card__detail-row">
+              <div className="payment-card__label">{paymentsPageStrings.payments.columns.amount}</div>
+              <div className="payment-card__value payment-card__value--total">
+                {formatCurrency(amountValue, locale)}
+              </div>
+            </div>
+            <div className="payment-card__detail-row">
+              <div className="payment-card__label">{paymentsPageStrings.payments.columns.status}</div>
+              <div className="payment-card__value">{statusLabel}</div>
+            </div>
+            <div className="payment-card__footer">
+              <div className="payment-card__footer-meta">
+                <span className="payment-card__subtitle">
+                  {paymentsPageStrings.payments.columns.date}: {createdAtLabel}
+                </span>
+              </div>
+              <div className="payment-card__actions">
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => handlePaymentDetailClick(paymentIdValue)}
+                  disabled={!paymentIdValue}
+                >
+                  {paymentsPageStrings.payments.columns.view}
+                </button>
+              </div>
+            </div>
+          </div>
+        </details>
+      );
+    });
+  }, [
+    formatCurrency,
+    formatDate,
+    handlePaymentDetailClick,
+    locale,
+    paymentsError,
+    paymentsLoading,
+    paymentsPageStrings.payments.columns.amount,
+    paymentsPageStrings.payments.columns.concept,
+    paymentsPageStrings.payments.columns.date,
+    paymentsPageStrings.payments.columns.id,
+    paymentsPageStrings.payments.columns.status,
+    paymentsPageStrings.payments.columns.view,
+    paymentsPageStrings.payments.empty,
+    recentPayments,
     tableStrings.loading,
   ]);
   const handlePaymentsPageChange = useCallback(
@@ -2208,61 +2398,68 @@ const StudentDashboardPage = ({
           </div>
 
           <UiCard className="page__table-card">
-            <GlobalTable
-              className="page__table-wrapper"
-              tableClassName="page__table mb-0"
-              columns={paymentsColumns}
-              data={recentPayments}
-              getRowId={(payment, index) =>
-                payment.payment_id ?? payment.paymentId ?? payment.id ?? payment.pt_name ?? `payment-${index}`
-              }
-              renderRow={(payment, index) => {
-                const paymentIdValue = payment.payment_id ?? payment.paymentId ?? payment.id ?? '';
-                const rowKey = paymentIdValue || payment.pt_name || `payment-${index}`;
+            {isDesktop ? (
+              <GlobalTable
+                className="page__table-wrapper"
+                tableClassName="page__table mb-0"
+                columns={paymentsColumns}
+                data={recentPayments}
+                getRowId={(payment, index) =>
+                  payment.payment_id ?? payment.paymentId ?? payment.id ?? payment.pt_name ?? `payment-${index}`
+                }
+                renderRow={(payment, index) => {
+                  const paymentIdValue = payment.payment_id ?? payment.paymentId ?? payment.id ?? '';
+                  const rowKey = paymentIdValue || payment.pt_name || `payment-${index}`;
 
-                return (
-                  <tr key={rowKey}>
-                    <td data-title={paymentsPageStrings.payments.columns.id}>{paymentIdValue || '—'}</td>
-                    <td data-title={paymentsPageStrings.payments.columns.concept}>
-                      {payment.pt_name || payment.partConceptName || paymentsPageStrings.payments.columns.concept}
-                    </td>
-                    <td data-title={paymentsPageStrings.payments.columns.amount} className="text-end">
-                      {formatCurrency(payment.amount ?? 0, locale)}
-                    </td>
-                    <td data-title={paymentsPageStrings.payments.columns.status}>
-                      {payment.payment_status_name || payment.paymentStatusName || paymentsPageStrings.payments.columns.status}
-                    </td>
-                    <td data-title={paymentsPageStrings.payments.columns.date}>
-                      {formatDate(payment.payment_created_at || payment.paymentCreatedAt, locale)}
-                    </td>
-                    <td data-title={paymentsPageStrings.payments.columns.view} className="text-end">
-                      <button
-                        type="button"
-                        className="ghost-button"
-                        onClick={() => handlePaymentDetailClick(paymentIdValue)}
-                        disabled={!paymentIdValue}
-                      >
-                        {paymentsPageStrings.payments.columns.view}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              }}
-              loading={paymentsLoading}
-              loadingMessage={tableStrings.loading}
-              error={paymentsError || null}
-              emptyMessage={paymentsPageStrings.payments.empty}
-              pagination={{
-                currentPage: paymentsCurrentPage,
-                pageSize: paymentsLimit,
-                totalItems: paymentsTotalElements,
-                onPageChange: handlePaymentsPageChange,
-                previousLabel: tableStrings.pagination.previous ?? '←',
-                nextLabel: tableStrings.pagination.next ?? '→',
-                summary: paymentSummary,
-                pageLabel: paymentPageLabel,
-              }}
-            />
+                  return (
+                    <tr key={rowKey}>
+                      <td data-title={paymentsPageStrings.payments.columns.id}>{paymentIdValue || '—'}</td>
+                      <td data-title={paymentsPageStrings.payments.columns.concept}>
+                        {payment.pt_name || payment.partConceptName || paymentsPageStrings.payments.columns.concept}
+                      </td>
+                      <td data-title={paymentsPageStrings.payments.columns.amount} className="text-end">
+                        {formatCurrency(payment.amount ?? 0, locale)}
+                      </td>
+                      <td data-title={paymentsPageStrings.payments.columns.status}>
+                        {payment.payment_status_name || payment.paymentStatusName || paymentsPageStrings.payments.columns.status}
+                      </td>
+                      <td data-title={paymentsPageStrings.payments.columns.date}>
+                        {formatDate(payment.payment_created_at || payment.paymentCreatedAt, locale)}
+                      </td>
+                      <td data-title={paymentsPageStrings.payments.columns.view} className="text-end">
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => handlePaymentDetailClick(paymentIdValue)}
+                          disabled={!paymentIdValue}
+                        >
+                          {paymentsPageStrings.payments.columns.view}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                }}
+                loading={paymentsLoading}
+                loadingMessage={tableStrings.loading}
+                error={paymentsError || null}
+                emptyMessage={paymentsPageStrings.payments.empty}
+                pagination={{
+                  currentPage: paymentsCurrentPage,
+                  pageSize: paymentsLimit,
+                  totalItems: paymentsTotalElements,
+                  onPageChange: handlePaymentsPageChange,
+                  previousLabel: tableStrings.pagination.previous ?? '←',
+                  nextLabel: tableStrings.pagination.next ?? '→',
+                  summary: paymentSummary,
+                  pageLabel: paymentPageLabel,
+                }}
+              />
+            ) : (
+              <div className="payment-requests-mobile">
+                {renderMobilePayments()}
+                {recentPayments && recentPayments.length > 0 ? renderPaymentsPagination() : null}
+              </div>
+            )}
           </UiCard>
         </section>
       ) : null}
