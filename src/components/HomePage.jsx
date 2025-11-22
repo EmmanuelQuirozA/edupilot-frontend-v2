@@ -726,7 +726,7 @@ const HomePage = ({
               <p className="dashboard__subtitle">{t.home.header.subtitle}</p>
             </div>
           </div>
-          <div className="dashboard__actions">
+          <div className="d-flex justify-content-between">
             <label className="dashboard__search" htmlFor="dashboard-search">
               <span className="visually-hidden">{t.home.header.searchPlaceholder}</span>
               <svg viewBox="0 0 24 24" aria-hidden="true">
