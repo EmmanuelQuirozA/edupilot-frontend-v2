@@ -1113,10 +1113,10 @@ const StudentDashboardPage = ({
   );
 
   useEffect(() => {
-    if (routeSegments[0] === 'payments') {
+    if (sectionKey === 'payments') {
       setActiveNav('payments');
-      if (routeSegments[1] === 'requests' && routeSegments[2]) {
-        setSelectedPaymentRequestId(routeSegments[2]);
+      if (paymentsPrimarySegment === 'requests' && paymentsSecondarySegment) {
+        setSelectedPaymentRequestId(paymentsSecondarySegment);
       } else {
         setSelectedPaymentRequestId(null);
       }
@@ -1125,7 +1125,7 @@ const StudentDashboardPage = ({
 
     setActiveNav('dashboard');
     setSelectedPaymentRequestId(null);
-  }, [routeSegments]);
+  }, [paymentsPrimarySegment, paymentsSecondarySegment, sectionKey]);
 
   useEffect(() => {
     if (!selectedPaymentRequestId) {
@@ -1188,10 +1188,12 @@ const StudentDashboardPage = ({
     });
   }, [tuitionRows, tuitionEndDate, tuitionStartDate]);
   const paymentColumns = useMemo(
-    () => [
-      ...monthColumns.map((month) => ({ key: month, header: month })),
-    ],
-    [monthColumns, tableColumns.generation, tableColumns.student],
+    () =>
+      monthColumns.map((month) => ({
+        key: month,
+        header: tableStrings.months?.[month]?.label ?? month,
+      })),
+    [monthColumns, tableStrings.months],
   );
   const tuitionTotalPages = Math.max(1, Math.ceil(Math.max(tuitionTotalElements, 1) / tuitionLimit));
   const tuitionCurrentPage = Math.min(tuitionTotalPages, Math.floor(tuitionOffset / tuitionLimit) + 1);
@@ -1314,6 +1316,33 @@ const StudentDashboardPage = ({
       onNavigate(`${paymentsBasePath}${suffix}`, { replace: true });
     }
   }, [handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath, resolvedPaymentsTab]);
+
+  const handlePaymentsRootNavigation = useCallback(() => {
+    handleNavClick('payments');
+    handlePaymentsTabChange('tuition', { replace: true });
+
+    if (onNavigate) {
+      onNavigate(paymentsBasePath, { replace: true });
+    }
+  }, [handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath]);
+
+  const handlePaymentRequestsNavigation = useCallback(() => {
+    handleNavClick('payments', { preserveRequest: true });
+    handlePaymentsTabChange('requests', { replace: true });
+
+    if (onNavigate) {
+      onNavigate(`${paymentsBasePath}/requests`, { replace: true });
+    }
+  }, [handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath]);
+
+  const handlePaymentsListNavigation = useCallback(() => {
+    handleNavClick('payments', { preserveRequest: true });
+    handlePaymentsTabChange('payments', { replace: true });
+
+    if (onNavigate) {
+      onNavigate(`${paymentsBasePath}/payments`, { replace: true });
+    }
+  }, [handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath]);
   const handleStudentDetailClick = useCallback((row) => {
     if (!row) {
       return;
@@ -2030,6 +2059,9 @@ const StudentDashboardPage = ({
 
   const breadcrumbs = useMemo(() => {
     const dashboardLabel = menuItems.find((item) => item.key === 'dashboard')?.label ?? headerTitle;
+    const paymentsLabel = menuItems.find((item) => item.key === 'payments')?.label ?? paymentsPageStrings.title;
+    const requestsLabel = paymentsPageStrings.requests?.title ?? paymentsPageStrings.requests.columns.id;
+    const paymentsListLabel = paymentsPageStrings.payments?.title ?? paymentsPageStrings.payments.columns.id;
     const items = [
       {
         label: dashboardLabel,
@@ -2037,12 +2069,28 @@ const StudentDashboardPage = ({
       },
     ];
 
-    if (activeNav !== 'dashboard') {
-      const activeLabel = menuItems.find((item) => item.key === activeNav)?.label ?? headerTitle;
-      items.push({ label: activeLabel });
-    }
-
     if (activeNav === 'payments') {
+      items.push({
+        label: paymentsLabel,
+        onClick: isPaymentDetailRoute || isPaymentRequestDetailRoute || paymentsTab !== 'tuition'
+          ? handlePaymentsRootNavigation
+          : undefined,
+      });
+
+      if (isPaymentRequestDetailRoute || paymentsTab === 'requests' || selectedPaymentRequestId) {
+        items.push({
+          label: requestsLabel,
+          onClick: isPaymentRequestDetailRoute ? handlePaymentRequestsNavigation : undefined,
+        });
+      }
+
+      if (isPaymentDetailRoute || paymentsTab === 'payments') {
+        items.push({
+          label: paymentsListLabel,
+          onClick: isPaymentDetailRoute ? handlePaymentsListNavigation : undefined,
+        });
+      }
+
       if (isPaymentRequestDetailRoute && paymentRequestDetailId) {
         items.push({ label: `${paymentsPageStrings.requests.columns.id} ${paymentRequestDetailId}` });
       } else if (selectedPaymentRequestId) {
@@ -2054,18 +2102,30 @@ const StudentDashboardPage = ({
       }
     }
 
+    if (activeNav !== 'payments' && activeNav !== 'dashboard') {
+      const activeLabel = menuItems.find((item) => item.key === activeNav)?.label ?? headerTitle;
+      items.push({ label: activeLabel });
+    }
+
     return items;
   }, [
     activeNav,
+    handleNavClick,
+    handlePaymentRequestsNavigation,
+    handlePaymentsListNavigation,
+    handlePaymentsRootNavigation,
+    headerTitle,
     isPaymentDetailRoute,
     isPaymentRequestDetailRoute,
-    handleNavClick,
-    headerTitle,
     menuItems,
     paymentDetailId,
     paymentRequestDetailId,
-    paymentsPageStrings.requests.columns.id,
     paymentsPageStrings.payments.columns.id,
+    paymentsPageStrings.payments?.title,
+    paymentsPageStrings.requests.columns.id,
+    paymentsPageStrings.requests?.title,
+    paymentsPageStrings.title,
+    paymentsTab,
     selectedPaymentRequestId,
   ]);
 
