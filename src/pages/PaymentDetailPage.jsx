@@ -387,8 +387,10 @@ const PaymentDetailPage = ({
   language = 'es',
   strings = {},
   onBreadcrumbChange,
+  readOnly = false,
 }) => {
   const normalizedLanguage = normalizeLanguage(language);
+  const isReadOnly = Boolean(readOnly);
   const mergedStrings = useMemo(() => ({
     ...DEFAULT_STRINGS,
     ...strings,
@@ -489,6 +491,12 @@ const PaymentDetailPage = ({
   const [isLoadingConcepts, setIsLoadingConcepts] = useState(false);
   const [isLoadingThrough, setIsLoadingThrough] = useState(false);
 
+  useEffect(() => {
+    if (isReadOnly && isEditing) {
+      setIsEditing(false);
+    }
+  }, [isEditing, isReadOnly]);
+
   const { isApproved: isPaymentApproved, isRejected: isPaymentRejected } = useMemo(() => {
     if (!payment) {
       return { isApproved: false, isRejected: false };
@@ -520,6 +528,7 @@ const PaymentDetailPage = ({
   }, [payment]);
 
   const isPaymentFinalized = isPaymentApproved || isPaymentRejected;
+  const canModifyStatus = !isPaymentFinalized && !isReadOnly;
 
   useEffect(() => {
     setIsReceiptModalOpen(false);
@@ -654,6 +663,10 @@ const PaymentDetailPage = ({
 
   const handleUpdateStatus = useCallback(
     async (statusId) => {
+      if (isReadOnly) {
+        return;
+      }
+
       if (!paymentId) {
         return;
       }
@@ -779,6 +792,7 @@ const PaymentDetailPage = ({
     },
     [
       fetchPaymentDetail,
+      isReadOnly,
       logout,
       mergedStrings,
       normalizedLanguage,
@@ -1283,6 +1297,10 @@ const PaymentDetailPage = ({
   }, [isEditing, loadPaymentConcepts, loadPaymentThrough]);
 
   const handleToggleEdit = useCallback(async () => {
+    if (isReadOnly) {
+      return;
+    }
+
     if (!isEditing && isPaymentFinalized) {
       return;
     }
@@ -1327,6 +1345,7 @@ const PaymentDetailPage = ({
     isEditDirty,
     isEditing,
     isPaymentFinalized,
+    isReadOnly,
     mergedStrings.confirmations,
     mergedStrings.editing,
   ]);
@@ -1369,6 +1388,10 @@ const PaymentDetailPage = ({
 
   const handleSaveDetails = useCallback(
     async (event) => {
+      if (isReadOnly) {
+        return;
+      }
+
       event?.preventDefault?.();
 
       if (!paymentId) {
@@ -1451,6 +1474,7 @@ const PaymentDetailPage = ({
       mergedStrings.actionFeedback.detailsUpdateSuccess,
       normalizedLanguage,
       paymentId,
+      isReadOnly,
       token,
       validateEditValues,
     ],
@@ -1780,7 +1804,7 @@ const PaymentDetailPage = ({
                 </div>
                 {payment ? (
                   <div className="payment-detail__header-actions">
-                    {!isPaymentFinalized ? (
+                    {canModifyStatus ? (
                       <ActionButton
                         variant={isEditing ? 'outline' : 'primary'}
                         onClick={handleToggleEdit}
@@ -1798,7 +1822,7 @@ const PaymentDetailPage = ({
                     >
                       {mergedStrings.actions.print}
                     </ActionButton>
-                    {!isPaymentFinalized ? (
+                    {canModifyStatus ? (
                       <>
                         <ActionButton
                           variant="success"

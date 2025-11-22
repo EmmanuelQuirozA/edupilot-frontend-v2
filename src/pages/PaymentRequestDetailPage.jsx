@@ -368,8 +368,10 @@ const PaymentRequestDetailPage = ({
   onNavigateBack,
   onStudentDetail,
   onPaymentDetail,
+  readOnly = false,
 }) => {
   const mergedStrings = useMemo(() => ({ ...DEFAULT_STRINGS, ...strings }), [strings]);
+  const isReadOnly = Boolean(readOnly);
   const { token, logout } = useAuth();
   const [details, setDetails] = useState(null);
   const [logs, setLogs] = useState([]);
@@ -384,6 +386,12 @@ const PaymentRequestDetailPage = ({
   const [isPrinting, setIsPrinting] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const detailRef = useRef(null);
+
+  useEffect(() => {
+    if (isReadOnly && isEditing) {
+      setIsEditing(false);
+    }
+  }, [isEditing, isReadOnly]);
 
   const safeRequestId = requestId ? String(requestId) : '';
 
@@ -614,6 +622,10 @@ const PaymentRequestDetailPage = ({
 
   const handleFormSubmit = useCallback(
     async (event) => {
+      if (isReadOnly) {
+        return;
+      }
+
       event.preventDefault();
 
       if (!formData) {
@@ -645,12 +657,19 @@ const PaymentRequestDetailPage = ({
         setIsSaving(false);
       }
     },
-    [fetchDetails, formData, mergedStrings.edit.error, mergedStrings.edit.success, updatePaymentRequest],
+    [
+      fetchDetails,
+      formData,
+      isReadOnly,
+      mergedStrings.edit.error,
+      mergedStrings.edit.success,
+      updatePaymentRequest,
+    ],
   );
 
   const handleStatusChange = useCallback(
     async (statusId) => {
-      if (!statusId) {
+      if (!statusId || isReadOnly) {
         return;
       }
 
@@ -666,7 +685,14 @@ const PaymentRequestDetailPage = ({
         setIsSaving(false);
       }
     },
-    [fetchDetails, fetchLogs, mergedStrings.statusActions.error, mergedStrings.statusActions.success, updatePaymentRequest],
+    [
+      fetchDetails,
+      fetchLogs,
+      isReadOnly,
+      mergedStrings.statusActions.error,
+      mergedStrings.statusActions.success,
+      updatePaymentRequest,
+    ],
   );
 
   const handleInputChange = useCallback((event) => {
@@ -678,7 +704,7 @@ const PaymentRequestDetailPage = ({
   }, []);
 
   const handleToggleEditing = useCallback(() => {
-    if (!paymentRequest) {
+    if (!paymentRequest || isReadOnly) {
       return;
     }
 
@@ -689,7 +715,7 @@ const PaymentRequestDetailPage = ({
       }
       return next;
     });
-  }, [paymentRequest]);
+  }, [isReadOnly, paymentRequest]);
 
   const handleViewStudent = useCallback(() => {
     if (!student?.student_id) {
@@ -861,11 +887,11 @@ const PaymentRequestDetailPage = ({
   }, [language, mergedStrings.breadcrumbFallback, mergedStrings.generalTitle, mergedStrings.printError, mergedStrings.printWindowError, paymentRequest, student]);
 
   const handleOpenPaymentModal = useCallback(() => {
-    if (!details) {
+    if (!details || isReadOnly) {
       return;
     }
     setIsPaymentModalOpen(true);
-  }, [details]);
+  }, [details, isReadOnly]);
 
   const handleClosePaymentModal = useCallback(() => {
     setIsPaymentModalOpen(false);
@@ -889,7 +915,7 @@ const PaymentRequestDetailPage = ({
           {mergedStrings.back}
         </ActionButton>
         <div className="payment-request-detail__actions">
-          {isClosedOrCancelled ? ( null ) : (
+          {isClosedOrCancelled || isReadOnly ? null : (
             <ActionButton type="button" onClick={handleOpenPaymentModal} disabled={!details}>
               {payButtonLabel}
             </ActionButton>
@@ -1024,7 +1050,7 @@ const PaymentRequestDetailPage = ({
                 <div className="payment-request-detail__card-header">
                   <h1 className="payment-request-detail__title">{mergedStrings.generalTitle}</h1>
                   <div className="payment-request-detail__actions">
-                    {isClosedOrCancelled ? (
+                    {isClosedOrCancelled || isReadOnly ? (
                       <span className="payment-request-detail__status-badge">
                         {paymentRequest?.ps_pr_name ?? '—'}
                       </span>

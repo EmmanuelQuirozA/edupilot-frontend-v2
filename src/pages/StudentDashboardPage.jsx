@@ -13,6 +13,8 @@ import StudentTableCell from '../components/ui/StudentTableCell.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
 import SidebarModal from '../components/ui/SidebarModal.jsx';
 import FilterButton from '../components/ui/buttons/FilterButton.jsx';
+import PaymentDetailPage from './PaymentDetailPage.jsx';
+import PaymentRequestDetailPage from './PaymentRequestDetailPage.jsx';
 import '../components/HomePage.css';
 import './StudentDashboardPage.css';
 
@@ -406,6 +408,16 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
       : null,
   );
   const [selectedPaymentRequest, setSelectedPaymentRequest] = useState(null);
+  const paymentRequestDetailId =
+    routeSegments[0] === 'payments' && routeSegments[1] === 'requests' && routeSegments[2]
+      ? routeSegments[2]
+      : null;
+  const paymentDetailId =
+    routeSegments[0] === 'payments' && routeSegments[1] === 'payments' && routeSegments[2]
+      ? routeSegments[2]
+      : null;
+  const isPaymentDetailRoute = Boolean(paymentDetailId);
+  const isPaymentRequestDetailRoute = Boolean(paymentRequestDetailId);
   const [tuitionStartDate, setTuitionStartDate] = useState('');
   const [tuitionEndDate, setTuitionEndDate] = useState('');
   const [requestsFilters, setRequestsFilters] = useState({
@@ -1052,6 +1064,8 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
       setActiveNav('payments');
       if (routeSegments[1] === 'requests' && routeSegments[2]) {
         setSelectedPaymentRequestId(routeSegments[2]);
+      } else {
+        setSelectedPaymentRequestId(null);
       }
       return;
     }
@@ -1232,6 +1246,14 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     },
     [handleNavClick, onNavigate, studentDashboardBasePath],
   );
+
+  const handlePaymentsBackNavigation = useCallback(() => {
+    handleNavClick('payments');
+
+    if (onNavigate) {
+      onNavigate(`${studentDashboardBasePath}/payments`, { replace: true });
+    }
+  }, [handleNavClick, onNavigate, studentDashboardBasePath]);
   const handleStudentDetailClick = useCallback((row) => {
     if (!row) {
       return;
@@ -1948,12 +1970,46 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
     </div>
   );
 
-  const pageTitle = activeNav === 'payments' ? paymentsPageStrings.title : headerTitle;
+  const pageTitle = isPaymentDetailRoute
+    ? `${paymentsPageStrings.payments.columns.id} ${paymentDetailId ?? ''}`.trim()
+    : isPaymentRequestDetailRoute
+    ? `${paymentsPageStrings.requests.columns.id} ${paymentRequestDetailId ?? ''}`.trim()
+    : activeNav === 'payments'
+    ? paymentsPageStrings.title
+    : headerTitle;
   const pageSubtitle =
     activeNav === 'payments'
       ? strings.sections?.payments?.description ?? headerSubtitle
       : headerSubtitle;
-  const mainContent = activeNav === 'payments' ? paymentsContent : dashboardContent;
+  const mainContent = isPaymentDetailRoute ? (
+    <div className="page__layout">
+      <section className="page__content">
+        <PaymentDetailPage
+          paymentId={paymentDetailId}
+          language={language}
+          strings={strings.paymentsPage?.detail ?? {}}
+          readOnly
+        />
+      </section>
+    </div>
+  ) : isPaymentRequestDetailRoute ? (
+    <div className="page__layout">
+      <section className="page__content">
+        <PaymentRequestDetailPage
+          requestId={paymentRequestDetailId}
+          language={language}
+          strings={strings.paymentsPage?.requestsDetail ?? {}}
+          readOnly
+          onNavigateBack={handlePaymentsBackNavigation}
+          onPaymentDetail={handlePaymentDetailClick}
+        />
+      </section>
+    </div>
+  ) : activeNav === 'payments' ? (
+    paymentsContent
+  ) : (
+    dashboardContent
+  );
 
   const breadcrumbs = useMemo(() => {
     const dashboardLabel = menuItems.find((item) => item.key === 'dashboard')?.label ?? headerTitle;
@@ -1969,17 +2025,30 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
       items.push({ label: activeLabel });
     }
 
-    if (activeNav === 'payments' && selectedPaymentRequestId) {
-      items.push({ label: `${paymentsPageStrings.requests.columns.id} ${selectedPaymentRequestId}` });
+    if (activeNav === 'payments') {
+      if (isPaymentRequestDetailRoute && paymentRequestDetailId) {
+        items.push({ label: `${paymentsPageStrings.requests.columns.id} ${paymentRequestDetailId}` });
+      } else if (selectedPaymentRequestId) {
+        items.push({ label: `${paymentsPageStrings.requests.columns.id} ${selectedPaymentRequestId}` });
+      }
+
+      if (isPaymentDetailRoute && paymentDetailId) {
+        items.push({ label: `${paymentsPageStrings.payments.columns.id} ${paymentDetailId}` });
+      }
     }
 
     return items;
   }, [
     activeNav,
+    isPaymentDetailRoute,
+    isPaymentRequestDetailRoute,
     handleNavClick,
     headerTitle,
     menuItems,
+    paymentDetailId,
+    paymentRequestDetailId,
     paymentsPageStrings.requests.columns.id,
+    paymentsPageStrings.payments.columns.id,
     selectedPaymentRequestId,
   ]);
 
