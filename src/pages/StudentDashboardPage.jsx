@@ -379,6 +379,22 @@ const StudentDashboardPage = ({
     .map((part) => part.charAt(0).toUpperCase())
     .slice(0, 2)
     .join('');
+  const schoolName = useMemo(() => {
+    if (user?.school_name) {
+      return user.school_name;
+    }
+
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    try {
+      const storedUser = JSON.parse(localStorage.getItem('user') ?? '{}');
+      return storedUser?.school_name ?? '';
+    } catch (error) {
+      return '';
+    }
+  }, [user?.school_name]);
   const headerTitle = strings.title ?? t.home.header.title;
   const headerSubtitle = strings.subtitle ?? t.home.header.subtitle;
 
@@ -2769,38 +2785,34 @@ const StudentDashboardPage = ({
         </button>
       </aside>
 
-      {!isDesktop ? (
-        <button
-          type='button'
-          className='dashboard__menu-toggle'
-          onClick={toggleSidebar}
-          aria-label={isSidebarOpen ? t.home.header.closeMenu : t.home.header.openMenu}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-      ) : null}
-
       {!isDesktop && isSidebarOpen ? <div className='dashboard__overlay' onClick={closeSidebar} aria-hidden='true' /> : null}
 
       <div className='dashboard__main'>
         <header className='dashboard__header'>
           <div className='dashboard__header-title'>
+            {!isDesktop ? (
+              <button
+                type='button'
+                className='dashboard__menu-toggle'
+                onClick={toggleSidebar}
+                aria-label={isSidebarOpen ? t.home.header.closeMenu : t.home.header.openMenu}
+              >
+                <span />
+                <span />
+                <span />
+              </button>
+            ) : null}
             <div>
               <h1>{pageTitle}</h1>
+              {schoolName ? <p className='dashboard__school'>{schoolName}</p> : null}
               <p className='dashboard__subtitle'>{pageSubtitle}</p>
             </div>
           </div>
-          <div className='d-flex justify-content-between'>
+          <div className='student-dashboard__header-actions'>
             <LanguageSelector value={language} onChange={onLanguageChange} />
             <div className='dashboard__user-chip'>
               <div className='dashboard__user-initials' aria-hidden='true'>
                 {initials || 'AD'}
-              </div>
-              <div>
-                <p>{displayName}</p>
-                <span>{user?.role ?? roleLabel}</span>
               </div>
             </div>
           </div>
