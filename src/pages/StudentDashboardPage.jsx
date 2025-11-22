@@ -9,7 +9,7 @@ import { buildMenuItemsForRole, getRoleLabel, normalizeRoleName } from '../utils
 import { getRoleNameFromToken } from '../utils/jwt';
 import Breadcrumbs from '../components/Breadcrumbs';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
-import StudentTableCell from '../components/ui/StudentTableCell.jsx';
+import ActionButton from '../components/ui/ActionButton.jsx';
 import UiCard from '../components/ui/UiCard.jsx';
 import SidebarModal from '../components/ui/SidebarModal.jsx';
 import FilterButton from '../components/ui/buttons/FilterButton.jsx';
@@ -1642,7 +1642,7 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
                   <td data-title={paymentsPageStrings.requests.columns.dueDate}>
                     <div className="student-dashboard__due-label">
                       <span className="pill pill--ghost">{getDueLabel(request.pr_pay_by || request.prPayBy)}</span>
-                      <span>{formatDate(request.pr_pay_by || request.prPayBy, locale)}</span>
+                      <span className='d-flex justify-content-center'>{formatDate(request.pr_pay_by || request.prPayBy, locale)}</span>
                     </div>
                   </td>
                   <td data-title={paymentsPageStrings.requests.columns.view} className="text-end">
@@ -1803,9 +1803,19 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
       <SidebarModal
         isOpen={showRequestsFilters}
         onClose={() => setShowRequestsFilters(false)}
-        title={requestsFilterStrings.title ?? paymentsActionsStrings.filter ?? strings.actions?.filter}
+        title={requestsFilterStrings.title ?? paymentsActionsStrings.filter ?? strings.sections?.pendingRequests?.title}
         description={requestsFilterStrings.subtitle ?? strings.sections?.pendingRequests?.description}
         id="student-dashboard-requests-filters"
+        footer={
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <ActionButton variant="text" onClick={handleResetRequestsFilters} type="button">
+              {requestsFilterStrings.reset ?? strings.actions?.reset ?? 'Borrar filtros'}
+            </ActionButton>
+            <ActionButton type="submit" form="payment-recurrences-filters-form">
+              {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
+            </ActionButton>
+          </div>
+        }
       >
         <form className="student-dashboard__filters" onSubmit={handleApplyRequestsFilters}>
           <label className="student-dashboard__filter-field">
@@ -1835,50 +1845,25 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
               placeholder={requestsFilterStrings.fields?.status?.placeholder ?? ''}
             />
           </label>
-          <label className="student-dashboard__filter-field">
-            <span>{requestsFilterStrings.fields?.reference?.label ?? tableStrings.studentId}</span>
-            <input
-              type="text"
-              value={requestsFiltersDraft.payment_reference}
-              onChange={(event) => handleRequestsFilterChange('payment_reference', event.target.value)}
-              placeholder={requestsFilterStrings.fields?.reference?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{requestsFilterStrings.fields?.gradeGroup?.label ?? tableColumns?.generation}</span>
-            <input
-              type="text"
-              value={requestsFiltersDraft.grade_group}
-              onChange={(event) => handleRequestsFilterChange('grade_group', event.target.value)}
-              placeholder={requestsFilterStrings.fields?.gradeGroup?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{requestsFilterStrings.fields?.student?.label ?? tableColumns?.student}</span>
-            <input
-              type="text"
-              value={requestsFiltersDraft.student_full_name}
-              onChange={(event) => handleRequestsFilterChange('student_full_name', event.target.value)}
-              placeholder={requestsFilterStrings.fields?.student?.placeholder ?? ''}
-            />
-          </label>
-          <div className="student-dashboard__filter-actions">
-            <button type="submit" className="primary-button" disabled={requestsLoading}>
-              {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
-            </button>
-            <button type="button" className="ghost-button" onClick={handleResetRequestsFilters} disabled={requestsLoading}>
-              {requestsFilterStrings.reset ?? strings.actions?.reset ?? 'Borrar filtros'}
-            </button>
-          </div>
         </form>
       </SidebarModal>
 
       <SidebarModal
         isOpen={showPaymentsFilters}
         onClose={() => setShowPaymentsFilters(false)}
-        title={paymentsFilterStrings.title ?? paymentsActionsStrings.filter ?? strings.actions?.filter}
+        title={paymentsFilterStrings.title ?? paymentsActionsStrings.filter ?? strings.sections?.payments?.title}
         description={paymentsFilterStrings.subtitle ?? strings.sections?.payments?.description}
         id="student-dashboard-payments-filters"
+        footer={
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <ActionButton variant="text" onClick={handleResetPaymentsFilters} type="button">
+              {requestsFilterStrings.reset ?? strings.actions?.reset ?? 'Borrar filtros'}
+            </ActionButton>
+            <ActionButton type="submit" form="payment-recurrences-filters-form">
+              {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
+            </ActionButton>
+          </div>
+        }
       >
         <form className="student-dashboard__filters" onSubmit={handleApplyPaymentsFilters}>
           <label className="student-dashboard__filter-field">
@@ -1888,15 +1873,6 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
               value={paymentsFiltersDraft.payment_id}
               onChange={(event) => handlePaymentsFilterChange('payment_id', event.target.value)}
               placeholder={paymentsFilterStrings.fields?.paymentId?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsFilterStrings.fields?.paymentRequestId?.label ?? paymentsPageStrings.requests.columns.id}</span>
-            <input
-              type="text"
-              value={paymentsFiltersDraft.payment_request_id}
-              onChange={(event) => handlePaymentsFilterChange('payment_request_id', event.target.value)}
-              placeholder={paymentsFilterStrings.fields?.paymentRequestId?.placeholder ?? ''}
             />
           </label>
           <label className="student-dashboard__filter-field">
@@ -1917,32 +1893,6 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
               placeholder={paymentsFilterStrings.fields?.month?.placeholder ?? ''}
             />
           </label>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsFilterStrings.fields?.reference?.label ?? tableStrings.studentId}</span>
-            <input
-              type="text"
-              value={paymentsFiltersDraft.payment_reference}
-              onChange={(event) => handlePaymentsFilterChange('payment_reference', event.target.value)}
-              placeholder={paymentsFilterStrings.fields?.reference?.placeholder ?? ''}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsFilterStrings.fields?.student?.label ?? tableColumns?.student}</span>
-            <input
-              type="text"
-              value={paymentsFiltersDraft.student_full_name}
-              onChange={(event) => handlePaymentsFilterChange('student_full_name', event.target.value)}
-              placeholder={paymentsFilterStrings.fields?.student?.placeholder ?? ''}
-            />
-          </label>
-          <div className="student-dashboard__filter-actions">
-            <button type="submit" className="primary-button" disabled={paymentsLoading}>
-              {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
-            </button>
-            <button type="button" className="ghost-button" onClick={handleResetPaymentsFilters} disabled={paymentsLoading}>
-              {paymentsFilterStrings.reset ?? strings.actions?.reset ?? 'Borrar filtros'}
-            </button>
-          </div>
         </form>
       </SidebarModal>
     </div>

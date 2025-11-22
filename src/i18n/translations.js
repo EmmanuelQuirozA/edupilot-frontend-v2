@@ -205,7 +205,7 @@ export const translations = {
             status: 'Estado',
           },
           pendingRequests: {
-            title: 'Solicitudes de pago pendientes',
+            title: 'Solicitudes de pago',
             description: 'Revisa tus pagos pendientes.',
             viewAll: 'Ver todo',
             dueLabel: 'Vence',
