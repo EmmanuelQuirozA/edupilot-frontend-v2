@@ -33,6 +33,7 @@ const HOME_PAGES = new Set([
   'communications',
 ]);
 const STUDENT_HOME_PAGE = 'student-dashboard';
+const STUDENT_SECTIONS = new Set([STUDENT_HOME_PAGE, 'payments']);
 
 const buildPath = (language, section) => `/${language}/${section}`;
 
@@ -109,7 +110,7 @@ const App = () => {
     }
 
     if (isStudentRole) {
-      return STUDENT_HOME_PAGE;
+      return STUDENT_SECTIONS.has(rawSection) ? rawSection : STUDENT_HOME_PAGE;
     }
 
     if (!rawSection || rawSection === 'login') {
@@ -128,9 +129,14 @@ const App = () => {
     }
 
     if (isStudentRole) {
-      if (rawSection !== STUDENT_HOME_PAGE) {
+      if (!rawSection) {
         return buildPath(language, STUDENT_HOME_PAGE);
       }
+
+      if (!STUDENT_SECTIONS.has(rawSection)) {
+        return buildPath(language, STUDENT_HOME_PAGE);
+      }
+
       return null;
     }
 
@@ -299,6 +305,7 @@ const App = () => {
       <StudentDashboardPage
         language={language}
         onLanguageChange={handleLanguageChange}
+        sectionKey={resolvedSection}
         routeSegments={detailSegments}
         onNavigate={navigate}
       />

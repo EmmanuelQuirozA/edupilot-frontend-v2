@@ -333,7 +333,13 @@ const DEFAULT_PAYMENTS_PAGE_STRINGS = {
   },
 };
 
-const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments = [], onNavigate }) => {
+const StudentDashboardPage = ({
+  language = 'es',
+  onLanguageChange,
+  routeSegments = [],
+  sectionKey = 'student-dashboard',
+  onNavigate,
+}) => {
   const { token, user, logout } = useAuth();
   const { openModal } = useModal();
   const t = getTranslation(language);
@@ -401,23 +407,24 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
   const [refreshIndex, setRefreshIndex] = useState(0);
   const [isDesktop, setIsDesktop] = useState(getIsDesktop);
   const [isSidebarOpen, setIsSidebarOpen] = useState(getIsDesktop);
-  const [activeNav, setActiveNav] = useState(routeSegments[0] === 'payments' ? 'payments' : 'dashboard');
-  const [selectedPaymentRequestId, setSelectedPaymentRequestId] = useState(
-    routeSegments[0] === 'payments' && routeSegments[1] === 'requests'
-      ? routeSegments[2] ?? null
-      : null,
-  );
+  const [activeNav, setActiveNav] = useState(sectionKey === 'payments' ? 'payments' : 'dashboard');
+  const [selectedPaymentRequestId, setSelectedPaymentRequestId] = useState(null);
   const [selectedPaymentRequest, setSelectedPaymentRequest] = useState(null);
+  const paymentsBasePath = useMemo(() => `/${language}/payments`, [language]);
+  const dashboardBasePath = useMemo(() => `/${language}/student-dashboard`, [language]);
+  const paymentsRouteSegments = Array.isArray(routeSegments) ? routeSegments : [];
+  const paymentsPrimarySegment = paymentsRouteSegments[0] ?? null;
+  const paymentsSecondarySegment = paymentsRouteSegments[1] ?? null;
   const paymentRequestDetailId =
-    routeSegments[0] === 'payments' && routeSegments[1] === 'requests' && routeSegments[2]
-      ? routeSegments[2]
+    sectionKey === 'payments' && paymentsPrimarySegment === 'requests' && paymentsSecondarySegment
+      ? paymentsSecondarySegment
       : null;
   const paymentDetailId =
-    routeSegments[0] === 'payments' && routeSegments[1] === 'payments' && routeSegments[2]
-      ? routeSegments[2]
+    sectionKey === 'payments' && paymentsPrimarySegment === 'payments' && paymentsSecondarySegment
+      ? paymentsSecondarySegment
       : null;
-  const isPaymentDetailRoute = Boolean(paymentDetailId);
-  const isPaymentRequestDetailRoute = Boolean(paymentRequestDetailId);
+  const isPaymentDetailRoute = sectionKey === 'payments' && Boolean(paymentDetailId);
+  const isPaymentRequestDetailRoute = sectionKey === 'payments' && Boolean(paymentRequestDetailId);
   const [tuitionStartDate, setTuitionStartDate] = useState('');
   const [tuitionEndDate, setTuitionEndDate] = useState('');
   const [requestsFilters, setRequestsFilters] = useState({
@@ -460,9 +467,29 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
   });
   const [showRequestsFilters, setShowRequestsFilters] = useState(false);
   const [showPaymentsFilters, setShowPaymentsFilters] = useState(false);
+  const resolvedPaymentsTab = useMemo(() => {
+    if (paymentsPrimarySegment === 'requests') {
+      return 'requests';
+    }
 
+    if (paymentsPrimarySegment === 'payments') {
+      return 'payments';
+    }
 
-  const studentDashboardBasePath = useMemo(() => `/${language}/student-dashboard`, [language]);
+    return 'tuition';
+  }, [paymentsPrimarySegment]);
+  const [paymentsTab, setPaymentsTab] = useState(resolvedPaymentsTab);
+
+  useEffect(() => {
+    setPaymentsTab(resolvedPaymentsTab);
+    setActiveNav(sectionKey === 'payments' ? 'payments' : 'dashboard');
+
+    if (paymentRequestDetailId) {
+      setSelectedPaymentRequestId(String(paymentRequestDetailId));
+    } else if (sectionKey === 'payments' && paymentsPrimarySegment !== 'requests') {
+      setSelectedPaymentRequestId(null);
+    }
+  }, [paymentRequestDetailId, paymentsPrimarySegment, resolvedPaymentsTab, sectionKey]);
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen((value) => !value);
@@ -485,11 +512,12 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
       }
 
       if (onNavigate) {
-        const suffix = key === 'dashboard' ? '' : `/${key}`;
-        onNavigate(`${studentDashboardBasePath}${suffix}`, { replace: true });
+        const basePath = key === 'payments' ? paymentsBasePath : dashboardBasePath;
+        const suffix = key === 'dashboard' || key === 'payments' ? '' : `/${key}`;
+        onNavigate(`${basePath}${suffix}`, { replace: true });
       }
     },
-    [isDesktop, onNavigate, studentDashboardBasePath],
+    [dashboardBasePath, isDesktop, onNavigate, paymentsBasePath],
   );
 
   const headers = useMemo(
@@ -519,6 +547,19 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
 
   const paymentDetailBasePath = useMemo(() => `/${language}/payments/payments`, [language]);
   const paymentRequestDetailBasePath = useMemo(() => `/${language}/payments/requests`, [language]);
+
+  const handlePaymentsTabChange = useCallback(
+    (nextTab, { replace = false } = {}) => {
+      const safeTab = ['payments', 'requests', 'tuition'].includes(nextTab) ? nextTab : 'tuition';
+      setPaymentsTab(safeTab);
+
+      if (onNavigate) {
+        const tabSuffix = safeTab === 'tuition' ? '' : `/${safeTab}`;
+        onNavigate(`${paymentsBasePath}${tabSuffix}`, { replace });
+      }
+    },
+    [onNavigate, paymentsBasePath],
+  );
 
   const paymentsPageStrings = useMemo(() => {
     const overrides = strings.paymentsPage ?? {};
@@ -562,6 +603,18 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
   const requestsFilterStrings = t.paymentsPage?.requestsFilters ?? {};
   const paymentsFilterStrings = t.paymentsPage?.paymentsFilters ?? {};
   const paymentsActionsStrings = t.paymentsPage?.actions ?? {};
+  const paymentsTabs = useMemo(
+    () => [
+      { key: 'tuition', label: paymentsPageStrings.tuition.title },
+      { key: 'requests', label: paymentsPageStrings.requests.title },
+      { key: 'payments', label: paymentsPageStrings.payments.title },
+    ],
+    [
+      paymentsPageStrings.payments.title,
+      paymentsPageStrings.requests.title,
+      paymentsPageStrings.tuition.title,
+    ],
+  );
 
 
   useEffect(() => {
@@ -1219,18 +1272,20 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
       setSelectedPaymentRequest(request ?? null);
       setSelectedPaymentRequestId(requestId ? String(requestId) : null);
       handleNavClick('payments', { preserveRequest: true });
+      handlePaymentsTabChange('requests', { replace: true });
 
       if (onNavigate) {
-        const suffix = requestId ? `/payments/requests/${encodeURIComponent(String(requestId))}` : '/payments';
-        onNavigate(`${studentDashboardBasePath}${suffix}`, { replace: true });
+        const suffix = requestId ? `/requests/${encodeURIComponent(String(requestId))}` : '';
+        onNavigate(`${paymentsBasePath}${suffix}`, { replace: true });
       }
     },
-    [getRequestId, handleNavClick, onNavigate, studentDashboardBasePath],
+    [getRequestId, handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath],
   );
 
   const handleViewAllPayments = useCallback(() => {
     handleNavClick('payments');
-  }, [handleNavClick]);
+    handlePaymentsTabChange('payments');
+  }, [handleNavClick, handlePaymentsTabChange]);
 
   const handlePaymentDetailClick = useCallback(
     (paymentId) => {
@@ -1239,21 +1294,24 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
       }
 
       handleNavClick('payments', { preserveRequest: true });
+      handlePaymentsTabChange('payments', { replace: true });
 
       if (onNavigate) {
-        onNavigate(`${studentDashboardBasePath}/payments/payments/${encodeURIComponent(String(paymentId))}`, { replace: true });
+        onNavigate(`${paymentsBasePath}/payments/${encodeURIComponent(String(paymentId))}`, { replace: true });
       }
     },
-    [handleNavClick, onNavigate, studentDashboardBasePath],
+    [handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath],
   );
 
   const handlePaymentsBackNavigation = useCallback(() => {
     handleNavClick('payments');
+    handlePaymentsTabChange(resolvedPaymentsTab, { replace: true });
 
     if (onNavigate) {
-      onNavigate(`${studentDashboardBasePath}/payments`, { replace: true });
+      const suffix = resolvedPaymentsTab === 'tuition' ? '' : `/${resolvedPaymentsTab}`;
+      onNavigate(`${paymentsBasePath}${suffix}`, { replace: true });
     }
-  }, [handleNavClick, onNavigate, studentDashboardBasePath]);
+  }, [handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath, resolvedPaymentsTab]);
   const handleStudentDetailClick = useCallback((row) => {
     if (!row) {
       return;
@@ -1261,9 +1319,9 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
 
     const studentId = row.student_id ?? row.studentId ?? row.student_uuid;
     if (studentId && onNavigate) {
-      onNavigate(`${studentDashboardBasePath}/students/${encodeURIComponent(String(studentId))}`);
+      onNavigate(`${dashboardBasePath}/students/${encodeURIComponent(String(studentId))}`);
     }
-  }, [onNavigate, studentDashboardBasePath]);
+  }, [dashboardBasePath, onNavigate]);
   const handlePageChange = useCallback(
     (nextPage) => {
       const safePage = Math.min(Math.max(nextPage, 1), tuitionTotalPages);
@@ -1498,288 +1556,340 @@ const StudentDashboardPage = ({ language = 'es', onLanguageChange, routeSegments
 
   const paymentsContent = (
     <div className="page">
-      <section className="student-dashboard__section">
-        <div className="student-dashboard__section-header">
-          <div>
-            <h3>{paymentsPageStrings.tuition.title}</h3>
-            <p className="student-dashboard__muted">{paymentsPageStrings.tuition.description}</p>
-          </div>
+      <div className="page__tabs-row">
+        <div className="tabs" role="tablist" aria-label={paymentsPageStrings.title}>
+          {paymentsTabs.map((tab) => (
+            <button
+              key={tab.key}
+              type='button'
+              role='tab'
+              aria-selected={paymentsTab === tab.key}
+              className={`nav-link${paymentsTab === tab.key ? ' active' : ''}`}
+              onClick={() => handlePaymentsTabChange(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+      </div>
 
-        <form className="student-dashboard__filters" onSubmit={(event) => event.preventDefault()}>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsPageStrings.tuition.filters.startDate}</span>
-            <input
-              type="month"
-              value={tuitionStartDate}
-              onChange={(event) => setTuitionStartDate(event.target.value)}
-            />
-          </label>
-          <label className="student-dashboard__filter-field">
-            <span>{paymentsPageStrings.tuition.filters.endDate}</span>
-            <input type="month" value={tuitionEndDate} onChange={(event) => setTuitionEndDate(event.target.value)} />
-          </label>
-        </form>
+      {paymentsTab === 'tuition' ? (
+        <section className="student-dashboard__section" role='tabpanel' aria-label={paymentsPageStrings.tuition.title}>
+          <div className="student-dashboard__section-header">
+            <div>
+              <h3>{paymentsPageStrings.tuition.title}</h3>
+              <p className="student-dashboard__muted">{paymentsPageStrings.tuition.description}</p>
+            </div>
+          </div>
 
-        <UiCard className="page__table-card">
-          <GlobalTable
-            className="page__table-wrapper"
-            tableClassName="page__table mb-0"
-            columns={paymentColumns}
-            data={tuitionRows}
-            getRowId={(row, index) => {
-              const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
-              return studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
-            }}
-            renderRow={(row, index) => {
-              const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
-              const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+          <form className="student-dashboard__filters" onSubmit={(event) => event.preventDefault()}>
+            <label className="student-dashboard__filter-field">
+              <span>{paymentsPageStrings.tuition.filters.startDate}</span>
+              <input
+                type="month"
+                value={tuitionStartDate}
+                onChange={(event) => setTuitionStartDate(event.target.value)}
+              />
+            </label>
+            <label className="student-dashboard__filter-field">
+              <span>{paymentsPageStrings.tuition.filters.endDate}</span>
+              <input type="month" value={tuitionEndDate} onChange={(event) => setTuitionEndDate(event.target.value)} />
+            </label>
+          </form>
 
-              return (
-                <tr key={rowKey}>
-                  {monthColumns.map((month) => {
-                    const value = row?.[month];
-                    const details = extractTuitionCellDetails(value);
-                    const hasDetails =
-                      details &&
-                      (details.totalAmount != null ||
-                        (details.payments && details.payments.length > 0) ||
-                        details.paymentRequestId != null);
-                    const displayAmount =
-                      details?.totalAmount != null
-                        ? currencyFormatter.format(details.totalAmount)
-                        : null;
-                    const fallbackAmount = normalizeAmount(value);
-                    const fallbackContent =
-                      fallbackAmount != null
-                        ? currencyFormatter.format(fallbackAmount)
-                        : (
-                            <span className="ui-table__empty-indicator">--</span>
-                          );
-                    const cellClassName = !hasDetails && fallbackAmount == null ? 'page__amount-null' : '';
-                    const monthDate = parseMonthKeyToDate(month);
-                    const monthDetails =
-                      monthDate || hasDetails
-                        ? {
-                            key: month,
-                            year: monthDate?.getFullYear() ?? null,
-                            month: monthDate ? monthDate.getMonth() + 1 : null,
-                            longLabel: monthDate
-                              ? new Intl.DateTimeFormat(locale, { month: 'long' }).format(monthDate)
-                              : month,
-                            details: details ?? null,
-                          }
-                        : null;
+          <UiCard className="page__table-card">
+            <GlobalTable
+              className="page__table-wrapper"
+              tableClassName="page__table mb-0"
+              columns={paymentColumns}
+              data={tuitionRows}
+              getRowId={(row, index) => {
+                const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
+                return studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+              }}
+              renderRow={(row, index) => {
+                const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
+                const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
 
-                    return (
-                      <td
-                        key={`${rowKey}-${month}`}
-                        data-title={month}
-                        className={cellClassName}
-                      >
-                        {hasDetails ? (
-                          <button
-                            type="button"
-                            className="page__amount-button"
-                            onClick={() => monthDetails && handleTuitionMonthClick(monthDetails)}
-                          >
-                            {displayAmount ?? (
+                return (
+                  <tr key={rowKey}>
+                    {monthColumns.map((month) => {
+                      const value = row?.[month];
+                      const details = extractTuitionCellDetails(value);
+                      const hasDetails =
+                        details &&
+                        (details.totalAmount != null ||
+                          (details.payments && details.payments.length > 0) ||
+                          details.paymentRequestId != null);
+                      const displayAmount =
+                        details?.totalAmount != null
+                          ? currencyFormatter.format(details.totalAmount)
+                          : null;
+                      const fallbackAmount = normalizeAmount(value);
+                      const fallbackContent =
+                        fallbackAmount != null
+                          ? currencyFormatter.format(fallbackAmount)
+                          : (
                               <span className="ui-table__empty-indicator">--</span>
-                            )}
-                          </button>
-                        ) : (
-                          fallbackContent
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            }}
-            loading={tuitionLoading}
-            loadingMessage={tableStrings.loading}
-            error={tuitionError || null}
-            emptyMessage={tableStrings.empty}
-            pagination={{
-              currentPage: tuitionCurrentPage,
-              pageSize: tuitionLimit,
-              totalItems: tuitionTotalElements,
-              onPageChange: handlePageChange,
-              previousLabel: tableStrings.pagination.previous ?? '←',
-              nextLabel: tableStrings.pagination.next ?? '→',
-              summary: paymentSummary,
-              pageLabel: paymentPageLabel,
-            }}
-          />
-        </UiCard>
-      </section>
+                            );
+                      const cellClassName = !hasDetails && fallbackAmount == null ? 'page__amount-null' : '';
+                      const monthDate = parseMonthKeyToDate(month);
+                      const monthDetails =
+                        monthDate || hasDetails
+                          ? {
+                              key: month,
+                              year: monthDate?.getFullYear() ?? null,
+                              month: monthDate ? monthDate.getMonth() + 1 : null,
+                              longLabel: monthDate
+                                ? new Intl.DateTimeFormat(locale, { month: 'long' }).format(monthDate)
+                                : month,
+                              details: details ?? null,
+                            }
+                          : null;
 
-      <section className="student-dashboard__section">
-        <div className="student-dashboard__section-header">
-          <div>
-            <h3>{paymentsPageStrings.requests.title}</h3>
-            <p className="student-dashboard__muted">{strings.sections?.pendingRequests?.description}</p>
+                      return (
+                        <td
+                          key={`${rowKey}-${month}`}
+                          data-title={tableStrings.months[month]?.label ?? month}
+                          className={`student-dashboard__month-cell ${cellClassName}`}
+                        >
+                          {hasDetails ? (
+                            <StudentTuitionCell
+                              month={monthDetails}
+                              tableStrings={tableStrings}
+                              paymentsPageStrings={paymentsPageStrings}
+                              onPaymentRequestDetail={(requestId) => {
+                                const selectedRequest = details?.payments?.find(
+                                  (payment) => payment.paymentRequestId === requestId,
+                                );
+
+                                if (selectedRequest) {
+                                  handlePaymentRequestSelect(selectedRequest);
+                                  return;
+                                }
+
+                                setSelectedPaymentRequest({
+                                  payment_request_id: requestId,
+                                  payment_id: details?.payments?.[0]?.paymentId,
+                                });
+                                setSelectedPaymentRequestId(String(requestId));
+                                handleNavClick('payments', { preserveRequest: true });
+                                handlePaymentsTabChange('requests', { replace: true });
+                              }}
+                              onPaymentDetail={(paymentId) => handlePaymentDetailClick(paymentId)}
+                              onDownloadInvoice={(invoiceUrl) => {
+                                if (invoiceUrl) {
+                                  window.open(invoiceUrl, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                              renderAmount={() => (
+                                <div className="student-dashboard__amount-button">
+                                  <p className="student-dashboard__amount-button__cta">{details?.statusName}</p>
+                                  <div className="d-flex flex-column text-start">
+                                    <span className="student-dashboard__muted">{paymentsPageStrings.tuition.table.month}</span>
+                                    <button type='button' className="ghost-button">
+                                      {details?.paymentMonth || monthDetails?.longLabel || month}
+                                    </button>
+                                  </div>
+                                  <p>{displayAmount ?? fallbackContent}</p>
+                                </div>
+                              )}
+                            />
+                          ) : (
+                            <span>{fallbackContent}</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              }}
+              loading={tuitionLoading}
+              loadingMessage={tableStrings.loading}
+              error={tuitionError || null}
+              emptyMessage={paymentsPageStrings.tuition.empty}
+              pagination={{
+                currentPage,
+                pageSize: tuitionLimit,
+                totalItems: tuitionTotalElements,
+                onPageChange: handlePageChange,
+                previousLabel: tableStrings.pagination.previous ?? '←',
+                nextLabel: tableStrings.pagination.next ?? '→',
+                summary: tuitionSummary,
+                pageLabel,
+              }}
+            />
+          </UiCard>
+        </section>
+      ) : null}
+
+      {paymentsTab === 'requests' ? (
+        <section className="student-dashboard__section" role='tabpanel' aria-label={paymentsPageStrings.requests.title}>
+          <div className="student-dashboard__section-header">
+            <div>
+              <h3>{paymentsPageStrings.requests.title}</h3>
+              <p className="student-dashboard__muted">{paymentsPageStrings.requests.description}</p>
+            </div>
+            <div className="student-dashboard__header-actions">
+              <FilterButton
+                type="button"
+                onClick={() => setShowRequestsFilters(true)}
+                aria-expanded={showRequestsFilters}
+                aria-controls="student-dashboard-requests-filters"
+                className="rounded-pill d-inline-flex align-items-center gap-2"
+              >
+                <span className="fw-semibold">{paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}</span>
+                {requestsFiltersCount > 0 ? (
+                  <span className="badge text-bg-primary rounded-pill">{requestsFiltersCount}</span>
+                ) : null}
+              </FilterButton>
+            </div>
           </div>
-          <div className="student-dashboard__header-actions">
-            <FilterButton
-              type="button"
-              onClick={() => setShowRequestsFilters(true)}
-              aria-expanded={showRequestsFilters}
-              aria-controls="student-dashboard-requests-filters"
-              className="rounded-pill d-inline-flex align-items-center gap-2"
-            >
-              <span className="fw-semibold">
-                {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
-              </span>
-              {requestsFiltersCount > 0 ? (
-                <span className="badge text-bg-primary rounded-pill">{requestsFiltersCount}</span>
-              ) : null}
-            </FilterButton>
+
+          <UiCard className="page__table-card">
+            <GlobalTable
+              className="page__table-wrapper"
+              tableClassName="page__table mb-0"
+              columns={requestsColumns}
+              data={pendingRequests}
+              getRowId={(request, index) => request.payment_request_id ?? request.paymentRequestId ?? request.pt_name ?? `request-${index}`}
+              renderRow={(request, index) => {
+                const requestId = getRequestId(request);
+                const rowKey = requestId ?? request.pt_name ?? `request-${index}`;
+
+                return (
+                  <tr key={rowKey}>
+                    <td data-title={paymentsPageStrings.requests.columns.id}>{requestId ?? '—'}</td>
+                    <td data-title={paymentsPageStrings.requests.columns.concept}>
+                      {request.pt_name || request.ptName || paymentsPageStrings.requests.columns.concept}
+                    </td>
+                    <td data-title={paymentsPageStrings.requests.columns.amount} className="text-end">
+                      {formatCurrency(request.pr_amount ?? request.prAmount ?? 0, locale)}
+                    </td>
+                    <td data-title={paymentsPageStrings.requests.columns.status}>
+                      {request.ps_pr_name || request.psPrName || paymentsPageStrings.requests.columns.status}
+                    </td>
+                    <td data-title={paymentsPageStrings.requests.columns.dueDate}>
+                      <div className="student-dashboard__due-label">
+                        <span className="pill pill--ghost">{getDueLabel(request.pr_pay_by || request.prPayBy)}</span>
+                        <span className='d-flex justify-content-center'>{formatDate(request.pr_pay_by || request.prPayBy, locale)}</span>
+                      </div>
+                    </td>
+                    <td data-title={paymentsPageStrings.requests.columns.view} className="text-end">
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => handlePaymentRequestSelect(request)}
+                      >
+                        {paymentsPageStrings.requests.columns.view}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              }}
+              loading={requestsLoading}
+              loadingMessage={tableStrings.loading}
+              error={requestsError || null}
+              emptyMessage={paymentsPageStrings.requests.empty}
+              pagination={{
+                currentPage: requestsCurrentPage,
+                pageSize: requestsLimit,
+                totalItems: requestsTotalElements,
+                onPageChange: handleRequestsPageChange,
+                previousLabel: tableStrings.pagination.previous ?? '←',
+                nextLabel: tableStrings.pagination.next ?? '→',
+                summary: paymentSummary,
+                pageLabel: paymentPageLabel,
+              }}
+            />
+          </UiCard>
+        </section>
+      ) : null}
+
+      {paymentsTab === 'payments' ? (
+        <section className="student-dashboard__section" role='tabpanel' aria-label={paymentsPageStrings.payments.title}>
+          <div className="student-dashboard__section-header">
+            <div>
+              <h3>{paymentsPageStrings.payments.title}</h3>
+              <p className="student-dashboard__muted">{strings.sections?.payments?.description ?? strings.sections?.history?.description}</p>
+            </div>
+            <div className="student-dashboard__header-actions">
+              <FilterButton
+                type="button"
+                onClick={() => setShowPaymentsFilters(true)}
+                aria-expanded={showPaymentsFilters}
+                aria-controls="student-dashboard-payments-filters"
+                className="rounded-pill d-inline-flex align-items-center gap-2"
+              >
+                <span className="fw-semibold">
+                  {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
+                </span>
+                {paymentsFiltersCount > 0 ? (
+                  <span className="badge text-bg-primary rounded-pill">{paymentsFiltersCount}</span>
+                ) : null}
+              </FilterButton>
+            </div>
           </div>
-        </div>
 
-        <UiCard className="page__table-card">
-          <GlobalTable
-            className="page__table-wrapper"
-            tableClassName="page__table mb-0"
-            columns={requestsColumns}
-            data={pendingRequests}
-            getRowId={(request, index) => getRequestId(request) ?? request.pt_name ?? `request-${index}`}
-            renderRow={(request, index) => {
-              const requestId = getRequestId(request);
-              const rowKey = requestId ?? request.pt_name ?? `request-${index}`;
+          <UiCard className="page__table-card">
+            <GlobalTable
+              className="page__table-wrapper"
+              tableClassName="page__table mb-0"
+              columns={paymentsColumns}
+              data={recentPayments}
+              getRowId={(payment, index) =>
+                payment.payment_id ?? payment.paymentId ?? payment.id ?? payment.pt_name ?? `payment-${index}`
+              }
+              renderRow={(payment, index) => {
+                const paymentIdValue = payment.payment_id ?? payment.paymentId ?? payment.id ?? '';
+                const rowKey = paymentIdValue || payment.pt_name || `payment-${index}`;
 
-              return (
-                <tr key={rowKey}>
-                  <td data-title={paymentsPageStrings.requests.columns.id}>{requestId ?? '—'}</td>
-                  <td data-title={paymentsPageStrings.requests.columns.concept}>
-                    {request.pt_name || request.ptName || paymentsPageStrings.requests.columns.concept}
-                  </td>
-                  <td data-title={paymentsPageStrings.requests.columns.amount} className="text-end">
-                    {formatCurrency(request.pr_amount ?? request.prAmount ?? 0, locale)}
-                  </td>
-                  <td data-title={paymentsPageStrings.requests.columns.status}>
-                    {request.ps_pr_name || request.psPrName || paymentsPageStrings.requests.columns.status}
-                  </td>
-                  <td data-title={paymentsPageStrings.requests.columns.dueDate}>
-                    <div className="student-dashboard__due-label">
-                      <span className="pill pill--ghost">{getDueLabel(request.pr_pay_by || request.prPayBy)}</span>
-                      <span className='d-flex justify-content-center'>{formatDate(request.pr_pay_by || request.prPayBy, locale)}</span>
-                    </div>
-                  </td>
-                  <td data-title={paymentsPageStrings.requests.columns.view} className="text-end">
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={() => handlePaymentRequestSelect(request)}
-                    >
-                      {paymentsPageStrings.requests.columns.view}
-                    </button>
-                  </td>
-                </tr>
-              );
-            }}
-            loading={requestsLoading}
-            loadingMessage={tableStrings.loading}
-            error={requestsError || null}
-            emptyMessage={paymentsPageStrings.requests.empty}
-            pagination={{
-              currentPage: requestsCurrentPage,
-              pageSize: requestsLimit,
-              totalItems: requestsTotalElements,
-              onPageChange: handleRequestsPageChange,
-              previousLabel: tableStrings.pagination.previous ?? '←',
-              nextLabel: tableStrings.pagination.next ?? '→',
-              summary: paymentSummary,
-              pageLabel: paymentPageLabel,
-            }}
-          />
-        </UiCard>
-      </section>
-
-      <section className="student-dashboard__section">
-        <div className="student-dashboard__section-header">
-          <div>
-            <h3>{paymentsPageStrings.payments.title}</h3>
-            <p className="student-dashboard__muted">{strings.sections?.payments?.description ?? strings.sections?.history?.description}</p>
-          </div>
-          <div className="student-dashboard__header-actions">
-            <FilterButton
-              type="button"
-              onClick={() => setShowPaymentsFilters(true)}
-              aria-expanded={showPaymentsFilters}
-              aria-controls="student-dashboard-payments-filters"
-              className="rounded-pill d-inline-flex align-items-center gap-2"
-            >
-              <span className="fw-semibold">
-                {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
-              </span>
-              {paymentsFiltersCount > 0 ? (
-                <span className="badge text-bg-primary rounded-pill">{paymentsFiltersCount}</span>
-              ) : null}
-            </FilterButton>
-          </div>
-        </div>
-
-        <UiCard className="page__table-card">
-          <GlobalTable
-            className="page__table-wrapper"
-            tableClassName="page__table mb-0"
-            columns={paymentsColumns}
-            data={recentPayments}
-            getRowId={(payment, index) =>
-              payment.payment_id ?? payment.paymentId ?? payment.id ?? payment.pt_name ?? `payment-${index}`
-            }
-            renderRow={(payment, index) => {
-              const paymentIdValue = payment.payment_id ?? payment.paymentId ?? payment.id ?? '';
-              const rowKey = paymentIdValue || payment.pt_name || `payment-${index}`;
-
-              return (
-                <tr key={rowKey}>
-                  <td data-title={paymentsPageStrings.payments.columns.id}>{paymentIdValue || '—'}</td>
-                  <td data-title={paymentsPageStrings.payments.columns.concept}>
-                    {payment.pt_name || payment.partConceptName || paymentsPageStrings.payments.columns.concept}
-                  </td>
-                  <td data-title={paymentsPageStrings.payments.columns.amount} className="text-end">
-                    {formatCurrency(payment.amount ?? 0, locale)}
-                  </td>
-                  <td data-title={paymentsPageStrings.payments.columns.status}>
-                    {payment.payment_status_name || payment.paymentStatusName || paymentsPageStrings.payments.columns.status}
-                  </td>
-                  <td data-title={paymentsPageStrings.payments.columns.date}>
-                    {formatDate(payment.payment_created_at || payment.paymentCreatedAt, locale)}
-                  </td>
-                  <td data-title={paymentsPageStrings.payments.columns.view} className="text-end">
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={() => handlePaymentDetailClick(paymentIdValue)}
-                      disabled={!paymentIdValue}
-                    >
-                      {paymentsPageStrings.payments.columns.view}
-                    </button>
-                  </td>
-                </tr>
-              );
-            }}
-            loading={paymentsLoading}
-            loadingMessage={tableStrings.loading}
-            error={paymentsError || null}
-            emptyMessage={paymentsPageStrings.payments.empty}
-            pagination={{
-              currentPage: paymentsCurrentPage,
-              pageSize: paymentsLimit,
-              totalItems: paymentsTotalElements,
-              onPageChange: handlePaymentsPageChange,
-              previousLabel: tableStrings.pagination.previous ?? '←',
-              nextLabel: tableStrings.pagination.next ?? '→',
-              summary: paymentSummary,
-              pageLabel: paymentPageLabel,
-            }}
-          />
-        </UiCard>
-      </section>
-
+                return (
+                  <tr key={rowKey}>
+                    <td data-title={paymentsPageStrings.payments.columns.id}>{paymentIdValue || '—'}</td>
+                    <td data-title={paymentsPageStrings.payments.columns.concept}>
+                      {payment.pt_name || payment.partConceptName || paymentsPageStrings.payments.columns.concept}
+                    </td>
+                    <td data-title={paymentsPageStrings.payments.columns.amount} className="text-end">
+                      {formatCurrency(payment.amount ?? 0, locale)}
+                    </td>
+                    <td data-title={paymentsPageStrings.payments.columns.status}>
+                      {payment.payment_status_name || payment.paymentStatusName || paymentsPageStrings.payments.columns.status}
+                    </td>
+                    <td data-title={paymentsPageStrings.payments.columns.date}>
+                      {formatDate(payment.payment_created_at || payment.paymentCreatedAt, locale)}
+                    </td>
+                    <td data-title={paymentsPageStrings.payments.columns.view} className="text-end">
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => handlePaymentDetailClick(paymentIdValue)}
+                        disabled={!paymentIdValue}
+                      >
+                        {paymentsPageStrings.payments.columns.view}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              }}
+              loading={paymentsLoading}
+              loadingMessage={tableStrings.loading}
+              error={paymentsError || null}
+              emptyMessage={paymentsPageStrings.payments.empty}
+              pagination={{
+                currentPage: paymentsCurrentPage,
+                pageSize: paymentsLimit,
+                totalItems: paymentsTotalElements,
+                onPageChange: handlePaymentsPageChange,
+                previousLabel: tableStrings.pagination.previous ?? '←',
+                nextLabel: tableStrings.pagination.next ?? '→',
+                summary: paymentSummary,
+                pageLabel: paymentPageLabel,
+              }}
+            />
+          </UiCard>
+        </section>
+      ) : null}
       {selectedPaymentRequest ? (
         <section className="student-dashboard__section">
           <div className="student-dashboard__section-header">
