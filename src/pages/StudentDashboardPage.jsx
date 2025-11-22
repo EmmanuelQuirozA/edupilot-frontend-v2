@@ -1322,6 +1322,27 @@ const StudentDashboardPage = ({
     [requestsLimit],
   );
 
+  const requestsTotalPages = Math.max(1, Math.ceil(Math.max(requestsTotalElements, 1) / requestsLimit));
+  const requestsCurrentPage = Math.min(requestsTotalPages, Math.floor(requestsOffset / requestsLimit) + 1);
+  const paymentsTotalPages = Math.max(1, Math.ceil(Math.max(paymentsTotalElements, 1) / paymentsLimit));
+  const paymentsCurrentPage = Math.min(paymentsTotalPages, Math.floor(paymentsOffset / paymentsLimit) + 1);
+
+  const handlePaymentRequestSelect = useCallback(
+    (request) => {
+      const requestId = getRequestId(request);
+      setSelectedPaymentRequest(request ?? null);
+      setSelectedPaymentRequestId(requestId ? String(requestId) : null);
+      handleNavClick('payments', { preserveRequest: true });
+      handlePaymentsTabChange('requests', { replace: true });
+
+      if (onNavigate) {
+        const suffix = requestId ? `/requests/${encodeURIComponent(String(requestId))}` : '';
+        onNavigate(`${paymentsBasePath}${suffix}`, { replace: true });
+      }
+    },
+    [getRequestId, handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath],
+  );
+
   const renderRequestsPagination = useCallback(() => {
     const totalPages = Math.max(1, Math.ceil(Math.max(requestsTotalElements, 1) / requestsLimit));
     const hasItems = requestsTotalElements > 0;
@@ -1553,26 +1574,6 @@ const StudentDashboardPage = ({
       { key: 'actions', header: paymentsPageStrings.payments.columns.view, align: 'end' },
     ],
     [paymentsPageStrings.payments.columns],
-  );
-  const requestsTotalPages = Math.max(1, Math.ceil(Math.max(requestsTotalElements, 1) / requestsLimit));
-  const requestsCurrentPage = Math.min(requestsTotalPages, Math.floor(requestsOffset / requestsLimit) + 1);
-  const paymentsTotalPages = Math.max(1, Math.ceil(Math.max(paymentsTotalElements, 1) / paymentsLimit));
-  const paymentsCurrentPage = Math.min(paymentsTotalPages, Math.floor(paymentsOffset / paymentsLimit) + 1);
-
-  const handlePaymentRequestSelect = useCallback(
-    (request) => {
-      const requestId = getRequestId(request);
-      setSelectedPaymentRequest(request ?? null);
-      setSelectedPaymentRequestId(requestId ? String(requestId) : null);
-      handleNavClick('payments', { preserveRequest: true });
-      handlePaymentsTabChange('requests', { replace: true });
-
-      if (onNavigate) {
-        const suffix = requestId ? `/requests/${encodeURIComponent(String(requestId))}` : '';
-        onNavigate(`${paymentsBasePath}${suffix}`, { replace: true });
-      }
-    },
-    [getRequestId, handleNavClick, handlePaymentsTabChange, onNavigate, paymentsBasePath],
   );
 
   const handleViewAllPayments = useCallback(() => {
