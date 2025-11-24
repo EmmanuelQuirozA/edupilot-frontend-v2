@@ -311,6 +311,8 @@ const HomePage = ({
       language={language}
       strings={studentsDetailStrings}
       onBreadcrumbChange={handleDetailBreadcrumbChange}
+      onPaymentDetail={handlePaymentDetailNavigate}
+      onPaymentRequestDetail={handlePaymentRequestDetailNavigate}
       onNavigateToStudents={() => handleNavClick('students')}
     />
   ) : isBulkUploadActive ? (

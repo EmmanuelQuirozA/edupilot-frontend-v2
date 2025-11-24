@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { handleExpiredToken } from '../utils/auth';
+import { useModal } from '../components/modal/useModal';
 import ActionButton from '../components/ui/ActionButton.jsx';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
 import './StudentDetailPage.css';
@@ -146,13 +147,45 @@ const formatDateValue = (value, locale = 'es') => {
   return parsed.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
+const DEFAULT_TUITION_MODAL_STRINGS = {
+  title: 'Detalle de pagos de colegiatura',
+  summary: {
+    student: 'Alumno',
+    class: 'Grupo',
+    generation: 'Generación',
+    level: 'Nivel académico',
+    month: 'Mes de pago',
+    total: 'Monto total',
+    request: 'Solicitud de pago',
+  },
+  paymentsTitle: 'Pagos registrados',
+  paymentsTable: {
+    columns: {
+      id: 'ID de pago',
+      date: 'Fecha',
+      amount: 'Monto',
+      status: 'Estatus',
+    },
+    empty: 'No hay pagos registrados para este mes.',
+    paymentLinkLabel: 'Ver detalle',
+  },
+  requestButton: 'Ver solicitud de pago',
+  close: 'Cerrar',
+};
+
+const SUPPORTED_LANGUAGES = ['es', 'en'];
+
 const StudentDetailPage = ({
   studentId,
   language = 'es',
   strings = {},
   onBreadcrumbChange,
+  onPaymentDetail,
+  onPaymentRequestDetail,
 }) => {
   const { token, logout } = useAuth();
+  const { openModal } = useModal();
+  const normalizedLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : 'es';
   const [status, setStatus] = useState('idle');
   const [student, setStudent] = useState(null);
   const [error, setError] = useState('');
@@ -677,22 +710,123 @@ const StudentDetailPage = ({
     fetchTabRows(tabKey, { sort: nextSort });
   };
 
-  const handleTuitionMonthClick = useCallback((row, monthKey, details) => {
-    if (!details) {
-      return;
-    }
+  const paymentDetailBasePath = useMemo(
+    () => `/${normalizedLanguage}/payments/payments`,
+    [normalizedLanguage],
+  );
+  const paymentRequestDetailBasePath = useMemo(
+    () => `/${normalizedLanguage}/payments/requests`,
+    [normalizedLanguage],
+  );
 
-    const hasDetails =
-      details.totalAmount != null ||
-      (details.payments && details.payments.length > 0) ||
-      details.paymentRequestId != null;
+  const tuitionModalStrings = useMemo(() => {
+    const modalStrings = strings.tuitionModal ?? {};
+    const summaryStrings = {
+      ...DEFAULT_TUITION_MODAL_STRINGS.summary,
+      ...(modalStrings.summary ?? {}),
+    };
+    const paymentsTableStrings = {
+      ...DEFAULT_TUITION_MODAL_STRINGS.paymentsTable,
+      ...(modalStrings.paymentsTable ?? {}),
+    };
+    const paymentColumns = {
+      ...DEFAULT_TUITION_MODAL_STRINGS.paymentsTable.columns,
+      ...(modalStrings.paymentsTable?.columns ?? {}),
+    };
 
-    if (!hasDetails) {
-      return;
-    }
+    return {
+      ...DEFAULT_TUITION_MODAL_STRINGS,
+      ...modalStrings,
+      summary: summaryStrings,
+      paymentsTable: { ...paymentsTableStrings, columns: paymentColumns },
+    };
+  }, [strings.tuitionModal]);
 
-    console.debug('Tuition month selected', { row, monthKey, details });
-  }, []);
+  const handlePaymentDetailClick = useCallback(
+    (paymentId) => {
+      const idValue = paymentId ? String(paymentId) : '';
+      if (!idValue) {
+        return;
+      }
+
+      if (onPaymentDetail) {
+        onPaymentDetail(idValue);
+        return;
+      }
+
+      if (typeof window !== 'undefined') {
+        window.location.assign(`${paymentDetailBasePath}/${encodeURIComponent(idValue)}`);
+      }
+    },
+    [onPaymentDetail, paymentDetailBasePath],
+  );
+
+  const handleRequestDetailClick = useCallback(
+    (requestId) => {
+      const idValue = requestId ? String(requestId) : '';
+      if (!idValue) {
+        return;
+      }
+
+      if (onPaymentRequestDetail) {
+        onPaymentRequestDetail(idValue);
+        return;
+      }
+
+      if (typeof window !== 'undefined') {
+        window.location.assign(`${paymentRequestDetailBasePath}/${encodeURIComponent(idValue)}`);
+      }
+    },
+    [onPaymentRequestDetail, paymentRequestDetailBasePath],
+  );
+
+  const handleTuitionMonthClick = useCallback(
+    (row, monthKey, details) => {
+      if (!details) {
+        return;
+      }
+
+      const { totalAmount, payments, paymentMonth, paymentRequestId } = details;
+      const hasDetails = totalAmount != null || (payments && payments.length > 0) || paymentRequestId != null;
+
+      if (!hasDetails) {
+        return;
+      }
+
+      const studentName = student?.full_name || row?.student || 'Alumno';
+      const className = row?.class || row?.grade_group || null;
+      const generation = row?.generation || row?.generation_name || null;
+      const scholarLevel = row?.scholar_level_name || row?.scholarLevel || null;
+
+      openModal({
+        key: 'TuitionPaymentDetails',
+        props: {
+          studentName,
+          className,
+          generation,
+          scholarLevel,
+          monthKey,
+          paymentMonth,
+          totalAmount,
+          paymentRequestId,
+          payments,
+          locale: normalizedLanguage === 'en' ? 'en-US' : 'es-MX',
+          currency: 'MXN',
+          strings: tuitionModalStrings,
+          paymentDetailBasePath,
+          paymentRequestDetailBasePath,
+        },
+      });
+    },
+    [
+      normalizedLanguage,
+      openModal,
+      paymentDetailBasePath,
+      paymentRequestDetailBasePath,
+      student?.full_name,
+      tuitionModalStrings,
+    ],
+  );
 
   const emptyValue = contactStrings.emptyValue;
 
@@ -782,20 +916,30 @@ const StudentDetailPage = ({
     </div>
   );
 
+  const renderSortIndicator = (columnKey, sortState) => {
+    const isActive = sortState?.orderBy === columnKey;
+    const direction = isActive ? sortState?.orderDir : null;
+    const upColor = isActive && direction === 'asc' ? '#4338ca' : '#c7d2fe';
+    const downColor = isActive && direction === 'desc' ? '#4338ca' : '#c7d2fe';
+
+    return (
+      <svg viewBox="0 0 12 12" aria-hidden="true">
+        <path d="M6 2l3 4H3l3-4Z" fill={upColor} />
+        <path d="M6 10l3-4H3l3 4Z" fill={downColor} />
+      </svg>
+    );
+  };
+
   const renderSortableHeader = (tabKey, columnKey, label, sortable = true, sortState) => {
     if (!sortable) {
       return label;
     }
 
-    const isActive = sortState?.orderBy === columnKey;
-    const direction = isActive ? sortState?.orderDir : null;
-    const icon = direction === 'asc' ? '▲' : direction === 'desc' ? '▼' : '';
-
     return (
       <button type="button" className="student-detail-table__sort" onClick={() => handleSort(tabKey, columnKey)}>
         <span>{label}</span>
         <span aria-hidden="true" className="student-detail-table__sort-icon">
-          {icon}
+          {renderSortIndicator(columnKey, sortState)}
         </span>
       </button>
     );
@@ -866,8 +1010,13 @@ const StudentDetailPage = ({
       key: 'actions',
       label: 'Ver detalles',
       sortable: false,
-      render: () => (
-        <ActionButton type="button" size="sm" variant="ghost">
+      render: (row) => (
+        <ActionButton
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => handlePaymentDetailClick(buildCellValue(row, 'payment_id'))}
+        >
           Ver detalles
         </ActionButton>
       ),
@@ -897,8 +1046,13 @@ const StudentDetailPage = ({
       key: 'actions',
       label: 'Ver detalles',
       sortable: false,
-      render: () => (
-        <ActionButton type="button" size="sm" variant="ghost">
+      render: (row) => (
+        <ActionButton
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => handleRequestDetailClick(buildCellValue(row, 'payment_request_id'))}
+        >
           Ver detalles
         </ActionButton>
       ),
