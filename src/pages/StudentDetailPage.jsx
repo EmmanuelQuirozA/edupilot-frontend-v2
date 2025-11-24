@@ -596,8 +596,19 @@ const StudentDetailPage = ({
       const params = new URLSearchParams({
         lang: language ?? 'es',
         limit: String(TABLE_LIMIT),
-        student_id: String(studentId),
       });
+
+      const shouldUseUserId = endpoint === 'reports/balance-recharges';
+      const identifier = shouldUseUserId ? student?.user_id : studentId;
+      const identifierKey = shouldUseUserId ? 'user_id' : 'student_id';
+
+      if (!identifier) {
+        setStatus('error');
+        setError('No fue posible cargar la información.');
+        return;
+      }
+
+      params.set(identifierKey, String(identifier));
 
       if (sortState?.orderBy) {
         params.set('order_by', sortState.orderBy);
@@ -645,7 +656,7 @@ const StudentDetailPage = ({
         setError('No fue posible cargar la información.');
       }
     },
-    [language, logout, studentId, tabConfig, token],
+    [language, logout, student, studentId, tabConfig, token],
   );
 
   const handleSort = (tabKey, columnKey) => {
