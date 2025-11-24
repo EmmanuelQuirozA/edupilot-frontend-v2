@@ -5,6 +5,7 @@ import { handleExpiredToken } from '../utils/auth';
 import { useModal } from '../components/modal/useModal';
 import ActionButton from '../components/ui/ActionButton.jsx';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
+import GlobalToast from '../components/GlobalToast.jsx';
 import './StudentDetailPage.css';
 
 const REQUIRED_FIELDS = ['first_name', 'last_name_father', 'last_name_mother', 'school_id', 'group_id', 'register_id', 'email'];
@@ -215,6 +216,10 @@ const StudentDetailPage = ({
   const [paymentsSort, setPaymentsSort] = useState({});
   const [requestsSort, setRequestsSort] = useState({});
   const [topupsSort, setTopupsSort] = useState({});
+  const [schoolsCatalog, setSchoolsCatalog] = useState([]);
+  const [groupsCatalog, setGroupsCatalog] = useState([]);
+  const [catalogsError, setCatalogsError] = useState('');
+  const [toast, setToast] = useState(null);
   const currencyFormatter = useMemo(
     () =>
       new Intl.NumberFormat(language === 'en' ? 'en-US' : 'es-MX', {
@@ -416,6 +421,44 @@ const StudentDetailPage = ({
     };
   }, [errorLabel, language, logout, onBreadcrumbChange, studentId, token]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    const headers = {
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    const loadCatalog = async (endpoint, setter) => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+          method: 'GET',
+          headers,
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          handleExpiredToken(response, logout);
+          throw new Error('Failed to load catalog');
+        }
+
+        const payload = await response.json();
+        const list = Array.isArray(payload) ? payload : payload?.data ?? payload?.result ?? [];
+        setter(Array.isArray(list) ? list : []);
+      } catch (catalogError) {
+        if (catalogError?.name === 'AbortError') {
+          return;
+        }
+        console.error('Failed to load catalog', endpoint, catalogError);
+        setCatalogsError('No fue posible cargar los catálogos.');
+      }
+    };
+
+    loadCatalog(`schools/list?lang=${normalizedLanguage}`, setSchoolsCatalog);
+    loadCatalog(`groups/catalog`, setGroupsCatalog);
+
+    return () => controller.abort();
+  }, [logout, normalizedLanguage, token]);
+
   const initials = useMemo(() => {
     if (!student) {
       return '';
@@ -554,6 +597,9 @@ const StudentDetailPage = ({
 
       setStudent(updatedStudent);
       setIsEditing(false);
+      const toastMessage = [payload?.title, payload?.message].filter(Boolean).join(' ');
+      const toastType = payload?.type || 'success';
+      setToast({ type: toastType, message: toastMessage || saveSuccess });
       setFeedbackMessage(payload?.message || saveSuccess);
     } catch (requestError) {
       console.error('Failed to update student', requestError);
@@ -909,6 +955,42 @@ const StudentDetailPage = ({
     );
   };
 
+  const renderSelectField = (
+    label,
+    name,
+    options,
+    { placeholder = '', displayValueOverride = null, helperContent = null } = {},
+  ) => {
+    const value = formValues[name] ?? '';
+    const error = formErrors[name];
+    const displayValue = displayValueOverride ?? options.find((item) => String(item.value) === String(value))?.label;
+
+    return (
+      <label className="field">
+        <span>{label}</span>
+        {isEditing ? (
+          <select
+            name={name}
+            value={value}
+            onChange={handleChange}
+            className={error ? 'input input--error' : 'input'}
+          >
+            <option value="">{placeholder || 'Selecciona una opción'}</option>
+            {options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p className="field__value">{displayValue || emptyValue}</p>
+        )}
+        {helperContent}
+        {isEditing && error ? <span className="input__error">{error}</span> : null}
+      </label>
+    );
+  };
+
   const renderStaticField = (label, value, { className = '' } = {}) => (
     <div className={`field ${className}`.trim()}>
       <span>{label}</span>
@@ -960,6 +1042,39 @@ const StudentDetailPage = ({
     row?.id || row?.payment_id || row?.payment_request_id || row?.balance_recharge_id || index;
 
   const formId = 'student-detail-form';
+
+  const schoolOptions = useMemo(
+    () =>
+      schoolsCatalog.map((school) => ({
+        value: school.school_id,
+        label: school.description_es || school.description || `Escuela ${school.school_id}`,
+      })),
+    [schoolsCatalog],
+  );
+
+  const groupOptions = useMemo(
+    () =>
+      groupsCatalog.map((group) => ({
+        value: group.group_id,
+        label: `${group.grade_group || 'Grupo'} - ${group.scholar_level_name || 'Nivel'}`.trim(),
+        meta: {
+          generation: group.generation,
+          gradeGroup: group.grade_group,
+          scholarLevel: group.scholar_level_name,
+        },
+      })),
+    [groupsCatalog],
+  );
+
+  const selectedGroup = useMemo(
+    () => groupOptions.find((option) => String(option.value) === String(formValues.group_id)),
+    [formValues.group_id, groupOptions],
+  );
+
+  const selectedSchool = useMemo(
+    () => schoolOptions.find((option) => String(option.value) === String(formValues.school_id)),
+    [formValues.school_id, schoolOptions],
+  );
 
   const monthColumns = useMemo(() => {
     const columns = [];
@@ -1084,10 +1199,11 @@ const StudentDetailPage = ({
   ];
 
   return (
-    <section className="student-detail-page">
-      <header className="student-detail-page__header">
-        {isLoading ? (
-          <div className="student-detail-page__header-skeleton">
+    <>
+      <section className="student-detail-page">
+        <header className="student-detail-page__header">
+          {isLoading ? (
+            <div className="student-detail-page__header-skeleton">
             <span
               className="student-detail-page__avatar skeleton skeleton--circle skeleton--lg"
               aria-hidden="true"
@@ -1162,7 +1278,7 @@ const StudentDetailPage = ({
             </div>
           </>
         )}
-      </header>
+        </header>
 
       <div className="student-detail-page__content">
         {stateMessage && !isLoading ? (
@@ -1214,6 +1330,11 @@ const StudentDetailPage = ({
           <form id={formId} onSubmit={handleSubmit}>
             <div className="container-fluid m-0 p-0">
               <div className="row g-3">
+                {catalogsError ? (
+                  <div className='col-12'>
+                    <p className="text-danger mb-0">{catalogsError}</p>
+                  </div>
+                ) : null}
                 <div className='col-md-4'>
                   <section className="student-card h-100">
                     <div className="student-card__row">
@@ -1280,40 +1401,50 @@ const StudentDetailPage = ({
                         </span>
                       </div>
                     </div>
-                    <div className="row">
+                      <div className="row">
                       <div className='col-md-4'>
-                      {renderEditableField(institutionStrings.fields.schoolId, 'school_id', {
-                        placeholder: institutionStrings.fields.schoolId,
-                        inputClassName: 'input',
-                      })}
+                        {renderSelectField(
+                          institutionStrings.fields.schoolId,
+                          'school_id',
+                          schoolOptions,
+                          {
+                            placeholder: institutionStrings.fields.schoolId,
+                            displayValueOverride:
+                              selectedSchool?.label ||
+                              student.school_name ||
+                              student.business_name ||
+                              student.commercial_name,
+                          },
+                        )}
                       </div>
                       <div className='col-md-4'>
-                      {renderStaticField(institutionStrings.fields.scholarLevel, student.scholar_level_name)}
+                        {renderSelectField(
+                          institutionStrings.fields.groupId,
+                          'group_id',
+                          groupOptions,
+                          {
+                            placeholder: institutionStrings.fields.groupId,
+                            displayValueOverride:
+                              selectedGroup?.label ||
+                              student.grade_group ||
+                              `${student.grade || ''} ${student.group || ''}`.trim(),
+                            helperContent: (
+                              <p className="form-text text-muted mb-0">
+                                Generación: {selectedGroup?.meta?.generation || student.generation || emptyValue} · Grupo: {selectedGroup?.meta?.gradeGroup || student.grade_group || emptyValue} · Nivel: {selectedGroup?.meta?.scholarLevel || student.scholar_level_name || emptyValue}
+                              </p>
+                            ),
+                          },
+                        )}
                       </div>
                       <div className='col-md-4'>
-                      {renderEditableField(institutionStrings.fields.groupId, 'group_id', {
-                        placeholder: institutionStrings.fields.groupId,
-                        inputClassName: 'input',
-                      })}
+                        {renderEditableField(institutionStrings.fields.curp, 'curp', {
+                          placeholder: institutionStrings.fields.curp,
+                          inputClassName: 'input',
+                        })}
                       </div>
-                      <div className='col-md-4'>
-                      {renderStaticField(
-                        institutionStrings.fields.gradeGroup,
-                        student.grade_group || `${student.grade || ''} ${student.group || ''}`.trim(),
-                      )}
                       </div>
-                      <div className='col-md-4'>
-                      {renderStaticField(institutionStrings.fields.generation, student.generation)}
-                      </div>
-                      <div className='col-md-4'>
-                      {renderEditableField(institutionStrings.fields.curp, 'curp', {
-                        placeholder: institutionStrings.fields.curp,
-                        inputClassName: 'input',
-                      })}
-                      </div>
-                    </div>
-                  </section>
-                </div>
+                    </section>
+                  </div>
 
                 <div className='col-md-12'>
                   <div className="info-card">
@@ -1621,7 +1752,9 @@ const StudentDetailPage = ({
           </div>
         </section>
       </div>
-    </section>
+      </section>
+      <GlobalToast alert={toast} onClose={() => setToast(null)} />
+    </>
   );
 };
 
