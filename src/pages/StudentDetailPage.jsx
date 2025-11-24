@@ -81,7 +81,6 @@ const StudentDetailPage = ({
   language = 'es',
   strings = {},
   onBreadcrumbChange,
-  onNavigateToStudents,
 }) => {
   const { token, logout } = useAuth();
   const [status, setStatus] = useState('idle');
@@ -95,12 +94,10 @@ const StudentDetailPage = ({
   const [activeTab, setActiveTab] = useState('tuition');
 
   const {
-    breadcrumbFallback = 'Detalle de alumno',
     loading: loadingLabel = 'Cargando información...',
     error: errorLabel = 'No fue posible cargar la información del alumno.',
     placeholderDescription = 'Muy pronto podrás consultar la información completa del alumno aquí.',
     registerLabel = 'Matrícula',
-    backToStudents = 'Volver a alumnos',
     saveSuccess = 'Información actualizada correctamente.',
     saveError = 'No se pudieron guardar los cambios.',
     saveButton = 'Guardar cambios',
@@ -134,7 +131,7 @@ const StudentDetailPage = ({
     lastPayment: summaryCard.lastPayment ?? 'Último pago registrado',
     creditsLabel: summaryCard.creditsLabel ?? 'Creditos de referencia',
     groupIdLabel: summaryCard.groupIdLabel ?? 'ID Grupo',
-    historyButton: summaryCard.historyButton ?? 'Ver historial de pagos',
+    balance: summaryCard.balance ?? 'Añadir saldo',
     registerPlaceholder: summaryCard.registerPlaceholder ?? 'Ej. 5003',
     paymentReferencePlaceholder: summaryCard.paymentReferencePlaceholder ?? 'Ingresa referencia',
   };
@@ -143,6 +140,7 @@ const StudentDetailPage = ({
     label: institutionCard.label ?? 'Institución',
     meta: institutionCard.meta ?? 'Agrega o actualiza la información escolar.',
     schoolStatus: institutionCard.schoolStatus ?? 'Estatus escolar',
+    groupStatus: institutionCard.groupStatus ?? 'Estatus del grupo',
     generationLabel: institutionCard.generationLabel ?? 'Generación',
     fields: {
       schoolId: institutionCard.fields?.schoolId ?? 'Escuela (ID)',
@@ -201,7 +199,6 @@ const StudentDetailPage = ({
       setStudent(null);
       setStatus('idle');
       setError('');
-      onBreadcrumbChange?.(breadcrumbFallback);
       return;
     }
 
@@ -212,7 +209,6 @@ const StudentDetailPage = ({
       try {
         setStatus('loading');
         setError('');
-        onBreadcrumbChange?.(breadcrumbFallback);
 
         const response = await fetch(
           `${API_BASE_URL}/students/student-details/${encodeURIComponent(studentId)}?lang=${language ?? 'es'}`,
@@ -254,7 +250,7 @@ const StudentDetailPage = ({
         ]
           .find((name) => typeof name === 'string' && name.trim().length > 0);
 
-        onBreadcrumbChange?.(displayName?.trim() || breadcrumbFallback);
+        onBreadcrumbChange?.(displayName?.trim());
       } catch (requestError) {
         if (isCancelled || requestError.name === 'AbortError') {
           return;
@@ -264,7 +260,6 @@ const StudentDetailPage = ({
         setStudent(null);
         setStatus('error');
         setError(errorLabel);
-        onBreadcrumbChange?.(breadcrumbFallback);
       }
     };
 
@@ -274,7 +269,7 @@ const StudentDetailPage = ({
       isCancelled = true;
       controller.abort();
     };
-  }, [breadcrumbFallback, errorLabel, language, logout, onBreadcrumbChange, studentId, token]);
+  }, [errorLabel, language, logout, onBreadcrumbChange, studentId, token]);
 
   const initials = useMemo(() => {
     if (!student) {
@@ -411,7 +406,6 @@ const StudentDetailPage = ({
       setStudent(updatedStudent);
       setIsEditing(false);
       setFeedbackMessage(payload?.message || saveSuccess);
-      onBreadcrumbChange?.(updatedFullName?.trim() || breadcrumbFallback);
     } catch (requestError) {
       console.error('Failed to update student', requestError);
       setFeedbackMessage(saveError);
@@ -473,32 +467,24 @@ const StudentDetailPage = ({
     <section className="student-detail-page">
       <header className="student-detail-page__header">
         <div className="student-detail-page__heading">
-          <div className="student-detail-page__breadcrumb">
-            <span className="student-detail-page__breadcrumb-link" role="link" onClick={onNavigateToStudents}>
-              {backToStudents}
-            </span>
-            <span className="student-detail-page__breadcrumb-divider">/</span>
-            <span className="student-detail-page__breadcrumb-current">{breadcrumbFallback}</span>
-          </div>
           <div className="student-detail-page__identity">
             <span className="student-detail-page__avatar" aria-hidden="true">
               {initials || '??'}
             </span>
             <div>
               <p className="student-detail-page__sub">{activeInGroup}</p>
-              <h2>{student?.full_name || breadcrumbFallback}</h2>
+              <h2>{student?.full_name}</h2>
               <p className="student-detail-page__meta">
-                <span
-                  className={`student-detail-page__chip ${
-                    student?.user_status === 'Activo' ? 'chip--success' : 'chip--muted'
-                  }`}
+                <span className={`student-detail-page__chip 
+                  ${student.school_enabled && student.role_enabled && student.group_enabled ? 
+                  'chip--success' : 'chip--warning'}`}
                 >
                   {student?.user_status || contactStrings.emptyValue}
                 </span>
                 <span className="student-detail-page__chip">{student?.role_name || roleFallback}</span>
-                <span className="student-detail-page__chip chip--light">
+                {/* <span className="student-detail-page__chip chip--light">
                   {student?.group_status || groupStatusFallback} | {student?.role_status || roleStatusFallback}
-                </span>
+                </span> */}
               </p>
             </div>
           </div>
@@ -516,14 +502,14 @@ const StudentDetailPage = ({
               <button
                 type="submit"
                 form={formId}
-                className="btn btn--primary"
+                className="ui-button ui-button--primary"
                 disabled={saveStatus === 'saving'}
               >
                 {saveStatus === 'saving' ? 'Guardando...' : saveButton}
               </button>
             </>
           ) : (
-            <button type="button" className="btn btn--primary" onClick={handleStartEdit} disabled={status !== 'success'}>
+            <button type="button" className="ui-button ui-button--primary" onClick={handleStartEdit} disabled={status !== 'success'}>
               {editButton}
             </button>
           )}
@@ -544,231 +530,267 @@ const StudentDetailPage = ({
         ) : null}
 
         {student ? (
-          <form id={formId} className="student-detail-page__grid" onSubmit={handleSubmit}>
-            <aside className="student-detail-page__sidebar">
-              <div className="student-card">
-                <div className="student-card__row">
-                  <div>
-                    <p className="student-card__label">{registerLabel}</p>
+          <form id={formId} onSubmit={handleSubmit}>
+            <div className="container-fluid m-0 p-0">
+              <div className="row g-3">
+                <div className='col-md-4'>
+                  <section className="student-card h-100">
+                    <div className="student-card__row">
+                      <div>
+                        <p className="student-card__label">{registerLabel}</p>
+                        {isEditing ? (
+                          <input
+                            name="register_id"
+                            value={formValues.register_id}
+                            onChange={handleChange}
+                            className={formErrors.register_id ? 'input input--error' : 'input'}
+                            placeholder={summaryStrings.registerPlaceholder}
+                          />
+                        ) : (
+                          <p className="field__value">{formValues.register_id || emptyValue}</p>
+                        )}
+                        {isEditing && formErrors.register_id ? (
+                          <span className="input__error">{formErrors.register_id}</span>
+                        ) : null}
+                      </div>
+                      <div>
+                        <p className="student-card__label">{summaryStrings.paymentReference}</p>
+                        {isEditing ? (
+                          <input
+                            name="payment_reference"
+                            value={formValues.payment_reference ?? ''}
+                            onChange={handleChange}
+                            className="input"
+                            placeholder={summaryStrings.paymentReferencePlaceholder}
+                          />
+                        ) : (
+                          <p className="field__value">{formValues.payment_reference || emptyValue}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="student-card__divider" />
+                    <div className="student-card__info">
+                      <div>
+                        <p className="student-card__label">{summaryStrings.balanceLabel}</p>
+                        <h3>{formatCurrency(student.balance)}</h3>
+                        <p className="student-card__hint">{summaryStrings.lastPayment}</p>
+                      </div>
+                    </div>
+                    <button type="button" className="btn btn--ghost btn--full" disabled>
+                      {summaryStrings.balance}
+                    </button>
+                  </section>
+                </div>
+
+                <div className='col-md-8'>
+                  <section className="info-card h-100">
+                    <div className="info-card__header">
+                      <div>
+                        <p className="info-card__label">{institutionStrings.label}</p>
+                        <h3>{student.business_name || student.commercial_name || '—'}</h3>
+                        <p className="info-card__meta">{institutionStrings.meta}</p>
+                      </div>
+                      <div className="info-card__status">
+                        <span className="student-detail-page__chip chip--info">
+                          {student.grade_group || institutionStrings.generationLabel}
+                        </span>
+                        <span className={`student-detail-page__chip ${student.group_enabled ? 'chip--success' : 'chip--warning'}`}>
+                          {student.group_status || institutionStrings.groupStatus}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="row">
+                      <div className='col-md-4'>
+                      {renderEditableField(institutionStrings.fields.schoolId, 'school_id', {
+                        placeholder: institutionStrings.fields.schoolId,
+                        inputClassName: 'input',
+                      })}
+                      </div>
+                      <div className='col-md-4'>
+                      {renderStaticField(institutionStrings.fields.scholarLevel, student.scholar_level_name)}
+                      </div>
+                      <div className='col-md-4'>
+                      {renderEditableField(institutionStrings.fields.groupId, 'group_id', {
+                        placeholder: institutionStrings.fields.groupId,
+                        inputClassName: 'input',
+                      })}
+                      </div>
+                      <div className='col-md-4'>
+                      {renderStaticField(
+                        institutionStrings.fields.gradeGroup,
+                        student.grade_group || `${student.grade || ''} ${student.group || ''}`.trim(),
+                      )}
+                      </div>
+                      <div className='col-md-4'>
+                      {renderStaticField(institutionStrings.fields.generation, student.generation)}
+                      </div>
+                      <div className='col-md-4'>
+                      {renderEditableField(institutionStrings.fields.curp, 'curp', {
+                        placeholder: institutionStrings.fields.curp,
+                        inputClassName: 'input',
+                      })}
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
+                <div className='col-md-12'>
+                  <div className="info-card">
+                    <div className="info-card__header">
+                      <div>
+                        <p className="info-card__label">{contactStrings.label}</p>
+                        <h3>{student.username}</h3>
+                        <p className="info-card__meta">{student.email || contactStrings.meta}</p>
+                      </div>
+                      <div className="info-card__status">
+                        <span className="student-detail-page__chip chip--info">
+                          {student.role_name || contactStrings.roleChip || roleFallback}
+                        </span>
+                        <span className={`student-detail-page__chip  'chip--warning'`}>
+                          {student.user_status || contactStrings.roleStatusChip || contactStrings.emptyValue}
+                        </span>
+                      </div>
+                    </div>
                     {isEditing ? (
-                      <input
-                        name="register_id"
-                        value={formValues.register_id}
-                        onChange={handleChange}
-                        className={formErrors.register_id ? 'input input--error' : 'input'}
-                        placeholder={summaryStrings.registerPlaceholder}
-                      />
+                      <>
+                        <div className="row">
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.firstName, 'first_name', {
+                              placeholder: contactStrings.fields.firstName,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.lastNameFather, 'last_name_father', {
+                              placeholder: contactStrings.fields.lastNameFather,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.lastNameMother, 'last_name_mother', {
+                              placeholder: contactStrings.fields.lastNameMother,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.birthDate, 'birth_date', {
+                              placeholder: contactStrings.fields.birthDate,
+                              type: 'date',
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.phoneNumber, 'phone_number', {
+                              placeholder: contactStrings.fields.phoneNumber,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.taxId, 'tax_id', {
+                              placeholder: contactStrings.fields.taxId,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.email, 'email', {
+                              placeholder: contactStrings.fields.email,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.personalEmail, 'personal_email', {
+                              placeholder: contactStrings.fields.personalEmail,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                        </div>
+                        <div className="row">
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.street, 'street', {
+                              placeholder: contactStrings.fields.street,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.extNumber, 'ext_number', {
+                              placeholder: contactStrings.fields.extNumber,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.intNumber, 'int_number', {
+                              placeholder: contactStrings.fields.intNumber,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.suburb, 'suburb', {
+                              placeholder: contactStrings.fields.suburb,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.locality, 'locality', {
+                              placeholder: contactStrings.fields.locality,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.municipality, 'municipality', {
+                              placeholder: contactStrings.fields.municipality,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                          <div className='col-md-4'>
+                            {renderEditableField(contactStrings.fields.state, 'state', {
+                              placeholder: contactStrings.fields.state,
+                              inputClassName: 'input',
+                            })}
+                          </div>
+                        </div>
+                      </>
                     ) : (
-                      <p className="field__value">{formValues.register_id || emptyValue}</p>
-                    )}
-                    {isEditing && formErrors.register_id ? (
-                      <span className="input__error">{formErrors.register_id}</span>
-                    ) : null}
-                  </div>
-                  <div>
-                    <p className="student-card__label">{summaryStrings.paymentReference}</p>
-                    {isEditing ? (
-                      <input
-                        name="payment_reference"
-                        value={formValues.payment_reference ?? ''}
-                        onChange={handleChange}
-                        className="input"
-                        placeholder={summaryStrings.paymentReferencePlaceholder}
-                      />
-                    ) : (
-                      <p className="field__value">{formValues.payment_reference || emptyValue}</p>
+                      <div className="info-card__summary">
+                        <p className="info-card__summary-title">{contactStrings.summaryTitle}</p>
+                        <div className="row">
+                          <div className='col-md-4'>
+                            <dt>{contactStrings.fields.firstName}:</dt>{' '}
+                            {student.full_name}
+                          </div>
+                          <div className='col-md-4'>
+                            <dt>{contactStrings.summary.phone}:</dt>{' '}
+                            {student.phone_number || emptyValue}
+                          </div>
+                          <div className='col-md-4'>
+                            <dt>{contactStrings.summary.birthDate}:</dt>{' '}
+                            {formatDateValue(student.birth_date, language) || emptyValue}
+                          </div>
+                          <div className='col-md-4'>
+                            <dt>{contactStrings.summary.taxId}:</dt>{' '}
+                            {student.tax_id || emptyValue}
+                          </div>
+                          <div className='col-md-4'>
+                            <dt>{contactStrings.summary.institutionalEmail}:</dt>{' '}
+                            {student.email || emptyValue}
+                          </div>
+                          <div className='col-md-4'>
+                            <dt>{contactStrings.summary.personalEmail}:</dt>{' '}
+                            {student.personal_email || emptyValue}
+                          </div>
+                        </div>
+                        <div className="info-card__address">
+                          <p className="info-card__summary-title">{contactStrings.summary.address}</p>
+                          <p className="info-card__meta">{contactStrings.addressHelper}</p>
+                          <p className="field__value">{buildAddressString(student, emptyValue)}</p>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
-                <div className="student-card__divider" />
-                <div className="student-card__info">
-                  <div>
-                    <p className="student-card__label">{summaryStrings.balanceLabel}</p>
-                    <h3>{formatCurrency(student.balance)}</h3>
-                    <p className="student-card__hint">{summaryStrings.lastPayment}</p>
-                  </div>
-                  <div className="student-card__info">
-                    <div>
-                      <p className="student-card__label">{summaryStrings.creditsLabel}</p>
-                      <p className="student-card__value">{student.payment_reference || emptyValue}</p>
-                    </div>
-                    <div>
-                      <p className="student-card__label">{summaryStrings.groupIdLabel}</p>
-                      <p className="student-card__value">{student.group_id || emptyValue}</p>
-                    </div>
-                  </div>
-                </div>
-                <button type="button" className="btn btn--ghost btn--full" disabled>
-                  {summaryStrings.historyButton}
-                </button>
               </div>
-            </aside>
-
-            <div className="student-detail-page__main">
-              <section className="info-card">
-                <div className="info-card__header">
-                  <div>
-                    <p className="info-card__label">{institutionStrings.label}</p>
-                    <h3>{student.business_name || student.commercial_name || '—'}</h3>
-                    <p className="info-card__meta">{institutionStrings.meta}</p>
-                  </div>
-                  <div className="info-card__status">
-                    <span className="student-detail-page__chip chip--success">
-                      {student.school_status || institutionStrings.schoolStatus}
-                    </span>
-                    <span className="student-detail-page__chip chip--info">
-                      {student.generation || institutionStrings.generationLabel}
-                    </span>
-                  </div>
-                </div>
-                <div className="info-card__grid">
-                  {renderEditableField(institutionStrings.fields.schoolId, 'school_id', {
-                    placeholder: institutionStrings.fields.schoolId,
-                    inputClassName: 'input',
-                  })}
-                  {renderStaticField(institutionStrings.fields.scholarLevel, student.scholar_level_name)}
-                  {renderEditableField(institutionStrings.fields.groupId, 'group_id', {
-                    placeholder: institutionStrings.fields.groupId,
-                    inputClassName: 'input',
-                  })}
-                  {renderStaticField(
-                    institutionStrings.fields.gradeGroup,
-                    student.grade_group || `${student.grade || ''} ${student.group || ''}`.trim(),
-                  )}
-                  {renderStaticField(institutionStrings.fields.generation, student.generation)}
-                  {renderEditableField(institutionStrings.fields.curp, 'curp', {
-                    placeholder: institutionStrings.fields.curp,
-                    inputClassName: 'input',
-                  })}
-                </div>
-              </section>
-
-              <section className="info-card">
-                <div className="info-card__header">
-                  <div>
-                    <p className="info-card__label">{contactStrings.label}</p>
-                    <h3>{student.username || breadcrumbFallback}</h3>
-                    <p className="info-card__meta">{student.email || contactStrings.meta}</p>
-                  </div>
-                  <div className="info-card__status">
-                    <span className="student-detail-page__chip chip--info">
-                      {student.role_name || contactStrings.roleChip || roleFallback}
-                    </span>
-                    <span className="student-detail-page__chip chip--success">
-                      {student.role_status || contactStrings.roleStatusChip || contactStrings.emptyValue}
-                    </span>
-                  </div>
-                </div>
-                {isEditing ? (
-                  <>
-                    <div className="info-card__grid">
-                      {renderEditableField(contactStrings.fields.firstName, 'first_name', {
-                        placeholder: contactStrings.fields.firstName,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.lastNameFather, 'last_name_father', {
-                        placeholder: contactStrings.fields.lastNameFather,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.lastNameMother, 'last_name_mother', {
-                        placeholder: contactStrings.fields.lastNameMother,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.birthDate, 'birth_date', {
-                        placeholder: contactStrings.fields.birthDate,
-                        type: 'date',
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.phoneNumber, 'phone_number', {
-                        placeholder: contactStrings.fields.phoneNumber,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.taxId, 'tax_id', {
-                        placeholder: contactStrings.fields.taxId,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.email, 'email', {
-                        placeholder: contactStrings.fields.email,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.personalEmail, 'personal_email', {
-                        placeholder: contactStrings.fields.personalEmail,
-                        inputClassName: 'input',
-                      })}
-                    </div>
-                    <div className="info-card__grid info-card__grid--address">
-                      {renderEditableField(contactStrings.fields.street, 'street', {
-                        placeholder: contactStrings.fields.street,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.extNumber, 'ext_number', {
-                        placeholder: contactStrings.fields.extNumber,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.intNumber, 'int_number', {
-                        placeholder: contactStrings.fields.intNumber,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.suburb, 'suburb', {
-                        placeholder: contactStrings.fields.suburb,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.locality, 'locality', {
-                        placeholder: contactStrings.fields.locality,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.municipality, 'municipality', {
-                        placeholder: contactStrings.fields.municipality,
-                        inputClassName: 'input',
-                      })}
-                      {renderEditableField(contactStrings.fields.state, 'state', {
-                        placeholder: contactStrings.fields.state,
-                        inputClassName: 'input',
-                      })}
-                    </div>
-                  </>
-                ) : (
-                  <div className="info-card__summary">
-                    <p className="info-card__summary-title">{contactStrings.summaryTitle}</p>
-                    <ul className="info-card__list">
-                      <li>
-                        <strong>{contactStrings.fields.firstName}:</strong>{' '}
-                        {student.full_name || breadcrumbFallback}
-                      </li>
-                      <li>
-                        <strong>{contactStrings.summary.phone}:</strong>{' '}
-                        {student.phone_number || emptyValue}
-                      </li>
-                      <li>
-                        <strong>{contactStrings.summary.birthDate}:</strong>{' '}
-                        {formatDateValue(student.birth_date, language) || emptyValue}
-                      </li>
-                      <li>
-                        <strong>{contactStrings.summary.taxId}:</strong>{' '}
-                        {student.tax_id || emptyValue}
-                      </li>
-                      <li>
-                        <strong>{contactStrings.summary.institutionalEmail}:</strong>{' '}
-                        {student.email || emptyValue}
-                      </li>
-                      <li>
-                        <strong>{contactStrings.summary.personalEmail}:</strong>{' '}
-                        {student.personal_email || emptyValue}
-                      </li>
-                    </ul>
-                    <div className="info-card__address">
-                      <p className="info-card__summary-title">{contactStrings.summary.address}</p>
-                      <p className="info-card__meta">{contactStrings.addressHelper}</p>
-                      <p className="field__value">{buildAddressString(student, emptyValue)}</p>
-                    </div>
-                  </div>
-                )}
-              </section>
             </div>
           </form>
         ) : null}
-
-        {feedbackMessage ? <div className="student-detail-page__feedback">{feedbackMessage}</div> : null}
 
         <section className="student-detail-page__tabs">
           <div className="tabs__header">
