@@ -2551,19 +2551,19 @@ const PaymentsFinancePage = ({
   );
 
   const handleStudentDetailClick = useCallback(
-    (row) => {
-      const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
-
-      if (!studentId) {
+    (studentId) => {
+      if (studentId == null || studentId === '') {
         return;
       }
 
-      const fullName = row?.student ?? '';
-      const registerId = row?.payment_reference ?? row?.register_id ?? row?.registration_id ?? '';
+      const idValue = String(studentId);
 
-      onStudentDetail?.({ id: studentId, name: fullName, registerId });
+      if (typeof window !== 'undefined') {
+        const fallbackUrl = `${studentDetailBasePath}/${encodeURIComponent(idValue)}`;
+        window.location.assign(fallbackUrl);
+      }
     },
-    [onStudentDetail],
+    [studentDetailBasePath],
   );
 
   const handleTuitionMonthClick = useCallback(
@@ -3607,8 +3607,8 @@ const PaymentsFinancePage = ({
                           gradeGroup={row.class ?? row.grade_group}
                           scholarLevel={row.scholar_level_name}
                           enrollment={studentMetaValue}
-                          onClick={() => handleStudentDetailClick(row)}
-                          href={studentHref}
+                          onClick={() => handleStudentDetailClick(studentId)}
+                          // href={studentHref}
                           disabled={!canNavigateToStudent}
                           nameButtonProps={{ 'aria-label': studentName }}
                         />
@@ -3770,7 +3770,7 @@ const PaymentsFinancePage = ({
                             <ActionButton
                               variant="href"
                               size="sm"
-                              href={scheduleDetailHref}
+                              // href={scheduleDetailHref}
                               onClick={() =>
                                 scheduleId != null
                                   ? handlePaymentRequestScheduleDetailNavigation(scheduleId)
@@ -3855,6 +3855,9 @@ const PaymentsFinancePage = ({
                       const studentHref = canNavigateToStudent
                         ? `${studentDetailBasePath}/${encodeURIComponent(studentId)}`
                         : undefined;
+                      const requestDetailHref = requestIdValue
+                        ? `${paymentRequestDetailBasePath}/${encodeURIComponent(requestIdValue)}`
+                        : undefined;
 
                       return (
                         <tr key={rowKey}>
@@ -3868,8 +3871,8 @@ const PaymentsFinancePage = ({
                               gradeGroup={row?.grade_group}
                               scholarLevel={row?.scholar_level_name}
                               enrollment={studentMeta}
-                              onClick={() => handleStudentDetailClick(row)}
-                              href={studentHref}
+                              onClick={() => handleStudentDetailClick(studentId)}
+                              // href={studentHref}
                               nameButtonProps={{ 'aria-label': studentName }}
                             />
                           </td>
@@ -3894,8 +3897,9 @@ const PaymentsFinancePage = ({
                           <td data-title={requestsTableStrings.columns.actions}>
                             <ActionButton
                               type="button"
-                              variant="secondary"
+                              variant="href"
                               size="sm"
+                              // href={requestDetailHref}
                               onClick={() => handlePaymentRequestDetailNavigation(requestIdValue)}
                               disabled={!hasValidRequestId}
                               aria-label={detailButtonLabel}
@@ -3964,6 +3968,9 @@ const PaymentsFinancePage = ({
                   const studentHref = canNavigateToStudent
                     ? `${studentDetailBasePath}/${encodeURIComponent(studentId)}`
                     : undefined;
+                  const paymentDetailHref = paymentIdValue
+                    ? `${paymentDetailBasePath}/${encodeURIComponent(paymentIdValue)}`
+                    : undefined;
 
                   return (
                     <tr key={rowKey}>
@@ -3977,8 +3984,8 @@ const PaymentsFinancePage = ({
                           gradeGroup={row?.grade_group}
                           scholarLevel={row?.scholar_level_name}
                           enrollment={studentMeta}
-                          onClick={() => handleStudentDetailClick(row)}
-                          href={studentHref}
+                          onClick={() => handleStudentDetailClick(studentId)}
+                          // href={studentHref}
                           disabled={!canNavigateToStudent}
                           nameButtonProps={{ 'aria-label': studentName }}
                         />
@@ -3994,8 +4001,9 @@ const PaymentsFinancePage = ({
                       <td data-title={paymentsTableStrings.columns.actions}>
                         <ActionButton
                           type="button"
-                          variant="secondary"
+                          variant="href"
                           size="sm"
+                          // href={paymentDetailHref}
                           onClick={() => handlePaymentDetailNavigation(paymentIdValue)}
                           disabled={isDetailDisabled}
                           aria-label={detailButtonLabel}
