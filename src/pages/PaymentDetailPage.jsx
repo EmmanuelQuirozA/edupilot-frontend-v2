@@ -32,7 +32,9 @@ const DEFAULT_STRINGS = {
       conceptRequired: 'Selecciona un concepto de pago.',
       throughRequired: 'Selecciona un método de pago.',
       createdAtRequired: 'Ingresa la fecha de creación.',
-      monthRequired: 'Selecciona el mes del pago.',
+      paymentDateRequired: 'Ingresa la fecha de pago.',
+      // monthRequired: 'Selecciona el mes del pago.',
+      monthRequired: 'Selecciona la colegiatura.',
       amountRequired: 'Ingresa el monto del pago.',
     },
   },
@@ -82,7 +84,9 @@ const DEFAULT_STRINGS = {
     fields: {
       status: 'Estatus',
       createdAt: 'Fecha de creación',
-      paymentMonth: 'Mes del pago',
+      paymentDate: 'Fecha de pago',
+      // paymentMonth: 'Mes del pago',
+      paymentMonth: 'Colegiatura',
       amount: 'Monto',
       paymentType: 'Método de pago',
       paymentConcept: 'Concepto de pago',
@@ -481,6 +485,7 @@ const PaymentDetailPage = ({
     paymentConceptId: '',
     paymentThroughId: '',
     paymentCreatedAt: '',
+    paymentPaymentDate: '',
     paymentMonth: '',
     amount: '',
     comments: '',
@@ -1118,6 +1123,7 @@ const PaymentDetailPage = ({
           ? String(payment.payment_through_id)
           : '',
       paymentCreatedAt: toDateTimeLocalValue(payment?.payment_created_at || payment?.created_at || ''),
+      paymentPaymentDate: toDateTimeLocalValue(payment?.payment_payment_date || payment?.payment_date || ''),
       paymentMonth: toMonthInputValue(payment?.payment_month || ''),
       amount: payment && payment.amount != null ? String(payment.amount) : '',
       comments: payment?.comments ?? '',
@@ -1375,6 +1381,10 @@ const PaymentDetailPage = ({
       return mergedStrings.editing.validation.createdAtRequired;
     }
 
+    if (!editValues.paymentPaymentDate) {
+      return mergedStrings.editing.validation.paymentDateRequired;
+    }
+
     if (!editValues.paymentMonth) {
       return mergedStrings.editing.validation.monthRequired;
     }
@@ -1410,11 +1420,13 @@ const PaymentDetailPage = ({
       const requestPayload = {
         payment_concept_id: Number(editValues.paymentConceptId),
         payment_through_id: Number(editValues.paymentThroughId),
-        payment_created_at: normalizeDateTimeForPayload(editValues.paymentCreatedAt),
+        created_at: normalizeDateTimeForPayload(editValues.paymentCreatedAt),
+        payment_date: normalizeDateTimeForPayload(editValues.paymentPaymentDate),
         payment_month: buildMonthPayload(editValues.paymentMonth),
         amount: String(editValues.amount),
         comments: editValues.comments ?? '',
       };
+      console.log(requestPayload);
 
       try {
         const url = `${API_BASE_URL}/payments/update/${paymentId}?lang=${normalizedLanguage}`;
@@ -1687,6 +1699,10 @@ const PaymentDetailPage = ({
         value: formatDateTime(payment.payment_created_at || payment.created_at, normalizedLanguage),
       },
       {
+        label: mergedStrings.paymentSection.fields.paymentDate,
+        value: formatDateTime(payment.payment_payment_date || payment.payment_date, normalizedLanguage),
+      },
+      {
         label: mergedStrings.paymentSection.fields.paymentMonth,
         value: formatMonth(payment.payment_month, normalizedLanguage),
       },
@@ -1917,6 +1933,24 @@ const PaymentDetailPage = ({
                                   setEditValues((previous) => ({
                                     ...previous,
                                     paymentCreatedAt: event.target.value,
+                                  }))
+                                }
+                                required
+                              />
+                            </dd>
+                          </div>
+                          <div className="payment-detail__details-item">
+                            <dt>{mergedStrings.paymentSection.fields.paymentDate}</dt>
+                            <dd>
+                              <input
+                                type="datetime-local"
+                                step="1"
+                                className="payment-detail__form-input"
+                                value={editValues.paymentPaymentDate}
+                                onChange={(event) =>
+                                  setEditValues((previous) => ({
+                                    ...previous,
+                                    paymentPaymentDate: event.target.value,
                                   }))
                                 }
                                 required

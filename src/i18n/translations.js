@@ -918,7 +918,8 @@ export const translations = {
             fields: {
               status: 'Estatus',
               createdAt: 'Fecha de creación',
-              paymentMonth: 'Mes del pago',
+              // paymentMonth: 'Mes del pago',
+              paymentMonth: 'Colegiatura',
               amount: 'Monto',
               paymentType: 'Método de pago',
               paymentConcept: 'Concepto',

@@ -9,7 +9,8 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const DEFAULT_STRINGS = {
   title: 'Registrar pago',
   description: 'Registra un pago para esta solicitud.',
-  monthLabel: 'Mes del pago',
+  // monthLabel: 'Mes del pago',
+  monthLabel: 'Colegiatura',
   conceptLabel: 'Concepto',
   partialLabel: 'Pago parcial',
   pendingLabel: 'Pendiente de pago',
