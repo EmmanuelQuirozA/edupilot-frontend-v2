@@ -795,73 +795,14 @@ const StudentDetailPage = ({
     row?.[key?.replace(/_(\w)/g, (_, char) => char.toUpperCase())] ??
     row?.[key?.replace(/([A-Z])/g, '_$1').toLowerCase()];
 
-  const renderTable = (tabKey, columns, rows, statusState, errorState, sortState) => {
-    const isLoadingTable = statusState === 'loading';
-    const hasError = statusState === 'error';
-    const hasRows = Array.isArray(rows) && rows.length > 0;
+  const buildSortableColumns = (tabKey, columns, sortState) =>
+    columns.map((column) => ({
+      ...column,
+      header: renderSortableHeader(tabKey, column.key, column.label, column.sortable !== false, sortState),
+    }));
 
-    return (
-      <div className="student-detail-page__table-card">
-        <div className="student-detail-table__wrapper">
-          <table className="student-detail-table">
-            <thead>
-              <tr>
-                {columns.map((column) => (
-                  <th key={column.key} scope="col">
-                    {renderSortableHeader(
-                      tabKey,
-                      column.key,
-                      column.label,
-                      column.sortable !== false,
-                      sortState,
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoadingTable ? (
-                <tr>
-                  <td colSpan={columns.length} className="text-center">
-                    Cargando información...
-                  </td>
-                </tr>
-              ) : null}
-              {!isLoadingTable && hasError ? (
-                <tr>
-                  <td colSpan={columns.length} className="text-center text-danger">
-                    {errorState || 'No fue posible cargar la información.'}
-                  </td>
-                </tr>
-              ) : null}
-              {!isLoadingTable && !hasError && !hasRows ? (
-                <tr>
-                  <td colSpan={columns.length} className="text-center">
-                    No hay información disponible.
-                  </td>
-                </tr>
-              ) : null}
-              {!isLoadingTable && !hasError && hasRows
-                ? rows.map((row, index) => (
-                    <tr key={row?.id || row?.payment_id || row?.payment_request_id || row?.balance_recharge_id || index}>
-                      {columns.map((column) => (
-                        <td key={column.key} data-title={column.label}>
-                          {column.render
-                            ? column.render(row)
-                            : typeof buildCellValue(row, column.key) === 'number'
-                              ? buildCellValue(row, column.key)
-                              : buildCellValue(row, column.key) || emptyValue}
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                : null}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
+  const getTableRowId = (row, index) =>
+    row?.id || row?.payment_id || row?.payment_request_id || row?.balance_recharge_id || index;
 
   const formId = 'student-detail-form';
 
@@ -1462,27 +1403,55 @@ const StudentDetailPage = ({
               </div>
             ) : null}
             {activeTab === 'requests'
-              ? renderTable(
-                  'requests',
-                  requestsColumns,
-                  requestsRows,
-                  requestsStatus,
-                  requestsError,
-                  requestsSort,
+              ? (
+                  <div className="student-detail-page__table-card">
+                    <GlobalTable
+                      className="page__table-wrapper"
+                      tableClassName="page__table mb-0"
+                      columns={buildSortableColumns('requests', requestsColumns, requestsSort)}
+                      data={requestsRows}
+                      getRowId={getTableRowId}
+                      loading={requestsStatus === 'loading'}
+                      loadingMessage="Cargando solicitudes..."
+                      error={requestsError || null}
+                      emptyMessage="No hay información disponible."
+                    />
+                  </div>
                 )
               : null}
             {activeTab === 'payments'
-              ? renderTable(
-                  'payments',
-                  paymentsColumns,
-                  paymentsRows,
-                  paymentsStatus,
-                  paymentsError,
-                  paymentsSort,
+              ? (
+                  <div className="student-detail-page__table-card">
+                    <GlobalTable
+                      className="page__table-wrapper"
+                      tableClassName="page__table mb-0"
+                      columns={buildSortableColumns('payments', paymentsColumns, paymentsSort)}
+                      data={paymentsRows}
+                      getRowId={getTableRowId}
+                      loading={paymentsStatus === 'loading'}
+                      loadingMessage="Cargando pagos..."
+                      error={paymentsError || null}
+                      emptyMessage="No hay información disponible."
+                    />
+                  </div>
                 )
               : null}
             {activeTab === 'topups'
-              ? renderTable('topups', topupsColumns, topupsRows, topupsStatus, topupsError, topupsSort)
+              ? (
+                  <div className="student-detail-page__table-card">
+                    <GlobalTable
+                      className="page__table-wrapper"
+                      tableClassName="page__table mb-0"
+                      columns={buildSortableColumns('topups', topupsColumns, topupsSort)}
+                      data={topupsRows}
+                      getRowId={getTableRowId}
+                      loading={topupsStatus === 'loading'}
+                      loadingMessage="Cargando recargas..."
+                      error={topupsError || null}
+                      emptyMessage="No hay información disponible."
+                    />
+                  </div>
+                )
               : null}
           </div>
         </section>
