@@ -106,7 +106,8 @@
   height: 16px;
 }
 
-.ui-button:disabled {
+.ui-button:disabled,
+.ui-button[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: var(--ui-button-disabled-opacity);
   transform: none;
@@ -228,6 +229,22 @@
   --ui-button-color: #0f172a;
   --ui-button-shadow: none;
   --ui-button-hover-shadow: none;
+}
+
+.ui-button--href {
+  --ui-button-bg: transparent;
+  --ui-button-color: var(--ui-color-primary);
+  --ui-button-border: none;
+  --ui-button-shadow: none;
+  --ui-button-hover-shadow: none;
+  padding-inline: 0;
+  font-weight: 700;
+}
+
+.ui-button--href:not(:disabled):not([aria-disabled='true']):hover,
+.ui-button--href:not(:disabled):not([aria-disabled='true']):focus-visible {
+  transform: none;
+  text-decoration: underline;
 }
 
 .ui-button--text {

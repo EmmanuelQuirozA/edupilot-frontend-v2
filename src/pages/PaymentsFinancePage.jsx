@@ -3726,6 +3726,9 @@ const PaymentsFinancePage = ({
                       const detailButtonLabel = scheduleId
                         ? `${requestsRecurrencesTableStrings.viewDetail} ${scheduleId}`
                         : requestsRecurrencesTableStrings.viewDetail;
+                      const scheduleDetailHref = scheduleId
+                        ? `${paymentRequestScheduleDetailBasePath}/${encodeURIComponent(scheduleId)}`
+                        : undefined;
 
                       return (
                         <tr key={rowKey}>
@@ -3765,9 +3768,9 @@ const PaymentsFinancePage = ({
                           </td>
                           <td data-title={requestsRecurrencesTableStrings.columns.actions}>
                             <ActionButton
-                              type="button"
-                              variant="secondary"
+                              variant="href"
                               size="sm"
+                              href={scheduleDetailHref}
                               onClick={() =>
                                 scheduleId != null
                                   ? handlePaymentRequestScheduleDetailNavigation(scheduleId)

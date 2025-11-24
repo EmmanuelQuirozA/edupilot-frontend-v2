@@ -11,6 +11,7 @@ const VARIANT_CLASSNAMES = {
   filter: 'ui-button--filter',
   upload: 'ui-button--upload',
   text: 'ui-button--text',
+  href: 'ui-button--href',
 };
 
 const SIZE_CLASSNAMES = {
@@ -23,17 +24,20 @@ const SIZE_CLASSNAMES = {
 const ActionButton = forwardRef(
   (
     {
-      as: Component = 'button',
+      as: asComponent,
       type,
       variant = 'primary',
       size = 'md',
       icon,
       className = '',
       children,
+      href,
+      disabled = false,
       ...props
     },
     ref,
   ) => {
+    const Component = asComponent ?? (href ? 'a' : 'button');
     const classes = ['ui-button'];
 
     const variantClass = VARIANT_CLASSNAMES[variant] ?? VARIANT_CLASSNAMES.primary;
@@ -50,6 +54,16 @@ const ActionButton = forwardRef(
 
     if (isButtonElement) {
       resolvedProps.type = type ?? 'button';
+      resolvedProps.disabled = disabled;
+    } else {
+      delete resolvedProps.type;
+      resolvedProps.href = href && !disabled ? href : undefined;
+
+      if (disabled) {
+        resolvedProps['aria-disabled'] = true;
+        resolvedProps.tabIndex = -1;
+        resolvedProps.onClick = undefined;
+      }
     }
 
     const content = [];
