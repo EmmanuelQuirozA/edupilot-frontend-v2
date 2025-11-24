@@ -3,9 +3,76 @@ import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { handleExpiredToken } from '../utils/auth';
 import ActionButton from '../components/ui/ActionButton.jsx';
+import GlobalTable from '../components/ui/GlobalTable.jsx';
 import './StudentDetailPage.css';
 
 const REQUIRED_FIELDS = ['first_name', 'last_name_father', 'last_name_mother', 'school_id', 'group_id', 'register_id', 'email'];
+
+const MONTH_KEY_REGEX = /^[A-Za-z]{3}-\d{2}$/;
+
+const parseTuitionCellValue = (value) => {
+  if (value == null || value === '') {
+    return null;
+  }
+
+  if (typeof value === 'object') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (parseError) {
+      console.warn('Unable to parse tuition cell value', parseError);
+      return null;
+    }
+  }
+
+  return null;
+};
+
+const normalizeAmount = (candidate) => {
+  if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+    return candidate;
+  }
+
+  if (typeof candidate === 'string') {
+    const trimmed = candidate.trim();
+
+    if (trimmed === '') {
+      return null;
+    }
+
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+};
+
+const extractTuitionCellDetails = (value) => {
+  const parsed = parseTuitionCellValue(value);
+  if (!parsed) {
+    return null;
+  }
+
+  const totalAmount = normalizeAmount(parsed.total_amount ?? parsed.totalAmount);
+  const paymentMonth =
+    typeof parsed.payment_month === 'string'
+      ? parsed.payment_month
+      : typeof parsed.paymentMonth === 'string'
+      ? parsed.paymentMonth
+      : null;
+  const paymentRequestId = parsed.payment_request_id ?? parsed.paymentRequestId ?? null;
+  const payments = Array.isArray(parsed.payments) ? parsed.payments : [];
+
+  return {
+    totalAmount,
+    paymentMonth,
+    paymentRequestId,
+    payments,
+  };
+};
 
 const extractStudentDetail = (payload) => {
   const candidates = [
@@ -111,10 +178,19 @@ const StudentDetailPage = ({
   const [paymentsFetched, setPaymentsFetched] = useState(false);
   const [requestsFetched, setRequestsFetched] = useState(false);
   const [topupsFetched, setTopupsFetched] = useState(false);
-  const [tuitionSort, setTuitionSort] = useState({ orderBy: 'created_at', orderDir: 'desc' });
-  const [paymentsSort, setPaymentsSort] = useState({ orderBy: 'created_at', orderDir: 'desc' });
-  const [requestsSort, setRequestsSort] = useState({ orderBy: 'created_at', orderDir: 'desc' });
-  const [topupsSort, setTopupsSort] = useState({ orderBy: 'created_at', orderDir: 'desc' });
+  const [tuitionSort, setTuitionSort] = useState({});
+  const [paymentsSort, setPaymentsSort] = useState({});
+  const [requestsSort, setRequestsSort] = useState({});
+  const [topupsSort, setTopupsSort] = useState({});
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(language === 'en' ? 'en-US' : 'es-MX', {
+        style: 'currency',
+        currency: 'MXN',
+        minimumFractionDigits: 2,
+      }),
+    [language],
+  );
   const isLoading = status === 'loading';
 
   const {
@@ -590,6 +666,23 @@ const StudentDetailPage = ({
     fetchTabRows(tabKey, { sort: nextSort });
   };
 
+  const handleTuitionMonthClick = useCallback((row, monthKey, details) => {
+    if (!details) {
+      return;
+    }
+
+    const hasDetails =
+      details.totalAmount != null ||
+      (details.payments && details.payments.length > 0) ||
+      details.paymentRequestId != null;
+
+    if (!hasDetails) {
+      return;
+    }
+
+    console.debug('Tuition month selected', { row, monthKey, details });
+  }, []);
+
   const emptyValue = contactStrings.emptyValue;
 
   useEffect(() => {
@@ -772,32 +865,36 @@ const StudentDetailPage = ({
 
   const formId = 'student-detail-form';
 
-  const tuitionColumns = [
-    { key: 'payment_month', label: 'Mes de pago' },
-    { key: 'payment_request_id', label: 'Solicitud' },
-    { key: 'pt_name', label: 'Concepto' },
-    {
-      key: 'total_amount',
-      label: 'Monto',
-      render: (row) => formatCurrency(buildCellValue(row, 'total_amount') ?? row?.amount ?? 0),
-    },
-    { key: 'payment_status_name', label: 'Estatus' },
-    {
-      key: 'created_at',
-      label: 'Creado',
-      render: (row) => formatDateValue(buildCellValue(row, 'created_at'), language) || emptyValue,
-    },
-    {
-      key: 'actions',
-      label: 'Ver detalles',
-      sortable: false,
-      render: () => (
-        <ActionButton type="button" size="sm" variant="ghost">
-          Ver detalles
-        </ActionButton>
-      ),
-    },
-  ];
+  const monthColumns = useMemo(() => {
+    const columns = [];
+
+    for (const row of tuitionRows) {
+      if (!row || typeof row !== 'object') {
+        continue;
+      }
+
+      for (const key of Object.keys(row)) {
+        if (!MONTH_KEY_REGEX.test(key)) {
+          continue;
+        }
+
+        if (!columns.includes(key)) {
+          columns.push(key);
+        }
+      }
+    }
+
+    return columns;
+  }, [tuitionRows]);
+
+  const tuitionColumns = useMemo(
+    () =>
+      monthColumns.map((month) => ({
+        key: month,
+        header: month,
+      })),
+    [monthColumns],
+  );
 
   const paymentsColumns = [
     { key: 'payment_id', label: 'Pago' },
@@ -1302,9 +1399,68 @@ const StudentDetailPage = ({
             </button>
           </div>
           <div className="tabs__content">
-            {activeTab === 'tuition'
-              ? renderTable('tuition', tuitionColumns, tuitionRows, tuitionStatus, tuitionError, tuitionSort)
-              : null}
+            {activeTab === 'tuition' ? (
+              <div className="student-detail-page__table-card">
+                <GlobalTable
+                  className="page__table-wrapper"
+                  tableClassName="page__table mb-0"
+                  columns={tuitionColumns}
+                  data={tuitionRows}
+                  getRowId={(row, index) => {
+                    const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
+                    return studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+                  }}
+                  renderRow={(row, index) => {
+                    const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
+                    const rowKey = studentId ?? row?.payment_reference ?? `${row?.student ?? 'row'}-${index}`;
+
+                    return (
+                      <tr key={rowKey}>
+                        {monthColumns.map((month) => {
+                          const value = row?.[month];
+                          const details = extractTuitionCellDetails(value);
+                          const hasDetails =
+                            details &&
+                            (details.totalAmount != null ||
+                              (details.payments && details.payments.length > 0) ||
+                              details.paymentRequestId != null);
+                          const displayAmount =
+                            details?.totalAmount != null
+                              ? currencyFormatter.format(details.totalAmount)
+                              : null;
+                          const fallbackAmount = normalizeAmount(value);
+                          const fallbackContent =
+                            fallbackAmount != null
+                              ? currencyFormatter.format(fallbackAmount)
+                              : <span className="ui-table__empty-indicator">--</span>;
+                          const cellClassName = !hasDetails && fallbackAmount == null ? 'page__amount-null' : '';
+
+                          return (
+                            <td key={`${rowKey}-${month}`} data-title={month} className={cellClassName}>
+                              {hasDetails ? (
+                                <button
+                                  type="button"
+                                  className="page__amount-button"
+                                  onClick={() => handleTuitionMonthClick(row, month, details)}
+                                >
+                                  {displayAmount ?? <span className="ui-table__empty-indicator">--</span>}
+                                </button>
+                              ) : (
+                                fallbackContent
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  }}
+                  loading={tuitionStatus === 'loading'}
+                  loadingMessage="Cargando colegiaturas..."
+                  error={tuitionError || null}
+                  emptyMessage="No hay información disponible."
+                />
+              </div>
+            ) : null}
             {activeTab === 'requests'
               ? renderTable(
                   'requests',
