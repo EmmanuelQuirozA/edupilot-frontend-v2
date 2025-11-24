@@ -92,6 +92,7 @@ const StudentDetailPage = ({
   const [saveStatus, setSaveStatus] = useState('idle');
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('tuition');
+  const isLoading = status === 'loading';
 
   const {
     loading: loadingLabel = 'Cargando información...',
@@ -291,6 +292,10 @@ const StudentDetailPage = ({
   const stateMessage =
     status === 'loading' ? loadingLabel : status === 'error' ? error || errorLabel : '';
 
+  const hasActiveAccess = Boolean(
+    student?.school_enabled && student?.role_enabled && student?.group_enabled,
+  );
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormValues((prev) => ({ ...prev, [name]: value }));
@@ -466,61 +471,122 @@ const StudentDetailPage = ({
   return (
     <section className="student-detail-page">
       <header className="student-detail-page__header">
-        <div className="student-detail-page__heading">
-          <div className="student-detail-page__identity">
-            <span className="student-detail-page__avatar" aria-hidden="true">
-              {initials || '??'}
-            </span>
-            <div>
-              <p className="student-detail-page__sub">{activeInGroup}</p>
-              <h2>{student?.full_name}</h2>
-              <p className="student-detail-page__meta">
-                <span className={`student-detail-page__chip 
-                  ${student.school_enabled && student.role_enabled && student.group_enabled ? 
-                  'chip--success' : 'chip--warning'}`}
-                >
-                  {student?.user_status || contactStrings.emptyValue}
-                </span>
-                <span className="student-detail-page__chip">{student?.role_name || roleFallback}</span>
-                {/* <span className="student-detail-page__chip chip--light">
-                  {student?.group_status || groupStatusFallback} | {student?.role_status || roleStatusFallback}
-                </span> */}
-              </p>
+        {isLoading ? (
+          <div className="student-detail-page__header-skeleton">
+            <span
+              className="student-detail-page__avatar skeleton skeleton--circle skeleton--lg"
+              aria-hidden="true"
+            />
+            <div className="student-detail-page__heading">
+              <div className="skeleton skeleton--text skeleton--sm" />
+              <div className="skeleton skeleton--text skeleton--lg" />
+              <div className="student-detail-page__meta">
+                <span className="skeleton skeleton--chip" />
+                <span className="skeleton skeleton--chip" />
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="student-detail-page__heading">
+              <div className="student-detail-page__identity">
+                <span className="student-detail-page__avatar" aria-hidden="true">
+                  {initials || '??'}
+                </span>
+                <div>
+                  <p className="student-detail-page__sub">{activeInGroup}</p>
+                  <h2>{student?.full_name || contactStrings.emptyValue}</h2>
+                  <p className="student-detail-page__meta">
+                    <span
+                      className={`student-detail-page__chip ${hasActiveAccess ? 'chip--success' : 'chip--warning'}`}
+                    >
+                      {student?.user_status || contactStrings.emptyValue}
+                    </span>
+                    <span className="student-detail-page__chip">{student?.role_name || roleFallback}</span>
+                    {/* <span className="student-detail-page__chip chip--light">
+                      {student?.group_status || groupStatusFallback} | {student?.role_status || roleStatusFallback}
+                    </span> */}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-        <div className="student-detail-page__actions">
-          <button type="button" className="btn btn--ghost" disabled={status === 'loading'}>
-            {resetPassword}
-          </button>
-          {isEditing ? (
-            <>
-              <button type="button" className="btn btn--secondary" onClick={handleCancelEdit} disabled={saveStatus === 'saving'}>
-                {cancelEdit}
+            <div className="student-detail-page__actions">
+              <button type="button" className="btn btn--ghost" disabled={status === 'loading'}>
+                {resetPassword}
               </button>
-              <button
-                type="submit"
-                form={formId}
-                className="ui-button ui-button--primary"
-                disabled={saveStatus === 'saving'}
-              >
-                {saveStatus === 'saving' ? 'Guardando...' : saveButton}
-              </button>
-            </>
-          ) : (
-            <button type="button" className="ui-button ui-button--primary" onClick={handleStartEdit} disabled={status !== 'success'}>
-              {editButton}
-            </button>
-          )}
-        </div>
+              {isEditing ? (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn--secondary"
+                    onClick={handleCancelEdit}
+                    disabled={saveStatus === 'saving'}
+                  >
+                    {cancelEdit}
+                  </button>
+                  <button
+                    type="submit"
+                    form={formId}
+                    className="ui-button ui-button--primary"
+                    disabled={saveStatus === 'saving'}
+                  >
+                    {saveStatus === 'saving' ? 'Guardando...' : saveButton}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="ui-button ui-button--primary"
+                  onClick={handleStartEdit}
+                  disabled={status !== 'success'}
+                >
+                  {editButton}
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </header>
 
       <div className="student-detail-page__content">
-        {stateMessage ? (
+        {stateMessage && !isLoading ? (
           <p className={`student-detail-page__state student-detail-page__state--${status}`} role={status === 'error' ? 'alert' : undefined}>
             {stateMessage}
           </p>
+        ) : null}
+
+        {isLoading ? (
+          <div className="student-detail-page__skeleton-grid">
+            <div className="student-card skeleton-card">
+              <div className="skeleton skeleton--text skeleton--sm" />
+              <div className="skeleton skeleton--input" />
+              <div className="skeleton skeleton--text skeleton--sm" />
+              <div className="skeleton skeleton--input" />
+              <div className="skeleton skeleton--text skeleton--md" />
+              <div className="skeleton skeleton--btn" />
+            </div>
+            <div className="info-card skeleton-card">
+              <div className="skeleton skeleton--text skeleton--sm" />
+              <div className="skeleton skeleton--text skeleton--lg" />
+              <div className="skeleton skeleton--text skeleton--sm" />
+              <div className="student-detail-page__meta">
+                <span className="skeleton skeleton--chip" />
+                <span className="skeleton skeleton--chip" />
+              </div>
+              <div className="skeleton skeleton--input" />
+              <div className="skeleton skeleton--input" />
+              <div className="skeleton skeleton--input" />
+            </div>
+            <div className="info-card skeleton-card">
+              <div className="skeleton skeleton--text skeleton--sm" />
+              <div className="skeleton skeleton--text skeleton--md" />
+              <div className="skeleton skeleton--text skeleton--sm" />
+              <div className="skeleton skeleton--input" />
+              <div className="skeleton skeleton--input" />
+              <div className="skeleton skeleton--input" />
+            </div>
+          </div>
         ) : null}
 
         {!student && status === 'success' ? (
@@ -529,7 +595,7 @@ const StudentDetailPage = ({
           </div>
         ) : null}
 
-        {student ? (
+        {student && !isLoading ? (
           <form id={formId} onSubmit={handleSubmit}>
             <div className="container-fluid m-0 p-0">
               <div className="row g-3">

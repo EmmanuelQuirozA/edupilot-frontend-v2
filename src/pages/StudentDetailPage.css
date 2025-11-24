@@ -368,6 +368,92 @@
   gap: 6px;
 }
 
+.student-detail-page__header-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.student-detail-page__skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.skeleton-card {
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0) 100%);
+  animation: shimmer 1.6s infinite;
+}
+
+.skeleton--circle {
+  border-radius: 50%;
+}
+
+.skeleton--lg {
+  width: 64px;
+  height: 64px;
+}
+
+.skeleton--text {
+  height: 16px;
+  width: 100%;
+}
+
+.skeleton--sm {
+  width: 140px;
+}
+
+.skeleton--md {
+  width: 70%;
+}
+
+.skeleton--chip {
+  height: 26px;
+  width: 120px;
+  border-radius: 999px;
+}
+
+.skeleton--input {
+  height: 42px;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.skeleton--btn {
+  height: 38px;
+  width: 160px;
+  border-radius: 10px;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 @media (max-width: 1120px) {
 
   .student-detail-page__sidebar {
