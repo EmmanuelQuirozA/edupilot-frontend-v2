@@ -43,6 +43,39 @@ const buildFormStateFromStudent = (detail) => ({
   email: detail?.email ?? '',
 });
 
+const buildAddressString = (source, emptyValue = '—') => {
+  if (!source) {
+    return emptyValue;
+  }
+
+  const parts = [
+    [source.street, [source.ext_number, source.int_number].filter(Boolean).join(' ')]
+      .filter(Boolean)
+      .join(' '),
+    source.suburb,
+    source.locality,
+    source.municipality,
+    source.state,
+  ]
+    .map((part) => (typeof part === 'string' ? part.trim() : ''))
+    .filter(Boolean);
+
+  return parts.length > 0 ? parts.join(', ') : emptyValue;
+};
+
+const formatDateValue = (value, locale = 'es') => {
+  if (!value) {
+    return '';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
 const StudentDetailPage = ({
   studentId,
   language = 'es',
@@ -80,7 +113,88 @@ const StudentDetailPage = ({
       payments: 'Pagos',
       topups: 'Recargas',
     },
+    header: headerStrings = {},
+    summaryCard = {},
+    institutionCard = {},
+    contactCard = {},
+    validation = {},
   } = strings ?? {};
+
+  const {
+    activeInGroup = 'Activo en Grupo',
+    roleFallback = 'Rol',
+    groupStatusFallback = 'Estado grupo',
+    roleStatusFallback = 'Estado rol',
+  } = headerStrings || {};
+
+  const summaryStrings = {
+    title: summaryCard.title ?? 'Cuenta del alumno',
+    paymentReference: summaryCard.paymentReference ?? 'Referencia de pago',
+    balanceLabel: summaryCard.balanceLabel ?? 'Saldo actual',
+    lastPayment: summaryCard.lastPayment ?? 'Último pago registrado',
+    creditsLabel: summaryCard.creditsLabel ?? 'Creditos de referencia',
+    groupIdLabel: summaryCard.groupIdLabel ?? 'ID Grupo',
+    historyButton: summaryCard.historyButton ?? 'Ver historial de pagos',
+    registerPlaceholder: summaryCard.registerPlaceholder ?? 'Ej. 5003',
+    paymentReferencePlaceholder: summaryCard.paymentReferencePlaceholder ?? 'Ingresa referencia',
+  };
+
+  const institutionStrings = {
+    label: institutionCard.label ?? 'Institución',
+    meta: institutionCard.meta ?? 'Agrega o actualiza la información escolar.',
+    schoolStatus: institutionCard.schoolStatus ?? 'Estatus escolar',
+    generationLabel: institutionCard.generationLabel ?? 'Generación',
+    fields: {
+      schoolId: institutionCard.fields?.schoolId ?? 'Escuela (ID)',
+      scholarLevel: institutionCard.fields?.scholarLevel ?? 'Nivel escolar',
+      groupId: institutionCard.fields?.groupId ?? 'Grupo (ID)',
+      gradeGroup: institutionCard.fields?.gradeGroup ?? 'Grado y grupo',
+      generation: institutionCard.fields?.generation ?? 'Generación',
+      curp: institutionCard.fields?.curp ?? 'CURP',
+    },
+  };
+
+  const contactStrings = {
+    label: contactCard.label ?? 'Información de contacto',
+    subtitle: contactCard.subtitle ?? 'Datos personales y de contacto del alumno.',
+    meta: contactCard.meta ?? 'Revisa los datos principales del alumno.',
+    roleChip: contactCard.roleChip ?? '',
+    roleStatusChip: contactCard.roleStatusChip ?? '',
+    emptyValue: contactCard.emptyValue ?? '—',
+    summaryTitle: contactCard.summaryTitle ?? 'Datos principales',
+    summary: {
+      phone: contactCard.summary?.phone ?? 'Teléfono',
+      birthDate: contactCard.summary?.birthDate ?? 'Fecha de nacimiento',
+      taxId: contactCard.summary?.taxId ?? 'RFC',
+      institutionalEmail: contactCard.summary?.institutionalEmail ?? 'Correo institucional',
+      personalEmail: contactCard.summary?.personalEmail ?? 'Correo personal',
+      address: contactCard.summary?.address ?? 'Dirección',
+    },
+    addressHelper: contactCard.addressHelper ?? 'Agrega la dirección actual del alumno.',
+    fields: {
+      firstName: contactCard.fields?.firstName ?? 'Nombre',
+      lastNameFather: contactCard.fields?.lastNameFather ?? 'Apellido paterno',
+      lastNameMother: contactCard.fields?.lastNameMother ?? 'Apellido materno',
+      birthDate: contactCard.fields?.birthDate ?? 'Fecha de nacimiento',
+      phoneNumber: contactCard.fields?.phoneNumber ?? 'Teléfono',
+      taxId: contactCard.fields?.taxId ?? 'RFC',
+      email: contactCard.fields?.email ?? 'Correo institucional',
+      personalEmail: contactCard.fields?.personalEmail ?? 'Correo personal',
+      street: contactCard.fields?.street ?? 'Calle',
+      extNumber: contactCard.fields?.extNumber ?? 'No. Exterior',
+      intNumber: contactCard.fields?.intNumber ?? 'No. Interior',
+      suburb: contactCard.fields?.suburb ?? 'Colonia',
+      locality: contactCard.fields?.locality ?? 'Localidad',
+      municipality: contactCard.fields?.municipality ?? 'Municipio',
+      state: contactCard.fields?.state ?? 'Estado',
+    },
+  };
+
+  const validationStrings = {
+    required: validation.required ?? 'Campo obligatorio',
+    invalidEmail: validation.invalidEmail ?? 'Correo inválido',
+    invalidPersonalEmail: validation.invalidPersonalEmail ?? 'Correo inválido',
+  };
 
   useEffect(() => {
     if (!studentId) {
@@ -193,16 +307,16 @@ const StudentDetailPage = ({
 
     REQUIRED_FIELDS.forEach((field) => {
       if (!String(formValues[field] ?? '').trim()) {
-        nextErrors[field] = 'Campo obligatorio';
+        nextErrors[field] = validationStrings.required;
       }
     });
 
     if (formValues.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formValues.email)) {
-      nextErrors.email = 'Correo inválido';
+      nextErrors.email = validationStrings.invalidEmail;
     }
 
     if (formValues.personal_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formValues.personal_email)) {
-      nextErrors.personal_email = 'Correo inválido';
+      nextErrors.personal_email = validationStrings.invalidPersonalEmail;
     }
 
     setFormErrors(nextErrors);
@@ -315,6 +429,44 @@ const StudentDetailPage = ({
     }).format(normalized);
   };
 
+  const emptyValue = contactStrings.emptyValue;
+
+  const renderEditableField = (
+    label,
+    name,
+    { placeholder = '', type = 'text', valueOverride, errorOverride, inputClassName = 'input' } = {},
+  ) => {
+    const value = valueOverride ?? formValues[name] ?? '';
+    const error = errorOverride ?? formErrors[name];
+    const displayValue = value || emptyValue;
+
+    return (
+      <label className="field">
+        <span>{label}</span>
+        {isEditing ? (
+          <input
+            type={type}
+            name={name}
+            value={value}
+            onChange={handleChange}
+            className={error ? `${inputClassName} input--error` : inputClassName}
+            placeholder={placeholder}
+          />
+        ) : (
+          <p className="field__value">{displayValue}</p>
+        )}
+        {isEditing && error ? <span className="input__error">{error}</span> : null}
+      </label>
+    );
+  };
+
+  const renderStaticField = (label, value, { className = '' } = {}) => (
+    <div className={`field ${className}`.trim()}>
+      <span>{label}</span>
+      <p className="field__value">{value || emptyValue}</p>
+    </div>
+  );
+
   const formId = 'student-detail-form';
 
   return (
@@ -326,14 +478,14 @@ const StudentDetailPage = ({
               {backToStudents}
             </span>
             <span className="student-detail-page__breadcrumb-divider">/</span>
-            <span className="student-detail-page__breadcrumb-current">Detalle de alumno</span>
+            <span className="student-detail-page__breadcrumb-current">{breadcrumbFallback}</span>
           </div>
           <div className="student-detail-page__identity">
             <span className="student-detail-page__avatar" aria-hidden="true">
               {initials || '??'}
             </span>
             <div>
-              <p className="student-detail-page__sub">Activo en Grupo</p>
+              <p className="student-detail-page__sub">{activeInGroup}</p>
               <h2>{student?.full_name || breadcrumbFallback}</h2>
               <p className="student-detail-page__meta">
                 <span
@@ -341,11 +493,11 @@ const StudentDetailPage = ({
                     student?.user_status === 'Activo' ? 'chip--success' : 'chip--muted'
                   }`}
                 >
-                  {student?.user_status || '—'}
+                  {student?.user_status || contactStrings.emptyValue}
                 </span>
-                <span className="student-detail-page__chip">{student?.role_name || 'Rol'}</span>
+                <span className="student-detail-page__chip">{student?.role_name || roleFallback}</span>
                 <span className="student-detail-page__chip chip--light">
-                  {student?.group_status || 'Estado grupo'} | {student?.role_status || 'Estado rol'}
+                  {student?.group_status || groupStatusFallback} | {student?.role_status || roleStatusFallback}
                 </span>
               </p>
             </div>
@@ -398,48 +550,56 @@ const StudentDetailPage = ({
                 <div className="student-card__row">
                   <div>
                     <p className="student-card__label">{registerLabel}</p>
-                    <input
-                      name="register_id"
-                      value={formValues.register_id}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className={formErrors.register_id ? 'input input--error' : 'input'}
-                      placeholder="Ej. 5003"
-                    />
-                    {formErrors.register_id ? <span className="input__error">{formErrors.register_id}</span> : null}
+                    {isEditing ? (
+                      <input
+                        name="register_id"
+                        value={formValues.register_id}
+                        onChange={handleChange}
+                        className={formErrors.register_id ? 'input input--error' : 'input'}
+                        placeholder={summaryStrings.registerPlaceholder}
+                      />
+                    ) : (
+                      <p className="field__value">{formValues.register_id || emptyValue}</p>
+                    )}
+                    {isEditing && formErrors.register_id ? (
+                      <span className="input__error">{formErrors.register_id}</span>
+                    ) : null}
                   </div>
                   <div>
-                    <p className="student-card__label">Referencia de pago</p>
-                    <input
-                      name="payment_reference"
-                      value={formValues.payment_reference ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="Ingresa referencia"
-                    />
+                    <p className="student-card__label">{summaryStrings.paymentReference}</p>
+                    {isEditing ? (
+                      <input
+                        name="payment_reference"
+                        value={formValues.payment_reference ?? ''}
+                        onChange={handleChange}
+                        className="input"
+                        placeholder={summaryStrings.paymentReferencePlaceholder}
+                      />
+                    ) : (
+                      <p className="field__value">{formValues.payment_reference || emptyValue}</p>
+                    )}
                   </div>
                 </div>
                 <div className="student-card__divider" />
                 <div className="student-card__info">
                   <div>
-                    <p className="student-card__label">Saldo actual</p>
+                    <p className="student-card__label">{summaryStrings.balanceLabel}</p>
                     <h3>{formatCurrency(student.balance)}</h3>
-                    <p className="student-card__hint">Último pago 10 dic 2024</p>
+                    <p className="student-card__hint">{summaryStrings.lastPayment}</p>
                   </div>
                   <div className="student-card__info">
                     <div>
-                      <p className="student-card__label">Creditos de referencia</p>
-                      <p className="student-card__value">{student.payment_reference || '—'}</p>
+                      <p className="student-card__label">{summaryStrings.creditsLabel}</p>
+                      <p className="student-card__value">{student.payment_reference || emptyValue}</p>
                     </div>
                     <div>
-                      <p className="student-card__label">ID Grupo</p>
-                      <p className="student-card__value">{student.group_id || '—'}</p>
+                      <p className="student-card__label">{summaryStrings.groupIdLabel}</p>
+                      <p className="student-card__value">{student.group_id || emptyValue}</p>
                     </div>
                   </div>
                 </div>
                 <button type="button" className="btn btn--ghost btn--full" disabled>
-                  Ver historial de pagos
+                  {summaryStrings.historyButton}
                 </button>
               </div>
             </aside>
@@ -448,262 +608,161 @@ const StudentDetailPage = ({
               <section className="info-card">
                 <div className="info-card__header">
                   <div>
-                    <p className="info-card__label">Institución</p>
+                    <p className="info-card__label">{institutionStrings.label}</p>
                     <h3>{student.business_name || student.commercial_name || '—'}</h3>
-                    <p className="info-card__meta">{student.user_status || '—'}</p>
+                    <p className="info-card__meta">{institutionStrings.meta}</p>
                   </div>
                   <div className="info-card__status">
-                    <span className="student-detail-page__chip chip--success">{student.school_status || '—'}</span>
-                    <span className="student-detail-page__chip chip--info">{student.generation || 'Generación'}</span>
+                    <span className="student-detail-page__chip chip--success">
+                      {student.school_status || institutionStrings.schoolStatus}
+                    </span>
+                    <span className="student-detail-page__chip chip--info">
+                      {student.generation || institutionStrings.generationLabel}
+                    </span>
                   </div>
                 </div>
                 <div className="info-card__grid">
-                  <label className="field">
-                    <span>Escuela (ID)</span>
-                    <input
-                      name="school_id"
-                      value={formValues.school_id}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className={formErrors.school_id ? 'input input--error' : 'input'}
-                      placeholder="ID de escuela"
-                    />
-                    {formErrors.school_id ? <span className="input__error">{formErrors.school_id}</span> : null}
-                  </label>
-                  <label className="field">
-                    <span>Nivel escolar</span>
-                    <input value={student.scholar_level_name || '—'} disabled className="input input--static" />
-                  </label>
-                  <label className="field">
-                    <span>Grupo (ID)</span>
-                    <input
-                      name="group_id"
-                      value={formValues.group_id}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className={formErrors.group_id ? 'input input--error' : 'input'}
-                      placeholder="ID de grupo"
-                    />
-                    {formErrors.group_id ? <span className="input__error">{formErrors.group_id}</span> : null}
-                  </label>
-                  <label className="field">
-                    <span>Grado y grupo</span>
-                    <input value={student.grade_group || `${student.grade || ''} ${student.group || ''}` || '—'} disabled className="input input--static" />
-                  </label>
-                  <label className="field">
-                    <span>Generación</span>
-                    <input value={student.generation || '—'} disabled className="input input--static" />
-                  </label>
-                  <label className="field">
-                    <span>CURP</span>
-                    <input
-                      name="curp"
-                      value={formValues.curp ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="Ingresa CURP"
-                    />
-                  </label>
+                  {renderEditableField(institutionStrings.fields.schoolId, 'school_id', {
+                    placeholder: institutionStrings.fields.schoolId,
+                    inputClassName: 'input',
+                  })}
+                  {renderStaticField(institutionStrings.fields.scholarLevel, student.scholar_level_name)}
+                  {renderEditableField(institutionStrings.fields.groupId, 'group_id', {
+                    placeholder: institutionStrings.fields.groupId,
+                    inputClassName: 'input',
+                  })}
+                  {renderStaticField(
+                    institutionStrings.fields.gradeGroup,
+                    student.grade_group || `${student.grade || ''} ${student.group || ''}`.trim(),
+                  )}
+                  {renderStaticField(institutionStrings.fields.generation, student.generation)}
+                  {renderEditableField(institutionStrings.fields.curp, 'curp', {
+                    placeholder: institutionStrings.fields.curp,
+                    inputClassName: 'input',
+                  })}
                 </div>
               </section>
 
               <section className="info-card">
                 <div className="info-card__header">
                   <div>
-                    <p className="info-card__label">Información de contacto</p>
-                    <h3>{student.username || 'Usuario no registrado'}</h3>
-                    <p className="info-card__meta">{student.email || 'Sin correo'}</p>
+                    <p className="info-card__label">{contactStrings.label}</p>
+                    <h3>{student.username || breadcrumbFallback}</h3>
+                    <p className="info-card__meta">{student.email || contactStrings.meta}</p>
                   </div>
                   <div className="info-card__status">
-                    <span className="student-detail-page__chip chip--info">{student.role_name || '—'}</span>
-                    <span className="student-detail-page__chip chip--success">{student.role_status || '—'}</span>
+                    <span className="student-detail-page__chip chip--info">
+                      {student.role_name || contactStrings.roleChip || roleFallback}
+                    </span>
+                    <span className="student-detail-page__chip chip--success">
+                      {student.role_status || contactStrings.roleStatusChip || contactStrings.emptyValue}
+                    </span>
                   </div>
                 </div>
-                <div className="info-card__grid">
-                  <label className="field">
-                    <span>Nombre</span>
-                    <input
-                      name="first_name"
-                      value={formValues.first_name}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className={formErrors.first_name ? 'input input--error' : 'input'}
-                      placeholder="Nombre(s)"
-                    />
-                    {formErrors.first_name ? <span className="input__error">{formErrors.first_name}</span> : null}
-                  </label>
-                  <label className="field">
-                    <span>Apellido paterno</span>
-                    <input
-                      name="last_name_father"
-                      value={formValues.last_name_father}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className={formErrors.last_name_father ? 'input input--error' : 'input'}
-                      placeholder="Apellido paterno"
-                    />
-                    {formErrors.last_name_father ? <span className="input__error">{formErrors.last_name_father}</span> : null}
-                  </label>
-                  <label className="field">
-                    <span>Apellido materno</span>
-                    <input
-                      name="last_name_mother"
-                      value={formValues.last_name_mother}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className={formErrors.last_name_mother ? 'input input--error' : 'input'}
-                      placeholder="Apellido materno"
-                    />
-                    {formErrors.last_name_mother ? <span className="input__error">{formErrors.last_name_mother}</span> : null}
-                  </label>
-                  <label className="field">
-                    <span>Fecha de nacimiento</span>
-                    <input
-                      type="date"
-                      name="birth_date"
-                      value={formValues.birth_date ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Teléfono</span>
-                    <input
-                      name="phone_number"
-                      value={formValues.phone_number ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="Agregar número"
-                    />
-                  </label>
-                  <label className="field">
-                    <span>RFC</span>
-                    <input
-                      name="tax_id"
-                      value={formValues.tax_id ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="RFC"
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Correo institucional</span>
-                    <input
-                      name="email"
-                      value={formValues.email ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className={formErrors.email ? 'input input--error' : 'input'}
-                      placeholder="Correo institucional"
-                    />
-                    {formErrors.email ? <span className="input__error">{formErrors.email}</span> : null}
-                  </label>
-                  <label className="field">
-                    <span>Correo personal</span>
-                    <input
-                      name="personal_email"
-                      value={formValues.personal_email ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className={formErrors.personal_email ? 'input input--error' : 'input'}
-                      placeholder="Correo personal"
-                    />
-                    {formErrors.personal_email ? <span className="input__error">{formErrors.personal_email}</span> : null}
-                  </label>
-                </div>
-              </section>
-
-              <section className="info-card">
-                <div className="info-card__header">
-                  <div>
-                    <p className="info-card__label">Dirección</p>
-                    <h3>Datos de localización</h3>
-                    <p className="info-card__meta">Agrega la dirección actual del alumno.</p>
+                {isEditing ? (
+                  <>
+                    <div className="info-card__grid">
+                      {renderEditableField(contactStrings.fields.firstName, 'first_name', {
+                        placeholder: contactStrings.fields.firstName,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.lastNameFather, 'last_name_father', {
+                        placeholder: contactStrings.fields.lastNameFather,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.lastNameMother, 'last_name_mother', {
+                        placeholder: contactStrings.fields.lastNameMother,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.birthDate, 'birth_date', {
+                        placeholder: contactStrings.fields.birthDate,
+                        type: 'date',
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.phoneNumber, 'phone_number', {
+                        placeholder: contactStrings.fields.phoneNumber,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.taxId, 'tax_id', {
+                        placeholder: contactStrings.fields.taxId,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.email, 'email', {
+                        placeholder: contactStrings.fields.email,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.personalEmail, 'personal_email', {
+                        placeholder: contactStrings.fields.personalEmail,
+                        inputClassName: 'input',
+                      })}
+                    </div>
+                    <div className="info-card__grid info-card__grid--address">
+                      {renderEditableField(contactStrings.fields.street, 'street', {
+                        placeholder: contactStrings.fields.street,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.extNumber, 'ext_number', {
+                        placeholder: contactStrings.fields.extNumber,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.intNumber, 'int_number', {
+                        placeholder: contactStrings.fields.intNumber,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.suburb, 'suburb', {
+                        placeholder: contactStrings.fields.suburb,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.locality, 'locality', {
+                        placeholder: contactStrings.fields.locality,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.municipality, 'municipality', {
+                        placeholder: contactStrings.fields.municipality,
+                        inputClassName: 'input',
+                      })}
+                      {renderEditableField(contactStrings.fields.state, 'state', {
+                        placeholder: contactStrings.fields.state,
+                        inputClassName: 'input',
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="info-card__summary">
+                    <p className="info-card__summary-title">{contactStrings.summaryTitle}</p>
+                    <ul className="info-card__list">
+                      <li>
+                        <strong>{contactStrings.fields.firstName}:</strong>{' '}
+                        {student.full_name || breadcrumbFallback}
+                      </li>
+                      <li>
+                        <strong>{contactStrings.summary.phone}:</strong>{' '}
+                        {student.phone_number || emptyValue}
+                      </li>
+                      <li>
+                        <strong>{contactStrings.summary.birthDate}:</strong>{' '}
+                        {formatDateValue(student.birth_date, language) || emptyValue}
+                      </li>
+                      <li>
+                        <strong>{contactStrings.summary.taxId}:</strong>{' '}
+                        {student.tax_id || emptyValue}
+                      </li>
+                      <li>
+                        <strong>{contactStrings.summary.institutionalEmail}:</strong>{' '}
+                        {student.email || emptyValue}
+                      </li>
+                      <li>
+                        <strong>{contactStrings.summary.personalEmail}:</strong>{' '}
+                        {student.personal_email || emptyValue}
+                      </li>
+                    </ul>
+                    <div className="info-card__address">
+                      <p className="info-card__summary-title">{contactStrings.summary.address}</p>
+                      <p className="info-card__meta">{contactStrings.addressHelper}</p>
+                      <p className="field__value">{buildAddressString(student, emptyValue)}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="info-card__grid info-card__grid--address">
-                  <label className="field">
-                    <span>Calle</span>
-                    <input
-                      name="street"
-                      value={formValues.street ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="Ingresa calle"
-                    />
-                  </label>
-                  <label className="field">
-                    <span>No. Exterior</span>
-                    <input
-                      name="ext_number"
-                      value={formValues.ext_number ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="Ext."
-                    />
-                  </label>
-                  <label className="field">
-                    <span>No. Interior</span>
-                    <input
-                      name="int_number"
-                      value={formValues.int_number ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="Int."
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Colonia</span>
-                    <input
-                      name="suburb"
-                      value={formValues.suburb ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="Colonia"
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Localidad</span>
-                    <input
-                      name="locality"
-                      value={formValues.locality ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="Localidad"
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Municipio</span>
-                    <input
-                      name="municipality"
-                      value={formValues.municipality ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="Municipio"
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Estado</span>
-                    <input
-                      name="state"
-                      value={formValues.state ?? ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="input"
-                      placeholder="Estado"
-                    />
-                  </label>
-                </div>
+                )}
               </section>
             </div>
           </form>

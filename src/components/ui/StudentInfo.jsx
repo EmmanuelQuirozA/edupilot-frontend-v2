@@ -17,6 +17,7 @@ const StudentInfo = ({
   metaLabel,
   metaValue,
   onClick,
+  href,
   disabled = false,
   avatarText,
   avatarFallback = '??',
@@ -34,6 +35,7 @@ const StudentInfo = ({
     .filter(Boolean)
     .join(' ');
   const isButtonDisabled = customDisabled ?? disabled;
+  const linkHref = typeof href === 'string' && href.trim() ? href.trim() : undefined;
 
   const renderMeta = () => {
     if (metaValue == null || metaValue === '') {
@@ -53,22 +55,34 @@ const StudentInfo = ({
     return <span className="table__student-meta">{metaValue}</span>;
   };
 
-  if (typeof onClick === 'function') {
+  if (typeof onClick === 'function' || linkHref) {
     return (
       <div className={wrapperClassName}>
         <span className="table__avatar" aria-hidden="true">
           {avatarContent}
         </span>
         <div className="table__student-info">
-          <button
-            type={type ?? 'button'}
-            className={buttonClassName}
-            disabled={isButtonDisabled}
-            {...restButtonProps}
-            onClick={onClick}
-          >
-            {displayName}
-          </button>
+          {linkHref ? (
+            <a
+              href={linkHref}
+              className={buttonClassName}
+              aria-disabled={isButtonDisabled}
+              onClick={isButtonDisabled ? (event) => event.preventDefault() : onClick}
+              {...restButtonProps}
+            >
+              {displayName}
+            </a>
+          ) : (
+            <button
+              type={type ?? 'button'}
+              className={buttonClassName}
+              disabled={isButtonDisabled}
+              {...restButtonProps}
+              onClick={onClick}
+            >
+              {displayName}
+            </button>
+          )}
           {renderMeta()}
         </div>
       </div>
