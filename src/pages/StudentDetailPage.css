@@ -347,6 +347,54 @@
   font-weight: 600;
 }
 
+.student-detail-page__table-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 10px 25px -20px rgba(15, 23, 42, 0.2);
+}
+
+.student-detail-table__wrapper {
+  overflow-x: auto;
+}
+
+.student-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.student-detail-table th,
+.student-detail-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.student-detail-table thead {
+  background: #f8fafc;
+}
+
+.student-detail-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.student-detail-table__sort-icon {
+  color: #475569;
+  font-size: 12px;
+}
+
+.student-detail-table tbody tr:hover {
+  background: #f8fafc;
+}
+
 .info-card__summary {
   display: flex;
   flex-direction: column;
