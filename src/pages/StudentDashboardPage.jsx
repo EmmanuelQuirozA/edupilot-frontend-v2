@@ -39,7 +39,7 @@ const DEFAULT_TUITION_MODAL_STRINGS = {
       status: 'Estatus',
     },
     empty: 'No hay pagos registrados para este mes.',
-    paymentLinkLabel: 'Abrir detalle del pago',
+    paymentLinkLabel: 'Ver detalle',
   },
   requestButton: 'Ver solicitud de pago',
   close: 'Cerrar',

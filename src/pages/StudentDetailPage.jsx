@@ -712,7 +712,7 @@ const StudentDetailPage = ({
                         <span className="student-detail-page__chip chip--info">
                           {student.role_name || contactStrings.roleChip || roleFallback}
                         </span>
-                        <span className={`student-detail-page__chip  'chip--warning'`}>
+                        <span className={`student-detail-page__chip ${student.user_enabled ? 'chip--success' : 'chip--warning'}`}>
                           {student.user_status || contactStrings.roleStatusChip || contactStrings.emptyValue}
                         </span>
                       </div>
@@ -862,28 +862,28 @@ const StudentDetailPage = ({
           <div className="tabs__header">
             <button
               type="button"
-              className={`tab-btn ${activeTab === 'tuition' ? 'tab-btn--active' : ''}`}
+              className={`tab-btn ${activeTab === 'tuition' ? 'fw-bold tab-btn--active' : ''}`}
               onClick={() => setActiveTab('tuition')}
             >
               {tabs?.tuition || 'Colegíaturas'}
             </button>
             <button
               type="button"
-              className={`tab-btn ${activeTab === 'requests' ? 'tab-btn--active' : ''}`}
+              className={`tab-btn ${activeTab === 'requests' ? 'fw-bold tab-btn--active' : ''}`}
               onClick={() => setActiveTab('requests')}
             >
               {tabs?.requests || 'Solicitudes de pagos'}
             </button>
             <button
               type="button"
-              className={`tab-btn ${activeTab === 'payments' ? 'tab-btn--active' : ''}`}
+              className={`tab-btn ${activeTab === 'payments' ? 'fw-bold tab-btn--active' : ''}`}
               onClick={() => setActiveTab('payments')}
             >
               {tabs?.payments || 'Pagos'}
             </button>
             <button
               type="button"
-              className={`tab-btn ${activeTab === 'topups' ? 'tab-btn--active' : ''}`}
+              className={`tab-btn ${activeTab === 'topups' ? 'fw-bold tab-btn--active' : ''}`}
               onClick={() => setActiveTab('topups')}
             >
               {tabs?.topups || 'Recargas'}
