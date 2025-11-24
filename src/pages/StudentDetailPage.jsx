@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { handleExpiredToken } from '../utils/auth';
+import ActionButton from '../components/ui/ActionButton.jsx';
 import './StudentDetailPage.css';
 
 const REQUIRED_FIELDS = ['first_name', 'last_name_father', 'last_name_mother', 'school_id', 'group_id', 'register_id', 'email'];
@@ -42,6 +43,8 @@ const buildFormStateFromStudent = (detail) => ({
   personal_email: detail?.personal_email ?? '',
   email: detail?.email ?? '',
 });
+
+const TABLE_LIMIT = 10;
 
 const buildAddressString = (source, emptyValue = '—') => {
   if (!source) {
@@ -92,6 +95,26 @@ const StudentDetailPage = ({
   const [saveStatus, setSaveStatus] = useState('idle');
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('tuition');
+  const [tuitionRows, setTuitionRows] = useState([]);
+  const [paymentsRows, setPaymentsRows] = useState([]);
+  const [requestsRows, setRequestsRows] = useState([]);
+  const [topupsRows, setTopupsRows] = useState([]);
+  const [tuitionStatus, setTuitionStatus] = useState('idle');
+  const [paymentsStatus, setPaymentsStatus] = useState('idle');
+  const [requestsStatus, setRequestsStatus] = useState('idle');
+  const [topupsStatus, setTopupsStatus] = useState('idle');
+  const [tuitionError, setTuitionError] = useState('');
+  const [paymentsError, setPaymentsError] = useState('');
+  const [requestsError, setRequestsError] = useState('');
+  const [topupsError, setTopupsError] = useState('');
+  const [tuitionFetched, setTuitionFetched] = useState(false);
+  const [paymentsFetched, setPaymentsFetched] = useState(false);
+  const [requestsFetched, setRequestsFetched] = useState(false);
+  const [topupsFetched, setTopupsFetched] = useState(false);
+  const [tuitionSort, setTuitionSort] = useState({ orderBy: 'created_at', orderDir: 'desc' });
+  const [paymentsSort, setPaymentsSort] = useState({ orderBy: 'created_at', orderDir: 'desc' });
+  const [requestsSort, setRequestsSort] = useState({ orderBy: 'created_at', orderDir: 'desc' });
+  const [topupsSort, setTopupsSort] = useState({ orderBy: 'created_at', orderDir: 'desc' });
   const isLoading = status === 'loading';
 
   const {
@@ -200,6 +223,18 @@ const StudentDetailPage = ({
       setStudent(null);
       setStatus('idle');
       setError('');
+      setTuitionRows([]);
+      setPaymentsRows([]);
+      setRequestsRows([]);
+      setTopupsRows([]);
+      setTuitionFetched(false);
+      setPaymentsFetched(false);
+      setRequestsFetched(false);
+      setTopupsFetched(false);
+      setTuitionStatus('idle');
+      setPaymentsStatus('idle');
+      setRequestsStatus('idle');
+      setTopupsStatus('idle');
       return;
     }
 
@@ -428,7 +463,184 @@ const StudentDetailPage = ({
     }).format(normalized);
   };
 
+  const getSortState = (key) =>
+    ({
+      tuition: tuitionSort,
+      payments: paymentsSort,
+      requests: requestsSort,
+      topups: topupsSort,
+    }[key] ?? { orderBy: '', orderDir: 'desc' });
+
+  const tabConfig = useMemo(
+    () => ({
+      tuition: {
+        endpoint: 'reports/payments/report',
+        setRows: setTuitionRows,
+        setStatus: setTuitionStatus,
+        setError: setTuitionError,
+        setFetched: setTuitionFetched,
+        sort: tuitionSort,
+      },
+      payments: {
+        endpoint: 'reports/payments',
+        setRows: setPaymentsRows,
+        setStatus: setPaymentsStatus,
+        setError: setPaymentsError,
+        setFetched: setPaymentsFetched,
+        sort: paymentsSort,
+      },
+      requests: {
+        endpoint: 'reports/paymentrequests',
+        setRows: setRequestsRows,
+        setStatus: setRequestsStatus,
+        setError: setRequestsError,
+        setFetched: setRequestsFetched,
+        sort: requestsSort,
+      },
+      topups: {
+        endpoint: 'reports/balance-recharges',
+        setRows: setTopupsRows,
+        setStatus: setTopupsStatus,
+        setError: setTopupsError,
+        setFetched: setTopupsFetched,
+        sort: topupsSort,
+      },
+    }),
+    [paymentsSort, requestsSort, topupsSort, tuitionSort],
+  );
+
+  const fetchTabRows = useCallback(
+    async (tabKey, { sort, signal } = {}) => {
+      if (!studentId || !tabConfig[tabKey]) {
+        return;
+      }
+
+      const { endpoint, setRows, setStatus, setError, setFetched } = tabConfig[tabKey];
+      const sortState = sort || getSortState(tabKey);
+      const params = new URLSearchParams({
+        lang: language ?? 'es',
+        limit: String(TABLE_LIMIT),
+        student_id: String(studentId),
+      });
+
+      if (sortState?.orderBy) {
+        params.set('order_by', sortState.orderBy);
+      }
+
+      if (sortState?.orderDir) {
+        params.set('order_dir', sortState.orderDir);
+      }
+
+      try {
+        setStatus('loading');
+        setError('');
+
+        const response = await fetch(`${API_BASE_URL}/${endpoint}?${params.toString()}`, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          signal,
+        });
+
+        if (!response.ok) {
+          handleExpiredToken(response, logout);
+          throw new Error('Failed to load table data');
+        }
+
+        const payload = await response.json();
+        const content = Array.isArray(payload?.content)
+          ? payload.content
+          : Array.isArray(payload)
+            ? payload
+            : [];
+
+        setRows(content);
+        setFetched(true);
+        setStatus('success');
+      } catch (requestError) {
+        if (requestError?.name === 'AbortError') {
+          return;
+        }
+
+        console.error('Failed to load table', tabKey, requestError);
+        setStatus('error');
+        setError('No fue posible cargar la información.');
+      }
+    },
+    [language, logout, studentId, tabConfig, token],
+  );
+
+  const handleSort = (tabKey, columnKey) => {
+    if (!columnKey || !tabConfig[tabKey]) {
+      return;
+    }
+
+    const currentSort = getSortState(tabKey);
+    const nextDir =
+      currentSort.orderBy === columnKey && currentSort.orderDir === 'asc' ? 'desc' : 'asc';
+    const nextSort = { orderBy: columnKey, orderDir: nextDir };
+
+    if (tabKey === 'tuition') setTuitionSort(nextSort);
+    if (tabKey === 'payments') setPaymentsSort(nextSort);
+    if (tabKey === 'requests') setRequestsSort(nextSort);
+    if (tabKey === 'topups') setTopupsSort(nextSort);
+
+    fetchTabRows(tabKey, { sort: nextSort });
+  };
+
   const emptyValue = contactStrings.emptyValue;
+
+  useEffect(() => {
+    if (!studentId) {
+      return undefined;
+    }
+
+    setTuitionRows([]);
+    setPaymentsRows([]);
+    setRequestsRows([]);
+    setTopupsRows([]);
+    setTuitionFetched(false);
+    setPaymentsFetched(false);
+    setRequestsFetched(false);
+    setTopupsFetched(false);
+
+    return undefined;
+  }, [studentId]);
+
+  useEffect(() => {
+    if (!studentId) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    fetchTabRows('tuition', { signal: controller.signal });
+
+    return () => controller.abort();
+  }, [fetchTabRows, studentId]);
+
+  useEffect(() => {
+    if (!studentId) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+
+    if (activeTab === 'payments' && !paymentsFetched) {
+      fetchTabRows('payments', { signal: controller.signal });
+    }
+
+    if (activeTab === 'requests' && !requestsFetched) {
+      fetchTabRows('requests', { signal: controller.signal });
+    }
+
+    if (activeTab === 'topups' && !topupsFetched) {
+      fetchTabRows('topups', { signal: controller.signal });
+    }
+
+    return () => controller.abort();
+  }, [activeTab, fetchTabRows, paymentsFetched, requestsFetched, studentId, topupsFetched]);
 
   const renderEditableField = (
     label,
@@ -466,7 +678,207 @@ const StudentDetailPage = ({
     </div>
   );
 
+  const renderSortableHeader = (tabKey, columnKey, label, sortable = true, sortState) => {
+    if (!sortable) {
+      return label;
+    }
+
+    const isActive = sortState?.orderBy === columnKey;
+    const direction = isActive ? sortState?.orderDir : null;
+    const icon = direction === 'asc' ? '▲' : direction === 'desc' ? '▼' : '';
+
+    return (
+      <button type="button" className="student-detail-table__sort" onClick={() => handleSort(tabKey, columnKey)}>
+        <span>{label}</span>
+        <span aria-hidden="true" className="student-detail-table__sort-icon">
+          {icon}
+        </span>
+      </button>
+    );
+  };
+
+  const buildCellValue = (row, key) =>
+    row?.[key] ??
+    row?.[key?.replace(/_(\w)/g, (_, char) => char.toUpperCase())] ??
+    row?.[key?.replace(/([A-Z])/g, '_$1').toLowerCase()];
+
+  const renderTable = (tabKey, columns, rows, statusState, errorState, sortState) => {
+    const isLoadingTable = statusState === 'loading';
+    const hasError = statusState === 'error';
+    const hasRows = Array.isArray(rows) && rows.length > 0;
+
+    return (
+      <div className="student-detail-page__table-card">
+        <div className="student-detail-table__wrapper">
+          <table className="student-detail-table">
+            <thead>
+              <tr>
+                {columns.map((column) => (
+                  <th key={column.key} scope="col">
+                    {renderSortableHeader(
+                      tabKey,
+                      column.key,
+                      column.label,
+                      column.sortable !== false,
+                      sortState,
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {isLoadingTable ? (
+                <tr>
+                  <td colSpan={columns.length} className="text-center">
+                    Cargando información...
+                  </td>
+                </tr>
+              ) : null}
+              {!isLoadingTable && hasError ? (
+                <tr>
+                  <td colSpan={columns.length} className="text-center text-danger">
+                    {errorState || 'No fue posible cargar la información.'}
+                  </td>
+                </tr>
+              ) : null}
+              {!isLoadingTable && !hasError && !hasRows ? (
+                <tr>
+                  <td colSpan={columns.length} className="text-center">
+                    No hay información disponible.
+                  </td>
+                </tr>
+              ) : null}
+              {!isLoadingTable && !hasError && hasRows
+                ? rows.map((row, index) => (
+                    <tr key={row?.id || row?.payment_id || row?.payment_request_id || row?.balance_recharge_id || index}>
+                      {columns.map((column) => (
+                        <td key={column.key} data-title={column.label}>
+                          {column.render
+                            ? column.render(row)
+                            : typeof buildCellValue(row, column.key) === 'number'
+                              ? buildCellValue(row, column.key)
+                              : buildCellValue(row, column.key) || emptyValue}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                : null}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   const formId = 'student-detail-form';
+
+  const tuitionColumns = [
+    { key: 'payment_month', label: 'Mes de pago' },
+    { key: 'payment_request_id', label: 'Solicitud' },
+    { key: 'pt_name', label: 'Concepto' },
+    {
+      key: 'total_amount',
+      label: 'Monto',
+      render: (row) => formatCurrency(buildCellValue(row, 'total_amount') ?? row?.amount ?? 0),
+    },
+    { key: 'payment_status_name', label: 'Estatus' },
+    {
+      key: 'created_at',
+      label: 'Creado',
+      render: (row) => formatDateValue(buildCellValue(row, 'created_at'), language) || emptyValue,
+    },
+    {
+      key: 'actions',
+      label: 'Ver detalles',
+      sortable: false,
+      render: () => (
+        <ActionButton type="button" size="sm" variant="ghost">
+          Ver detalles
+        </ActionButton>
+      ),
+    },
+  ];
+
+  const paymentsColumns = [
+    { key: 'payment_id', label: 'Pago' },
+    { key: 'pt_name', label: 'Concepto' },
+    {
+      key: 'amount',
+      label: 'Monto',
+      render: (row) => formatCurrency(buildCellValue(row, 'amount') ?? 0),
+    },
+    { key: 'payment_status_name', label: 'Estatus' },
+    {
+      key: 'created_at',
+      label: 'Fecha',
+      render: (row) => formatDateValue(buildCellValue(row, 'created_at'), language) || emptyValue,
+    },
+    {
+      key: 'actions',
+      label: 'Ver detalles',
+      sortable: false,
+      render: () => (
+        <ActionButton type="button" size="sm" variant="ghost">
+          Ver detalles
+        </ActionButton>
+      ),
+    },
+  ];
+
+  const requestsColumns = [
+    { key: 'payment_request_id', label: 'Solicitud' },
+    { key: 'pt_name', label: 'Concepto' },
+    {
+      key: 'amount',
+      label: 'Monto',
+      render: (row) => formatCurrency(buildCellValue(row, 'amount') ?? 0),
+    },
+    { key: 'ps_pr_name', label: 'Estatus' },
+    {
+      key: 'due_date',
+      label: 'Vencimiento',
+      render: (row) => formatDateValue(buildCellValue(row, 'due_date'), language) || emptyValue,
+    },
+    {
+      key: 'created_at',
+      label: 'Creado',
+      render: (row) => formatDateValue(buildCellValue(row, 'created_at'), language) || emptyValue,
+    },
+    {
+      key: 'actions',
+      label: 'Ver detalles',
+      sortable: false,
+      render: () => (
+        <ActionButton type="button" size="sm" variant="ghost">
+          Ver detalles
+        </ActionButton>
+      ),
+    },
+  ];
+
+  const topupsColumns = [
+    { key: 'balance_recharge_id', label: 'ID de recarga' },
+    {
+      key: 'amount',
+      label: 'Monto',
+      render: (row) => formatCurrency(buildCellValue(row, 'amount') ?? 0),
+    },
+    {
+      key: 'created_at',
+      label: 'Fecha',
+      render: (row) => formatDateValue(buildCellValue(row, 'created_at'), language) || emptyValue,
+    },
+    {
+      key: 'actions',
+      label: 'Ver detalles',
+      sortable: false,
+      render: () => (
+        <ActionButton type="button" size="sm" variant="ghost">
+          Ver detalles
+        </ActionButton>
+      ),
+    },
+  ];
 
   return (
     <section className="student-detail-page">
@@ -890,10 +1302,32 @@ const StudentDetailPage = ({
             </button>
           </div>
           <div className="tabs__content">
-            {activeTab === 'tuition' ? <p>Gestiona las colegiaturas y mensualidades del alumno.</p> : null}
-            {activeTab === 'requests' ? <p>Consulta las solicitudes de pagos generadas.</p> : null}
-            {activeTab === 'payments' ? <p>Revisa los pagos registrados para el alumno.</p> : null}
-            {activeTab === 'topups' ? <p>Administra las recargas y fondos adicionales.</p> : null}
+            {activeTab === 'tuition'
+              ? renderTable('tuition', tuitionColumns, tuitionRows, tuitionStatus, tuitionError, tuitionSort)
+              : null}
+            {activeTab === 'requests'
+              ? renderTable(
+                  'requests',
+                  requestsColumns,
+                  requestsRows,
+                  requestsStatus,
+                  requestsError,
+                  requestsSort,
+                )
+              : null}
+            {activeTab === 'payments'
+              ? renderTable(
+                  'payments',
+                  paymentsColumns,
+                  paymentsRows,
+                  paymentsStatus,
+                  paymentsError,
+                  paymentsSort,
+                )
+              : null}
+            {activeTab === 'topups'
+              ? renderTable('topups', topupsColumns, topupsRows, topupsStatus, topupsError, topupsSort)
+              : null}
           </div>
         </section>
       </div>
