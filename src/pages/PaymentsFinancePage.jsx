@@ -739,6 +739,10 @@ const PaymentsFinancePage = ({
     () => `/${normalizedLanguage}/payments/requests`,
     [normalizedLanguage],
   );
+  const studentDetailBasePath = useMemo(
+    () => `/${normalizedLanguage}/students`,
+    [normalizedLanguage],
+  );
   const paymentRequestDetailBasePath = paymentRequestsBasePath;
   const paymentRequestScheduleDetailBasePath = useMemo(
     () => `${paymentRequestsBasePath}/scheduled`,
@@ -3592,6 +3596,9 @@ const PaymentsFinancePage = ({
                   const studentIdLabel = tableStrings.studentIdLabel;
                   const studentName = row.student ?? tableStrings.studentFallback;
                   const studentMetaValue = row.payment_reference ?? '';
+                  const studentHref = canNavigateToStudent
+                    ? `${studentDetailBasePath}/${encodeURIComponent(studentId)}`
+                    : undefined;
 
                   return (
                     <tr key={rowKey}>
@@ -3603,6 +3610,7 @@ const PaymentsFinancePage = ({
                           scholarLevel={row.scholar_level_name}
                           enrollment={studentMetaValue}
                           onClick={() => handleStudentDetailClick(row)}
+                          href={studentHref}
                           disabled={!canNavigateToStudent}
                           nameButtonProps={{ 'aria-label': studentName }}
                         />

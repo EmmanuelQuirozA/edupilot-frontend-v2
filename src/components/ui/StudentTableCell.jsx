@@ -25,6 +25,7 @@ const StudentTableCell = ({
   scholarLevel,
   enrollment,
   onClick,
+  href,
   disabled = false,
   className = '',
   avatarText,
@@ -39,6 +40,7 @@ const StudentTableCell = ({
       fallbackName={fallbackName}
       metaValue={metaValue || undefined}
       onClick={onClick}
+      href={href}
       disabled={disabled}
       className={className}
       avatarText={avatarText}
