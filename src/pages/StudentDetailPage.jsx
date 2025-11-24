@@ -858,9 +858,9 @@ const StudentDetailPage = ({
     },
     { key: 'payment_status_name', label: 'Estatus' },
     {
-      key: 'created_at',
+      key: 'payment_created_at',
       label: 'Fecha',
-      render: (row) => formatDateValue(buildCellValue(row, 'created_at'), language) || emptyValue,
+      render: (row) => formatDateValue(buildCellValue(row, 'payment_created_at'), language) || emptyValue,
     },
     {
       key: 'actions',
@@ -884,14 +884,14 @@ const StudentDetailPage = ({
     },
     { key: 'ps_pr_name', label: 'Estatus' },
     {
-      key: 'due_date',
+      key: 'pr_pay_by',
       label: 'Vencimiento',
-      render: (row) => formatDateValue(buildCellValue(row, 'due_date'), language) || emptyValue,
+      render: (row) => formatDateValue(buildCellValue(row, 'pr_pay_by'), language) || emptyValue,
     },
     {
-      key: 'created_at',
+      key: 'pr_created_at',
       label: 'Creado',
-      render: (row) => formatDateValue(buildCellValue(row, 'created_at'), language) || emptyValue,
+      render: (row) => formatDateValue(buildCellValue(row, 'pr_created_at'), language) || emptyValue,
     },
     {
       key: 'actions',
