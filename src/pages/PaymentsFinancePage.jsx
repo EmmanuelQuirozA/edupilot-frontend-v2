@@ -331,8 +331,6 @@ const DEFAULT_PAYMENTS_STRINGS = {
       },
     },
     scheduleRecurrenceComingSoon: 'Muy pronto podrás programar recurrencias.',
-    filterRecurrences: 'Filtrar recurrencias',
-    exportRecurrences: 'Exportar recurrencias',
     viewRequestResult: 'Ver detalle',
     viewScheduledRequestDetail: 'Ver solicitud programada',
     bulkUpload: 'Carga masiva',
@@ -3466,7 +3464,7 @@ const PaymentsFinancePage = ({
                     aria-controls="payment-recurrences-filters"
                     className="rounded-pill d-inline-flex align-items-center gap-2"
                   >
-                    <span className="fw-semibold">{actionStrings.filterRecurrences}</span>
+                    <span className="fw-semibold">{actionStrings.filter}</span>
                     {recurrenceFiltersCount > 0 && (
                       <span className="badge text-bg-primary rounded-pill">{recurrenceFiltersCount}</span>
                     )}
@@ -3478,7 +3476,7 @@ const PaymentsFinancePage = ({
                   >
                     {isRecurrenceExporting
                       ? actionStrings.exporting
-                      : actionStrings.exportRecurrences}
+                      : actionStrings.export}
                   </ExportButton>
                 </>
               ) : (
@@ -3813,6 +3811,7 @@ const PaymentsFinancePage = ({
                       `payment-request-${index}`
                     }
                     renderRow={(row, index) => {
+                      const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
                       const rowKey =
                         row?.payment_request_id ??
                         row?.paymentRequestId ??
@@ -3838,6 +3837,7 @@ const PaymentsFinancePage = ({
                           ? String(dueDateRaw)
                           : dateFormatter.format(parsed);
                       })();
+                      const canNavigateToStudent = Boolean(studentId);
                       const requestIdValue = row?.payment_request_id ?? row?.paymentRequestId ?? null;
                       const requestIdLabel = requestIdValue != null ? String(requestIdValue) : null;
                       const hasValidRequestId = !(
@@ -3849,6 +3849,9 @@ const PaymentsFinancePage = ({
                       const detailButtonLabel = hasValidRequestId
                         ? `${requestsDetailStrings.open} ${requestIdLabel}`
                         : requestsDetailStrings.open;
+                      const studentHref = canNavigateToStudent
+                        ? `${studentDetailBasePath}/${encodeURIComponent(studentId)}`
+                        : undefined;
 
                       return (
                         <tr key={rowKey}>
@@ -3862,17 +3865,9 @@ const PaymentsFinancePage = ({
                               gradeGroup={row?.grade_group}
                               scholarLevel={row?.scholar_level_name}
                               enrollment={studentMeta}
-                              onClick={() =>
-                                handleStudentDetailClick({
-                                  ...row,
-                                  student: studentName,
-                                })
-                              }
-                              nameButtonProps={{
-                                'aria-label': studentMeta
-                                  ? `${studentName} (${tableStrings.studentIdLabel}: ${studentMeta})`
-                                  : studentName,
-                              }}
+                              onClick={() => handleStudentDetailClick(row)}
+                              href={studentHref}
+                              nameButtonProps={{ 'aria-label': studentName }}
                             />
                           </td>
                           <td data-title={requestsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
@@ -3938,10 +3933,12 @@ const PaymentsFinancePage = ({
                   row?.payment_id ?? row?.paymentId ?? row?.payment_reference ?? `payment-${index}`
                 }
                 renderRow={(row, index) => {
+                  const studentId = row?.student_id ?? row?.studentId ?? row?.student_uuid;
                   const rowKey =
                     row?.payment_id ?? row?.paymentId ?? row?.payment_reference ?? `payment-${index}`;
                   const studentName = row?.student_full_name ?? row?.student ?? '';
                   const studentMeta = row?.payment_reference ?? '';
+                  const canNavigateToStudent = Boolean(studentId);
                   const amountRaw = row?.amount;
                   const formattedAmount =
                     typeof amountRaw === 'number'
@@ -3961,6 +3958,9 @@ const PaymentsFinancePage = ({
                   const detailButtonLabel = hasValidPaymentId
                     ? `${paymentDetailButtonLabel} ${paymentIdLabel}`
                     : paymentDetailButtonLabel;
+                  const studentHref = canNavigateToStudent
+                    ? `${studentDetailBasePath}/${encodeURIComponent(studentId)}`
+                    : undefined;
 
                   return (
                     <tr key={rowKey}>
@@ -3974,6 +3974,10 @@ const PaymentsFinancePage = ({
                           gradeGroup={row?.grade_group}
                           scholarLevel={row?.scholar_level_name}
                           enrollment={studentMeta}
+                          onClick={() => handleStudentDetailClick(row)}
+                          href={studentHref}
+                          disabled={!canNavigateToStudent}
+                          nameButtonProps={{ 'aria-label': studentName }}
                         />
                       </td>
                       <td data-title={paymentsTableStrings.columns.concept}>{row?.pt_name ?? '--'}</td>
@@ -4308,7 +4312,7 @@ const PaymentsFinancePage = ({
               {requestsRecurrenceFilterStrings.reset}
             </ActionButton>
             <ActionButton type="submit" form="payment-recurrences-filters-form">
-              {actionStrings.filterRecurrences ?? actionStrings.filter}
+              {actionStrings.filter ?? actionStrings.filter}
             </ActionButton>
           </div>
         }
