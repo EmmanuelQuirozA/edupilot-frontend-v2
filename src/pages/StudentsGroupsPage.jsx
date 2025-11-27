@@ -286,11 +286,7 @@ const StudentsGroupsPage = ({
   const [globalAlert, setGlobalAlert] = useState(null);
   const [schoolOptions, setSchoolOptions] = useState([]);
   const [classOptions, setClassOptions] = useState([]);
-  const [modalMode, setModalMode] = useState('create');
-  const [editingStudentUserId, setEditingStudentUserId] = useState(null);
   const [isStudentPrefetching, setIsStudentPrefetching] = useState(false);
-  const [openActionsMenuId, setOpenActionsMenuId] = useState(null);
-  const [pendingStatusStudentId, setPendingStatusStudentId] = useState(null);
 
   const [groups, setGroups] = useState([]);
   const [totalGroups, setTotalGroups] = useState(0);
@@ -1037,8 +1033,6 @@ const StudentsGroupsPage = ({
     setIsStudentModalOpen(false);
     setStudentForm(createInitialStudent());
     setFormFeedback('');
-    setModalMode('create');
-    setEditingStudentUserId(null);
     setSchoolOptions([]);
     setClassOptions([]);
     setIsStudentPrefetching(false);
@@ -1081,7 +1075,7 @@ const StudentsGroupsPage = ({
     setIsSubmittingStudent(true);
     setFormFeedback('');
 
-    const { student_id: studentId, user_id: userId, ...restForm } = studentForm;
+    const { student_id: _studentId, user_id: _userId, ...restForm } = studentForm;
 
     const sanitizedEntries = Object.entries(restForm).map(([key, value]) => [
       key,
@@ -1090,87 +1084,39 @@ const StudentsGroupsPage = ({
 
     const sanitizedForm = Object.fromEntries(sanitizedEntries);
 
-    if (modalMode === 'edit') {
-      if (sanitizedForm.password === '') {
-        delete sanitizedForm.password;
-      }
-      if (sanitizedForm.username === '') {
-        delete sanitizedForm.username;
-      }
-    }
+    const createPayload = [{ ...sanitizedForm }];
 
     try {
-      if (modalMode === 'edit' && editingStudentUserId) {
-        const updatePayload = {
-          ...sanitizedForm,
-          ...(studentId ? { student_id: studentId } : {}),
-          ...(userId ? { user_id: userId } : {}),
-        };
+      const response = await fetch(`${API_BASE_URL}/students/create?lang=${language ?? 'es'}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(createPayload),
+      });
 
-        const response = await fetch(
-          `${API_BASE_URL}/students/update/${encodeURIComponent(editingStudentUserId)}?lang=${language ?? 'es'}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify(updatePayload),
-          },
-        );
-
-        if (!response.ok) {
-          handleExpiredToken(response, logout);
-        }
-
-        const payload = await response.json();
-        if (!response.ok || !payload?.success) {
-          const feedbackMessage = payload?.message || strings.form.editError;
-          setFormFeedback(feedbackMessage);
-          showGlobalAlert('error', feedbackMessage);
-          return;
-        }
-
-        const successMessage = payload?.message || strings.form.editSuccess;
-        showGlobalAlert('success', successMessage);
-      } else {
-        const createPayload = [{ ...sanitizedForm }];
-
-        const response = await fetch(`${API_BASE_URL}/students/create?lang=${language ?? 'es'}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify(createPayload),
-        });
-
-        if (!response.ok) {
-          handleExpiredToken(response, logout);
-        }
-
-        const payload = await response.json();
-        if (!response.ok || !payload?.success) {
-          const feedbackMessage = payload?.message || strings.form.error;
-          setFormFeedback(feedbackMessage);
-          showGlobalAlert('error', feedbackMessage);
-          return;
-        }
-
-        const successMessage = payload?.message || strings.form.success;
-        showGlobalAlert('success', successMessage);
+      if (!response.ok) {
+        handleExpiredToken(response, logout);
       }
+
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        const feedbackMessage = payload?.message || strings.form.error;
+        setFormFeedback(feedbackMessage);
+        showGlobalAlert('error', feedbackMessage);
+        return;
+      }
+
+      const successMessage = payload?.message || strings.form.success;
+      showGlobalAlert('success', successMessage);
 
       closeStudentModal();
       fetchStudents();
     } catch (error) {
       console.error('Failed to submit student', error);
-      const fallbackMessage =
-        modalMode === 'edit'
-          ? strings.form.editError
-          : strings.form.error;
+      const fallbackMessage = strings.form.error;
       setFormFeedback(fallbackMessage);
       showGlobalAlert('error', fallbackMessage);
     } finally {
@@ -1179,11 +1125,8 @@ const StudentsGroupsPage = ({
   };
 
   const handleOpenCreateStudent = async () => {
-    setModalMode('create');
-    setEditingStudentUserId(null);
     setStudentForm(createInitialStudent());
     setFormFeedback('');
-    setOpenActionsMenuId(null);
     setIsStudentPrefetching(true);
 
     try {
@@ -1222,94 +1165,6 @@ const StudentsGroupsPage = ({
       showGlobalAlert('error', groupFormLoadErrorMessage);
     } finally {
       setIsGroupPrefetching(false);
-    }
-  };
-
-  const handleEditStudent = async (student) => {
-    const studentId = student?.student_id ?? student?.id;
-    if (!studentId) {
-      return;
-    }
-
-    setOpenActionsMenuId(null);
-    setModalMode('edit');
-    setFormFeedback('');
-    setIsStudentPrefetching(true);
-
-    try {
-      const detail = await fetchStudentDetail(studentId);
-      const mappedForm = mapDetailToForm(detail);
-      setStudentForm(mappedForm);
-      setEditingStudentUserId(detail.user_id);
-      await fetchSchools(mappedForm.school_id, mappedForm.group_id);
-      setIsStudentModalOpen(true);
-    } catch (error) {
-      console.error('Failed to load student for editing', error);
-      showGlobalAlert('error', strings.form.loadError);
-    } finally {
-      setIsStudentPrefetching(false);
-    }
-  };
-
-  const handleToggleStudentStatus = async (student, shouldEnable) => {
-    const studentId = student?.student_id ?? student?.id;
-    if (!studentId) {
-      return;
-    }
-
-    setOpenActionsMenuId(null);
-    setPendingStatusStudentId(studentId);
-
-    try {
-      let userIdFromDetail = extractUserIdFromStudentDetail(student);
-
-      if (!userIdFromDetail) {
-        const detail = await fetchStudentDetail(studentId);
-        userIdFromDetail = extractUserIdFromStudentDetail(detail);
-      }
-
-      if (!userIdFromDetail) {
-        throw new Error('Missing user id');
-      }
-
-      const response = await fetch(
-        `${API_BASE_URL}/users/update/${encodeURIComponent(userIdFromDetail)}/status?lang=${language ?? 'es'}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ status: shouldEnable ? 1 : 0 }),
-        },
-      );
-
-      if (!response.ok) {
-        handleExpiredToken(response, logout);
-      }
-
-      const payload = await response.json();
-      if (!response.ok || !payload?.success) {
-        const errorMessage =
-          payload?.message || strings.actions.statusError || strings.actions.disableError;
-        showGlobalAlert('error', errorMessage);
-        return;
-      }
-
-      const successMessage =
-        payload?.message ||
-        (shouldEnable
-          ? strings.actions.enableSuccess ?? strings.actions.disableSuccess
-          : strings.actions.disableSuccess);
-      showGlobalAlert('success', successMessage);
-      fetchStudents();
-    } catch (error) {
-      console.error('Failed to toggle student status', error);
-      const fallbackMessage = strings.actions.statusError ?? strings.actions.disableError;
-      showGlobalAlert('error', fallbackMessage);
-    } finally {
-      setPendingStatusStudentId(null);
     }
   };
 
@@ -1601,33 +1456,6 @@ const StudentsGroupsPage = ({
     }
   };
 
-  useEffect(() => {
-    if (!openActionsMenuId) {
-      return () => {};
-    }
-
-    const handleClickOutside = (event) => {
-      if (typeof window === 'undefined') {
-        return;
-      }
-
-      const target = event.target;
-      if (target instanceof Element) {
-        if (target.closest('.students-table__menu')) {
-          return;
-        }
-      }
-
-      setOpenActionsMenuId(null);
-    };
-
-    document.addEventListener('click', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [openActionsMenuId]);
-
   const handleStudentDetailNavigation = (student, fallbackName) => {
     const studentId = student?.student_id ?? student?.id;
     if (!studentId) {
@@ -1673,7 +1501,7 @@ const StudentsGroupsPage = ({
     return status === 1 || status === true;
   };
 
-  const isEditMode = modalMode === 'edit';
+  const isEditMode = false;
   const getStudentFilterFieldId = (name) => `student-filter-${name}`;
   const getGroupFilterFieldId = (name) => `group-filter-${name}`;
   const getStudentFieldId = (name) => `student-form-${name}`;
@@ -1728,14 +1556,12 @@ const StudentsGroupsPage = ({
           headerClassName: 'text-center',
           align: 'center',
         },
-        { key: 'actions', header: tableStrings.actions, headerClassName: 'text-end', align: 'end' },
       ];
     },
     [
       handleStudentSort,
       studentsOrderBy,
       studentsOrderDir,
-      tableStrings.actions,
       tableStrings.gradeGroup,
       tableStrings.status,
       tableStrings.student,
@@ -1986,14 +1812,7 @@ const StudentsGroupsPage = ({
               const scholarLevel = student.scholar_level_name ?? tableStrings.noGroup;
               const registerId = student.register_id ?? student.registration_id ?? '—';
               const studentId = student.student_id ?? student.id ?? registerId;
-              const isStatusPending = pendingStatusStudentId === studentId;
               const isActive = isStudentActive(student);
-              const switchTitle = isStatusPending
-                ? strings.actions.statusUpdating ?? strings.actions.disabling
-                : isActive
-                ? statusLabels.active
-                : statusLabels.inactive;
-              const switchActionLabel = isActive ? strings.actions.disable : strings.actions.enable;
 
               return (
                 <tr key={studentId}>
@@ -2008,71 +1827,6 @@ const StudentsGroupsPage = ({
                   </td>
                   <td data-title={tableStrings.gradeGroup}>{`${gradeGroup} ${scholarLevel}`}</td>
                   <td data-title={tableStrings.status}>{renderStatusPill(student, isActive)}</td>
-                  <td data-title={tableStrings.actions} className="table__actions-cell">
-                    <div className="table__actions">
-                      <EditRecordButton
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="table__icon-button"
-                        onClick={() => handleEditStudent(student)}
-                        aria-label={`${strings.actions.edit} ${fullName || tableStrings.unknownStudent}`}
-                      />
-                      <label
-                        className={`table__switch ${isStatusPending ? 'is-disabled' : ''}`}
-                        title={switchTitle}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isActive}
-                          onChange={() => handleToggleStudentStatus(student, !isActive)}
-                          disabled={isStatusPending}
-                          aria-label={`${switchActionLabel} ${fullName || tableStrings.unknownStudent}`}
-                        />
-                        <span className="table__switch-track">
-                          <span className="table__switch-thumb" />
-                        </span>
-                      </label>
-                      {/* <div className={`table__menu ${openActionsMenuId === studentId ? 'is-open' : ''}`}>
-                        <ActionButton
-                          variant="ghost"
-                          size="icon"
-                          aria-haspopup="menu"
-                          aria-expanded={openActionsMenuId === studentId}
-                          onClick={() => toggleActionsMenu(studentId)}
-                          className="table__icon-button"
-                          icon={
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <circle cx="12" cy="5" r="1.8" />
-                              <circle cx="12" cy="12" r="1.8" />
-                              <circle cx="12" cy="19" r="1.8" />
-                            </svg>
-                          }
-                        >
-                          <span className="visually-hidden">{strings.actions.more}</span>
-                        </ActionButton>
-                        {openActionsMenuId === studentId ? (
-                          <ul role="menu">
-                            <li>
-                              <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
-                                {strings.actions.registerPayment}
-                              </button>
-                            </li>
-                            <li>
-                              <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
-                                {strings.actions.createPaymentRequest}
-                              </button>
-                            </li>
-                            <li>
-                              <button type="button" onClick={handleMenuPlaceholder} role="menuitem">
-                                {strings.actions.addBalance}
-                              </button>
-                            </li>
-                          </ul>
-                        ) : null}
-                      </div> */}
-                    </div>
-                  </td>
                 </tr>
               );
             }}
@@ -2504,7 +2258,7 @@ const StudentsGroupsPage = ({
                           name="username"
                           value={studentForm.username}
                           onChange={handleStudentFormChange}
-                          required={modalMode !== 'edit'}
+                          required
                           autoComplete="username"
                           className="form-control"
                         />
@@ -2519,7 +2273,7 @@ const StudentsGroupsPage = ({
                           name="password"
                           value={studentForm.password}
                           onChange={handleStudentFormChange}
-                          required={modalMode !== 'edit'}
+                          required
                           autoComplete="new-password"
                           className="form-control"
                         />

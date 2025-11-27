@@ -200,6 +200,28 @@ const formatDateValue = (value, locale = 'es') => {
   return parsed.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
+const isUserStatusActive = (candidate, activeTokens = []) => {
+  const statusCandidate =
+    candidate?.user_enabled ?? candidate?.enabled ?? candidate?.user_status ?? candidate?.status ?? candidate?.state;
+
+  if (typeof statusCandidate === 'string') {
+    const normalized = statusCandidate.trim().toLowerCase();
+
+    if (!normalized) {
+      return false;
+    }
+
+    const baseTokens = ['1', 'true', 'active', 'enabled', 'activo', 'habilitado'];
+    const normalizedActiveTokens = activeTokens
+      .map((token) => token && token.toString().trim().toLowerCase())
+      .filter(Boolean);
+
+    return [...baseTokens, ...normalizedActiveTokens].includes(normalized);
+  }
+
+  return statusCandidate === 1 || statusCandidate === true;
+};
+
 const DEFAULT_TUITION_MODAL_STRINGS = {
   title: 'Detalle de pagos de colegiatura',
   summary: {
@@ -247,6 +269,7 @@ const StudentDetailPage = ({
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
   const [isEditing, setIsEditing] = useState(false);
+  const [userStatusDraft, setUserStatusDraft] = useState(false);
   const [activeTab, setActiveTab] = useState('tuition');
   const [tuitionRows, setTuitionRows] = useState([]);
   const [paymentsRows, setPaymentsRows] = useState([]);
@@ -313,6 +336,9 @@ const StudentDetailPage = ({
     payments: tabs?.payments ?? 'Pagos',
     topups: tabs?.topups ?? 'Recargas',
   };
+
+  const userStatusLabels = headerStrings?.statusLabels ?? { active: 'Activo', inactive: 'Inactivo' };
+  const statusTokens = useMemo(() => [userStatusLabels.active], [userStatusLabels.active]);
 
   const {
     activeInGroup = 'Activo en Grupo',
@@ -586,6 +612,10 @@ const StudentDetailPage = ({
     student?.school_enabled && student?.role_enabled && student?.group_enabled,
   );
 
+  useEffect(() => {
+    setUserStatusDraft(isUserStatusActive(student, statusTokens));
+  }, [student, statusTokens]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormValues((prev) => ({ ...prev, [name]: value }));
@@ -619,6 +649,7 @@ const StudentDetailPage = ({
     }
     setFormValues(buildFormStateFromStudent(student));
     setFeedbackMessage('');
+    setUserStatusDraft(isUserStatusActive(student, statusTokens));
     setIsEditing(true);
   };
 
@@ -627,6 +658,7 @@ const StudentDetailPage = ({
     setFormErrors({});
     setFeedbackMessage('');
     setFormValues(buildFormStateFromStudent(student));
+    setUserStatusDraft(isUserStatusActive(student, statusTokens));
   };
 
   const handleSubmit = async (event) => {
@@ -647,6 +679,9 @@ const StudentDetailPage = ({
       setFeedbackMessage(saveError);
       return;
     }
+
+    const initialStatus = isUserStatusActive(student, statusTokens);
+    const statusChanged = initialStatus !== userStatusDraft;
 
     const sanitizedPayload = Object.fromEntries(
       Object.entries(formValues).map(([key, value]) => {
@@ -698,7 +733,45 @@ const StudentDetailPage = ({
         full_name: updatedFullName,
       };
 
-      setStudent(updatedStudent);
+      let nextStudent = updatedStudent;
+
+      if (statusChanged) {
+        const statusResponse = await fetch(
+          `${API_BASE_URL}/users/update/${encodeURIComponent(targetId)}/status?lang=${language ?? 'es'}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ status: userStatusDraft ? 1 : 0 }),
+          },
+        );
+
+        if (!statusResponse.ok) {
+          handleExpiredToken(statusResponse, logout);
+        }
+
+        const statusPayload = await statusResponse.json();
+
+        if (!statusResponse.ok || statusPayload?.success === false) {
+          setFeedbackMessage(statusPayload?.message || saveError);
+          setSaveStatus('idle');
+          return;
+        }
+
+        const statusLabel =
+          statusPayload?.status || statusPayload?.message || (userStatusDraft ? userStatusLabels.active : userStatusLabels.inactive);
+
+        nextStudent = {
+          ...nextStudent,
+          user_enabled: userStatusDraft,
+          user_status: statusLabel,
+        };
+      }
+
+      setStudent(nextStudent);
       setIsEditing(false);
       const toastMessage = [payload?.title, payload?.message].filter(Boolean).join(' ');
       const toastType = payload?.type || 'success';
@@ -1404,11 +1477,36 @@ const StudentDetailPage = ({
                   <p className="student-detail-page__sub">{activeInGroup}</p>
                   <h2>{student?.full_name || contactStrings.emptyValue}</h2>
                   <p className="student-detail-page__meta">
-                    <span
-                      className={`student-detail-page__chip ${hasActiveAccess ? 'chip--success' : 'chip--warning'}`}
-                    >
-                      {student?.user_status || contactStrings.emptyValue}
-                    </span>
+                    {isEditing ? (
+                      <div className="student-detail-page__status-toggle">
+                        <label
+                          className="table__switch"
+                          aria-label={
+                            userStatusDraft
+                              ? 'Desactivar acceso del alumno temporalmente'
+                              : 'Activar acceso del alumno'
+                          }
+                        >
+                          <input
+                            type="checkbox"
+                            checked={userStatusDraft}
+                            onChange={(event) => setUserStatusDraft(event.target.checked)}
+                          />
+                          <span className="table__switch-track">
+                            <span className="table__switch-thumb" />
+                          </span>
+                        </label>
+                        <span className="student-detail-page__status-label">
+                          {userStatusDraft ? userStatusLabels.active : userStatusLabels.inactive}
+                        </span>
+                      </div>
+                    ) : (
+                      <span
+                        className={`student-detail-page__chip ${hasActiveAccess ? 'chip--success' : 'chip--warning'}`}
+                      >
+                        {student?.user_status || contactStrings.emptyValue}
+                      </span>
+                    )}
                     <span className="student-detail-page__chip">{student?.role_name || roleFallback}</span>
                     {/* <span className="student-detail-page__chip chip--light">
                       {student?.group_status || groupStatusFallback} | {student?.role_status || roleStatusFallback}
@@ -1665,8 +1763,16 @@ const StudentDetailPage = ({
                         <span className="student-detail-page__chip chip--info">
                           {student.role_name || contactStrings.roleChip || roleFallback}
                         </span>
-                        <span className={`student-detail-page__chip ${student.user_enabled ? 'chip--success' : 'chip--warning'}`}>
-                          {student.user_status || contactStrings.roleStatusChip || contactStrings.emptyValue}
+                        <span
+                          className={`student-detail-page__chip ${
+                            (isEditing ? userStatusDraft : student.user_enabled) ? 'chip--success' : 'chip--warning'
+                          }`}
+                        >
+                          {isEditing
+                            ? userStatusDraft
+                              ? userStatusLabels.active
+                              : userStatusLabels.inactive
+                            : student.user_status || contactStrings.roleStatusChip || contactStrings.emptyValue}
                         </span>
                       </div>
                     </div>
