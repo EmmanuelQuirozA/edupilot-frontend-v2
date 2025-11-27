@@ -682,6 +682,17 @@ const StudentDetailPage = ({
 
     const initialStatus = isUserStatusActive(student, statusTokens);
     const statusChanged = initialStatus !== userStatusDraft;
+    const initialFormState = buildFormStateFromStudent(student);
+
+    const normalizeComparableValue = (value) => {
+      if (value == null) {
+        return '';
+      }
+      if (typeof value === 'string') {
+        return value.trim();
+      }
+      return String(value);
+    };
 
     const sanitizedPayload = Object.fromEntries(
       Object.entries(formValues).map(([key, value]) => {
@@ -693,33 +704,48 @@ const StudentDetailPage = ({
       }),
     );
 
+    const hasStudentChanges = Object.entries(sanitizedPayload).some(([key, value]) => {
+      return normalizeComparableValue(value) !== normalizeComparableValue(initialFormState[key]);
+    });
+
+    if (!hasStudentChanges && !statusChanged) {
+      setFeedbackMessage('No se detectaron cambios.');
+      return;
+    }
+
     try {
       setSaveStatus('saving');
       setFeedbackMessage('');
 
-      const response = await fetch(
-        `${API_BASE_URL}/students/update/${encodeURIComponent(targetId)}?lang=${language ?? 'es'}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      let studentUpdatePayload = null;
+      if (hasStudentChanges) {
+        const response = await fetch(
+          `${API_BASE_URL}/students/update/${encodeURIComponent(targetId)}?lang=${language ?? 'es'}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(sanitizedPayload),
           },
-          body: JSON.stringify(sanitizedPayload),
-        },
-      );
+        );
 
-      if (!response.ok) {
-        handleExpiredToken(response, logout);
-      }
+        if (!response.ok) {
+          handleExpiredToken(response, logout);
+        }
 
-      const payload = await response.json();
+        studentUpdatePayload = await response.json();
 
-      if (!response.ok || payload?.success === false) {
-        setFeedbackMessage(payload?.message || saveError);
-        setSaveStatus('idle');
-        return;
+        const isWarningWithoutChanges =
+          studentUpdatePayload?.type === 'warning' && studentUpdatePayload?.success === false;
+
+        if (!response.ok || (!isWarningWithoutChanges && studentUpdatePayload?.success === false)) {
+          setFeedbackMessage(studentUpdatePayload?.message || saveError);
+          setSaveStatus('idle');
+          return;
+        }
       }
 
       const updatedFullName =
@@ -729,11 +755,12 @@ const StudentDetailPage = ({
 
       const updatedStudent = {
         ...student,
-        ...sanitizedPayload,
+        ...(hasStudentChanges ? sanitizedPayload : {}),
         full_name: updatedFullName,
       };
 
       let nextStudent = updatedStudent;
+      let statusPayload = null;
 
       if (statusChanged) {
         const statusResponse = await fetch(
@@ -753,7 +780,7 @@ const StudentDetailPage = ({
           handleExpiredToken(statusResponse, logout);
         }
 
-        const statusPayload = await statusResponse.json();
+        statusPayload = await statusResponse.json();
 
         if (!statusResponse.ok || statusPayload?.success === false) {
           setFeedbackMessage(statusPayload?.message || saveError);
@@ -772,11 +799,15 @@ const StudentDetailPage = ({
       }
 
       setStudent(nextStudent);
+      setFormValues(buildFormStateFromStudent(nextStudent));
       setIsEditing(false);
-      const toastMessage = [payload?.title, payload?.message].filter(Boolean).join(' ');
-      const toastType = payload?.type || 'success';
+      const toastMessage =
+        [studentUpdatePayload?.title, studentUpdatePayload?.message, statusPayload?.message]
+          .filter(Boolean)
+          .join(' ');
+      const toastType = statusPayload?.type || studentUpdatePayload?.type || 'success';
       setToast({ type: toastType, message: toastMessage || saveSuccess });
-      setFeedbackMessage(payload?.message || saveSuccess);
+      setFeedbackMessage(toastMessage || saveSuccess);
     } catch (requestError) {
       console.error('Failed to update student', requestError);
       setFeedbackMessage(saveError);
