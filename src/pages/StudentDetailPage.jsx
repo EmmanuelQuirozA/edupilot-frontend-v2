@@ -307,6 +307,13 @@ const StudentDetailPage = ({
     validation = {},
   } = strings ?? {};
 
+  const tabStrings = {
+    tuition: tabs?.tuition ?? 'Colegíaturas',
+    requests: tabs?.requests ?? 'Solicitudes de pagos',
+    payments: tabs?.payments ?? 'Pagos',
+    topups: tabs?.topups ?? 'Recargas',
+  };
+
   const {
     activeInGroup = 'Activo en Grupo',
     roleFallback = 'Rol',
@@ -382,6 +389,50 @@ const StudentDetailPage = ({
     required: validation.required ?? 'Campo obligatorio',
     invalidEmail: validation.invalidEmail ?? 'Correo inválido',
     invalidPersonalEmail: validation.invalidPersonalEmail ?? 'Correo inválido',
+  };
+
+  const tuitionTableStrings = {
+    loading: strings.tables?.tuition?.loading ?? 'Cargando colegiaturas...',
+    empty: strings.tables?.tuition?.empty ?? 'No hay información disponible.',
+  };
+
+  const requestsTableStrings = {
+    loading: strings.tables?.requests?.loading ?? 'Cargando solicitudes...',
+    empty: strings.tables?.requests?.empty ?? 'No hay información disponible.',
+    viewDetails: strings.tables?.requests?.viewDetails ?? 'Ver detalles',
+    columns: {
+      id: strings.tables?.requests?.columns?.id ?? 'Solicitud',
+      concept: strings.tables?.requests?.columns?.concept ?? 'Concepto',
+      amount: strings.tables?.requests?.columns?.amount ?? 'Monto',
+      status: strings.tables?.requests?.columns?.status ?? 'Estatus',
+      dueDate: strings.tables?.requests?.columns?.dueDate ?? 'Vencimiento',
+      createdAt: strings.tables?.requests?.columns?.createdAt ?? 'Creado',
+      actions: strings.tables?.requests?.columns?.actions ?? 'Acciones',
+    },
+  };
+
+  const paymentsTableStrings = {
+    loading: strings.tables?.payments?.loading ?? 'Cargando pagos...',
+    empty: strings.tables?.payments?.empty ?? 'No hay información disponible.',
+    viewDetails: strings.tables?.payments?.viewDetails ?? 'Ver detalles',
+    columns: {
+      id: strings.tables?.payments?.columns?.id ?? 'Pago',
+      concept: strings.tables?.payments?.columns?.concept ?? 'Concepto',
+      amount: strings.tables?.payments?.columns?.amount ?? 'Monto',
+      status: strings.tables?.payments?.columns?.status ?? 'Estatus',
+      date: strings.tables?.payments?.columns?.date ?? 'Fecha',
+      actions: strings.tables?.payments?.columns?.actions ?? 'Acciones',
+    },
+  };
+
+  const topupsTableStrings = {
+    loading: strings.tables?.topups?.loading ?? 'Cargando recargas...',
+    empty: strings.tables?.topups?.empty ?? 'No hay información disponible.',
+    columns: {
+      id: strings.tables?.topups?.columns?.id ?? 'ID de recarga',
+      amount: strings.tables?.topups?.columns?.amount ?? 'Monto',
+      date: strings.tables?.topups?.columns?.date ?? 'Fecha',
+    },
   };
 
   useEffect(() => {
@@ -809,6 +860,7 @@ const StudentDetailPage = ({
           scholarLevel: student.scholar_level_name || student.scholar_level || student.scholarLevel,
           balance: student.balance,
         },
+        strings: strings.balanceModal,
       },
       onSubmit: (result) => {
         if (result?.newBalance != null) {
@@ -818,7 +870,7 @@ const StudentDetailPage = ({
         fetchTabRows('topups');
       },
     });
-  }, [fetchTabRows, logout, normalizedLanguage, openModal, student, studentId, token]);
+  }, [fetchTabRows, logout, normalizedLanguage, openModal, student, studentId, strings.balanceModal, token]);
 
   const getSortState = (key) =>
     ({
@@ -1198,22 +1250,22 @@ const StudentDetailPage = ({
   );
 
   const paymentsColumns = [
-    { key: 'payment_id', label: 'Pago' },
-    { key: 'pt_name', label: 'Concepto' },
+    { key: 'payment_id', label: paymentsTableStrings.columns.id },
+    { key: 'pt_name', label: paymentsTableStrings.columns.concept },
     {
       key: 'amount',
-      label: 'Monto',
+      label: paymentsTableStrings.columns.amount,
       render: (row) => formatCurrency(buildCellValue(row, 'amount') ?? 0),
     },
-    { key: 'payment_status_name', label: 'Estatus' },
+    { key: 'payment_status_name', label: paymentsTableStrings.columns.status },
     {
       key: 'payment_created_at',
-      label: 'Fecha',
+      label: paymentsTableStrings.columns.date,
       render: (row) => formatDateValue(buildCellValue(row, 'payment_created_at'), language) || emptyValue,
     },
     {
       key: 'actions',
-      label: 'Ver detalles',
+      label: paymentsTableStrings.columns.actions,
       sortable: false,
       render: (row) => (
         <ActionButton
@@ -1222,34 +1274,34 @@ const StudentDetailPage = ({
           variant="ghost"
           onClick={() => handlePaymentDetailClick(buildCellValue(row, 'payment_id'))}
         >
-          Ver detalles
+          {paymentsTableStrings.viewDetails}
         </ActionButton>
       ),
     },
   ];
 
   const requestsColumns = [
-    { key: 'payment_request_id', label: 'Solicitud' },
-    { key: 'pt_name', label: 'Concepto' },
+    { key: 'payment_request_id', label: requestsTableStrings.columns.id },
+    { key: 'pt_name', label: requestsTableStrings.columns.concept },
     {
       key: 'amount',
-      label: 'Monto',
+      label: requestsTableStrings.columns.amount,
       render: (row) => formatCurrency(buildCellValue(row, 'amount') ?? 0),
     },
-    { key: 'ps_pr_name', label: 'Estatus' },
+    { key: 'ps_pr_name', label: requestsTableStrings.columns.status },
     {
       key: 'pr_pay_by',
-      label: 'Vencimiento',
+      label: requestsTableStrings.columns.dueDate,
       render: (row) => formatDateValue(buildCellValue(row, 'pr_pay_by'), language) || emptyValue,
     },
     {
       key: 'pr_created_at',
-      label: 'Creado',
+      label: requestsTableStrings.columns.createdAt,
       render: (row) => formatDateValue(buildCellValue(row, 'pr_created_at'), language) || emptyValue,
     },
     {
       key: 'actions',
-      label: 'Ver detalles',
+      label: requestsTableStrings.columns.actions,
       sortable: false,
       render: (row) => (
         <ActionButton
@@ -1258,22 +1310,22 @@ const StudentDetailPage = ({
           variant="ghost"
           onClick={() => handleRequestDetailClick(buildCellValue(row, 'payment_request_id'))}
         >
-          Ver detalles
+          {requestsTableStrings.viewDetails}
         </ActionButton>
       ),
     },
   ];
 
   const topupsColumns = [
-    { key: 'balance_recharge_id', label: 'ID de recarga' },
+    { key: 'balance_recharge_id', label: topupsTableStrings.columns.id },
     {
       key: 'amount',
-      label: 'Monto',
+      label: topupsTableStrings.columns.amount,
       render: (row) => formatCurrency(buildCellValue(row, 'amount') ?? 0),
     },
     {
       key: 'created_at',
-      label: 'Fecha',
+      label: topupsTableStrings.columns.date,
       render: (row) => formatDateValue(buildCellValue(row, 'created_at'), language) || emptyValue,
     },
     // No actions available for topups
@@ -1805,28 +1857,28 @@ const StudentDetailPage = ({
               className={`tab-btn ${activeTab === 'tuition' ? 'fw-bold tab-btn--active' : ''}`}
               onClick={() => setActiveTab('tuition')}
             >
-              {tabs?.tuition || 'Colegíaturas'}
+              {tabStrings.tuition}
             </button>
             <button
               type="button"
               className={`tab-btn ${activeTab === 'requests' ? 'fw-bold tab-btn--active' : ''}`}
               onClick={() => setActiveTab('requests')}
             >
-              {tabs?.requests || 'Solicitudes de pagos'}
+              {tabStrings.requests}
             </button>
             <button
               type="button"
               className={`tab-btn ${activeTab === 'payments' ? 'fw-bold tab-btn--active' : ''}`}
               onClick={() => setActiveTab('payments')}
             >
-              {tabs?.payments || 'Pagos'}
+              {tabStrings.payments}
             </button>
             <button
               type="button"
               className={`tab-btn ${activeTab === 'topups' ? 'fw-bold tab-btn--active' : ''}`}
               onClick={() => setActiveTab('topups')}
             >
-              {tabs?.topups || 'Recargas'}
+              {tabStrings.topups}
             </button>
           </div>
           <div className="tabs__content">
@@ -1886,9 +1938,9 @@ const StudentDetailPage = ({
                     );
                   }}
                   loading={tuitionStatus === 'loading'}
-                  loadingMessage="Cargando colegiaturas..."
+                  loadingMessage={tuitionTableStrings.loading}
                   error={tuitionError || null}
-                  emptyMessage="No hay información disponible."
+                  emptyMessage={tuitionTableStrings.empty}
                 />
               </div>
             ) : null}
@@ -1902,9 +1954,9 @@ const StudentDetailPage = ({
                       data={requestsRows}
                       getRowId={getTableRowId}
                       loading={requestsStatus === 'loading'}
-                      loadingMessage="Cargando solicitudes..."
+                      loadingMessage={requestsTableStrings.loading}
                       error={requestsError || null}
-                      emptyMessage="No hay información disponible."
+                      emptyMessage={requestsTableStrings.empty}
                     />
                   </div>
                 )
@@ -1919,9 +1971,9 @@ const StudentDetailPage = ({
                       data={paymentsRows}
                       getRowId={getTableRowId}
                       loading={paymentsStatus === 'loading'}
-                      loadingMessage="Cargando pagos..."
+                      loadingMessage={paymentsTableStrings.loading}
                       error={paymentsError || null}
-                      emptyMessage="No hay información disponible."
+                      emptyMessage={paymentsTableStrings.empty}
                     />
                   </div>
                 )
@@ -1936,9 +1988,9 @@ const StudentDetailPage = ({
                       data={topupsRows}
                       getRowId={getTableRowId}
                       loading={topupsStatus === 'loading'}
-                      loadingMessage="Cargando recargas..."
+                      loadingMessage={topupsTableStrings.loading}
                       error={topupsError || null}
-                      emptyMessage="No hay información disponible."
+                      emptyMessage={topupsTableStrings.empty}
                     />
                   </div>
                 )

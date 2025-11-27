@@ -29,8 +29,8 @@ type SelectedUser = {
 
 const DEFAULT_STRINGS = {
   title: 'Añadir saldo a favor',
-  description: 'Ingresa el monto que deseas abonar al saldo del alumno.',
-  studentInfoTitle: 'Datos del alumno',
+  description: 'Ingresa el monto que deseas abonar al saldo del usuario.',
+  studentInfoTitle: 'Datos del usuario',
   nameLabel: 'Nombre',
   gradeLabel: 'Grado',
   groupLabel: 'Grupo',
@@ -44,7 +44,7 @@ const DEFAULT_STRINGS = {
   confirm: 'Confirmar recarga',
   confirmLoading: 'Procesando...',
   amountRequired: 'Ingresa un monto válido.',
-  userRequired: 'Selecciona un alumno.',
+  userRequired: 'Selecciona un usuario.',
   confirmTitle: 'Confirmar recarga',
   confirmText: '¿Deseas continuar con la recarga?',
   confirmButton: 'Sí, recargar',
@@ -97,7 +97,7 @@ const normalizeSelectedUser = (userId: string | number | null | undefined, info?
 
   return {
     id: String(userId),
-    fullName: info?.fullName ?? 'Alumno seleccionado',
+    fullName: info?.fullName ?? 'Usuario seleccionado',
     balance: Number(info?.balance ?? 0) || 0,
     grade: info?.grade ?? null,
     group: info?.group ?? null,
