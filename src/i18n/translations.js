@@ -1172,9 +1172,9 @@ export const translations = {
             schoolStatus: 'Estatus escolar',
             generationLabel: 'Generación',
             fields: {
-              schoolId: 'Escuela (ID)',
+              schoolId: 'Escuela',
               scholarLevel: 'Nivel escolar',
-              groupId: 'Grupo (ID)',
+              groupId: 'Grupo',
               gradeGroup: 'Grado y grupo',
               generation: 'Generación',
               curp: 'CURP',
@@ -2516,9 +2516,9 @@ export const translations = {
             schoolStatus: 'School status',
             generationLabel: 'Generation',
             fields: {
-              schoolId: 'School (ID)',
+              schoolId: 'School',
               scholarLevel: 'Scholar level',
-              groupId: 'Group (ID)',
+              groupId: 'Group',
               gradeGroup: 'Grade & group',
               generation: 'Generation',
               curp: 'CURP',

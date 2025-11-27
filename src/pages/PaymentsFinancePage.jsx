@@ -189,8 +189,7 @@ const extractTuitionCellDetails = (value) => {
       : typeof parsed.paymentMonth === 'string'
       ? parsed.paymentMonth
       : null;
-  const paymentRequestId =
-    parsed.payment_request_id ?? parsed.paymentRequestId ?? null;
+  const paymentRequestId = parsed.payment_request_id ?? parsed.paymentRequestId ?? null;
   const payments = normalizePaymentList(parsed.payments);
 
   return {

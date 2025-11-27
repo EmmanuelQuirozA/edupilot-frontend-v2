@@ -8,6 +8,21 @@ import GlobalTable from '../components/ui/GlobalTable.jsx';
 import GlobalToast from '../components/GlobalToast.jsx';
 import './StudentDetailPage.css';
 
+const EmailIcon = () => (
+  <svg
+    className="payment-request-detail__contact-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm0 2v.01L12 13l8-5.99V7H4zm0 10h16V9.24l-7.553 5.65a1 1 0 0 1-1.194 0L4 9.24V17z" />
+  </svg>
+);
+
+const WhatsappIcon = () => (
+  <i className="bi bi-whatsapp payment-request-detail__contact-icon" aria-hidden="true" />
+);
+
 const REQUIRED_FIELDS = ['first_name', 'last_name_father', 'last_name_mother', 'school_id', 'group_id', 'register_id', 'email'];
 
 const MONTH_KEY_REGEX = /^[A-Za-z]{3}-\d{2}$/;
@@ -52,6 +67,42 @@ const normalizeAmount = (candidate) => {
   return null;
 };
 
+const normalizePaymentList = (payments) => {
+  if (!Array.isArray(payments)) {
+    return [];
+  }
+
+  return payments.map((payment) => {
+    const rawId =
+      payment?.payment_id ?? payment?.paymentId ?? payment?.id ?? null;
+
+    const rawAmount = payment?.amount ?? payment?.total ?? null;
+    const createdAt =
+      typeof payment?.created_at === 'string'
+        ? payment.created_at
+        : typeof payment?.date === 'string'
+        ? payment.date
+        : null;
+    const statusName =
+      typeof payment?.payment_status_name === 'string'
+        ? payment.payment_status_name
+        : typeof payment?.status_name === 'string'
+        ? payment.status_name
+        : typeof payment?.payment_status === 'string'
+        ? payment.payment_status
+        : typeof payment?.status === 'string'
+        ? payment.status
+        : null;
+
+    return {
+      paymentId: rawId != null ? rawId : null,
+      amount: normalizeAmount(rawAmount),
+      createdAt,
+      statusName,
+    };
+  });
+};
+
 const extractTuitionCellDetails = (value) => {
   const parsed = parseTuitionCellValue(value);
   if (!parsed) {
@@ -66,7 +117,8 @@ const extractTuitionCellDetails = (value) => {
       ? parsed.paymentMonth
       : null;
   const paymentRequestId = parsed.payment_request_id ?? parsed.paymentRequestId ?? null;
-  const payments = Array.isArray(parsed.payments) ? parsed.payments : [];
+  const payments = normalizePaymentList(parsed.payments);
+  // const payments = Array.isArray(parsed.payments) ? parsed.payments : [];
 
   return {
     totalAmount,
@@ -1198,6 +1250,39 @@ const StudentDetailPage = ({
     },
   ];
 
+  const studentPhone = student?.phone_number || student?.phoneNumber || student?.phone;
+  const normalizedStudentPhone = typeof studentPhone === 'string' ? student.phone_number.trim() : '';
+  const whatsappPhoneNumber = normalizedStudentPhone.replace(/\D+/g, '');
+  const whatsappLink = whatsappPhoneNumber ? `https://wa.me/${whatsappPhoneNumber}` : '';
+
+  const studentEmail = student?.email;
+  const normalizedEmail = typeof studentEmail === 'string' ? student.email.trim() : '';
+
+  const studentPersonalEmail = student?.personal_email;
+  const normalizedPersonalEmail = typeof studentPersonalEmail === 'string' ? student.personal_email.trim() : '';
+
+  const handleEmailClick = useCallback(() => {
+    if (!normalizedEmail) {
+      return;
+    }
+
+    const mailto = `mailto:${encodeURIComponent(normalizedEmail)}`;
+    if (typeof window !== 'undefined') {
+      window.location.href = mailto;
+    }
+  }, [normalizedEmail]);
+
+  const handlePersonalEmailClick = useCallback(() => {
+    if (!normalizedPersonalEmail) {
+      return;
+    }
+
+    const mailto = `mailto:${encodeURIComponent(normalizedPersonalEmail)}`;
+    if (typeof window !== 'undefined') {
+      window.location.href = mailto;
+    }
+  }, [normalizedPersonalEmail]);
+
   return (
     <>
       <section className="student-detail-page">
@@ -1243,9 +1328,6 @@ const StudentDetailPage = ({
             </div>
 
             <div className="student-detail-page__actions">
-              <button type="button" className="btn btn--ghost" disabled={status === 'loading'}>
-                {resetPassword}
-              </button>
               {isEditing ? (
                 <>
                   <button
@@ -1266,14 +1348,19 @@ const StudentDetailPage = ({
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  className="ui-button ui-button--primary"
-                  onClick={handleStartEdit}
-                  disabled={status !== 'success'}
-                >
-                  {editButton}
-                </button>
+                <>
+                  <button type="button" className="btn btn--ghost" disabled={status === 'loading'}>
+                    {resetPassword}
+                  </button>
+                  <button
+                    type="button"
+                    className="ui-button ui-button--primary"
+                    onClick={handleStartEdit}
+                    disabled={status !== 'success'}
+                  >
+                    {editButton}
+                  </button>
+                </>
               )}
             </div>
           </>
@@ -1401,50 +1488,79 @@ const StudentDetailPage = ({
                         </span>
                       </div>
                     </div>
-                      <div className="row">
-                      <div className='col-md-4'>
-                        {renderSelectField(
-                          institutionStrings.fields.schoolId,
-                          'school_id',
-                          schoolOptions,
-                          {
-                            placeholder: institutionStrings.fields.schoolId,
-                            displayValueOverride:
-                              selectedSchool?.label ||
-                              student.school_name ||
-                              student.business_name ||
-                              student.commercial_name,
-                          },
+                    <div className="row">
+                        {isEditing ? (
+                          <>
+                            <div className='col-md-4'>
+                              {renderSelectField(
+                                institutionStrings.fields.schoolId,
+                                'school_id',
+                                schoolOptions,
+                                {
+                                  placeholder: institutionStrings.fields.schoolId,
+                                  displayValueOverride:
+                                    selectedSchool?.label ||
+                                    student.school_name ||
+                                    student.business_name ||
+                                    student.commercial_name,
+                                },
+                              )}
+                            </div>
+                            <div className='col-md-4'>
+                              {renderSelectField(
+                                institutionStrings.fields.groupId,
+                                'group_id',
+                                groupOptions,
+                                {
+                                  placeholder: institutionStrings.fields.groupId,
+                                  displayValueOverride:
+                                    selectedGroup?.label ||
+                                    student.grade_group ||
+                                    `${student.grade || ''} ${student.group || ''}`.trim(),
+                                  helperContent: (
+                                    <p className="form-text text-muted mb-0">
+                                      Generación: {selectedGroup?.meta?.generation || student.generation || emptyValue} · Grupo: {selectedGroup?.meta?.gradeGroup || student.grade_group || emptyValue} · Nivel: {selectedGroup?.meta?.scholarLevel || student.scholar_level_name || emptyValue}
+                                    </p>
+                                  ),
+                                },
+                              )}
+                            </div>
+                            <div className='col-md-4'>
+                              {renderEditableField(institutionStrings.fields.curp, 'curp', {
+                                placeholder: institutionStrings.fields.curp,
+                                inputClassName: 'input',
+                              })}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className='col-md-4'>
+                              <div className="field">
+                                <span>{institutionStrings.fields.schoolId}</span>
+                                <div className='field__value'>{student.business_name}</div>
+                              </div>
+                            {/* {renderEditableField(institutionStrings.fields.schoolId, 'business_name', {
+                              placeholder: institutionStrings.fields.schoolId,
+                              inputClassName: 'input',
+                            })} */}
+                            </div>
+                            <div className='col-md-8'>
+                              <div className="field">
+                                <span>{institutionStrings.fields.scholarLevel}</span>
+                                <div className='field__value'>Generación: {selectedGroup?.meta?.generation || student.generation || emptyValue} · Grupo: {selectedGroup?.meta?.gradeGroup || student.grade_group || emptyValue} · Nivel: {selectedGroup?.meta?.scholarLevel || student.scholar_level_name || emptyValue}</div>
+                              </div>
+                            </div>
+                            <div className='col-md-4'>
+                            {renderEditableField(institutionStrings.fields.curp, 'curp', {
+                              placeholder: institutionStrings.fields.curp,
+                              inputClassName: 'input',
+                            })}
+                            </div>
+                          </>
                         )}
-                      </div>
-                      <div className='col-md-4'>
-                        {renderSelectField(
-                          institutionStrings.fields.groupId,
-                          'group_id',
-                          groupOptions,
-                          {
-                            placeholder: institutionStrings.fields.groupId,
-                            displayValueOverride:
-                              selectedGroup?.label ||
-                              student.grade_group ||
-                              `${student.grade || ''} ${student.group || ''}`.trim(),
-                            helperContent: (
-                              <p className="form-text text-muted mb-0">
-                                Generación: {selectedGroup?.meta?.generation || student.generation || emptyValue} · Grupo: {selectedGroup?.meta?.gradeGroup || student.grade_group || emptyValue} · Nivel: {selectedGroup?.meta?.scholarLevel || student.scholar_level_name || emptyValue}
-                              </p>
-                            ),
-                          },
-                        )}
-                      </div>
-                      <div className='col-md-4'>
-                        {renderEditableField(institutionStrings.fields.curp, 'curp', {
-                          placeholder: institutionStrings.fields.curp,
-                          inputClassName: 'input',
-                        })}
-                      </div>
-                      </div>
-                    </section>
-                  </div>
+                    </div>
+                  </section>
+                </div>
 
                 <div className='col-md-12'>
                   <div className="info-card">
@@ -1571,7 +1687,21 @@ const StudentDetailPage = ({
                           </div>
                           <div className='col-md-4'>
                             <dt>{contactStrings.summary.phone}:</dt>{' '}
-                            {student.phone_number || emptyValue}
+                            {whatsappLink ? (
+                              <a
+                                href={whatsappLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="payment-request-detail__phone-link"
+                              >
+                                <WhatsappIcon />
+                                <span className='text-black'>{normalizedStudentPhone}</span>
+                              </a>
+                            ) : (
+                              student.phone_number || emptyValue
+                            )}
+                            {/* <dt>{contactStrings.summary.phone}:</dt>{' '}
+                            {student.phone_number || emptyValue} */}
                           </div>
                           <div className='col-md-4'>
                             <dt>{contactStrings.summary.birthDate}:</dt>{' '}
@@ -1583,11 +1713,36 @@ const StudentDetailPage = ({
                           </div>
                           <div className='col-md-4'>
                             <dt>{contactStrings.summary.institutionalEmail}:</dt>{' '}
-                            {student.email || emptyValue}
+                            {normalizedEmail ? (
+                              <button
+                                type="button"
+                                className="student-detail-page__email-button"
+                                onClick={handleEmailClick}
+                              >
+                                <EmailIcon />
+                                <span className='text-black'>{normalizedEmail}</span>
+                              </button>
+                            ) : (
+                              <span>—</span>
+                            )}
+                            {/* {student.email || emptyValue} */}
                           </div>
                           <div className='col-md-4'>
                             <dt>{contactStrings.summary.personalEmail}:</dt>{' '}
-                            {student.personal_email || emptyValue}
+                            {normalizedPersonalEmail ? (
+                              <button
+                                type="button"
+                                className="student-detail-page__email-button"
+                                onClick={handlePersonalEmailClick}
+                              >
+                                <EmailIcon />
+                                <span className='text-black'>{normalizedPersonalEmail}</span>
+                              </button>
+                            ) : (
+                              <span>—</span>
+                            )}
+                            {/* <dt>{contactStrings.summary.personalEmail}:</dt>{' '}
+                            {student.personal_email || emptyValue} */}
                           </div>
                         </div>
                         <div className="info-card__address">

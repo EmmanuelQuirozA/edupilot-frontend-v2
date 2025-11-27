@@ -127,6 +127,19 @@
   transform: translateY(-1px);
 }
 
+.student-detail-page__email-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 .student-detail-page__content {
   display: flex;
   flex-direction: column;
