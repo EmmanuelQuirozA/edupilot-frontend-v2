@@ -618,6 +618,46 @@ const StudentDetailPage = ({
     }).format(normalized);
   };
 
+  const handleOpenBalanceModal = useCallback(() => {
+    if (!student) {
+      return;
+    }
+
+    const identifier = student.user_id || studentId;
+    if (!identifier) {
+      return;
+    }
+
+    const displayName =
+      student.full_name ||
+      [student.first_name, student.last_name_father, student.last_name_mother].filter(Boolean).join(' ');
+
+    openModal({
+      key: 'BalanceRecharge',
+      props: {
+        token,
+        logout,
+        language: normalizedLanguage,
+        userId: identifier,
+        studentInfo: {
+          fullName: displayName,
+          grade: student.grade || student.grade_name || student.gradeName,
+          group: student.grade_group || student.group_name || student.groupName,
+          scholarLevel: student.scholar_level_name || student.scholar_level || student.scholarLevel,
+          balance: student.balance,
+          registerId: student.register_id || student.payment_reference,
+        },
+      },
+      onSubmit: (result) => {
+        if (result?.newBalance != null) {
+          setStudent((current) => (current ? { ...current, balance: result.newBalance } : current));
+        }
+        setTopupsFetched(false);
+        fetchTabRows('topups');
+      },
+    });
+  }, [fetchTabRows, logout, normalizedLanguage, openModal, student, studentId, token]);
+
   const getSortState = (key) =>
     ({
       tuition: tuitionSort,
@@ -1378,7 +1418,7 @@ const StudentDetailPage = ({
                         <p className="student-card__hint">{summaryStrings.lastPayment}</p>
                       </div>
                     </div>
-                    <button type="button" className="btn btn--ghost btn--full" disabled>
+                    <button type="button" className="btn btn--ghost btn--full" onClick={handleOpenBalanceModal}>
                       {summaryStrings.balance}
                     </button>
                   </section>
