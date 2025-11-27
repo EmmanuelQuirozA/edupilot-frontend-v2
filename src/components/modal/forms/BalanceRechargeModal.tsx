@@ -29,7 +29,7 @@ type SelectedUser = {
 
 const DEFAULT_STRINGS = {
   title: 'Añadir saldo a favor',
-  subtitle: 'Ingresa el monto que deseas abonar al saldo del alumno.',
+  description: 'Ingresa el monto que deseas abonar al saldo del alumno.',
   studentInfoTitle: 'Datos del alumno',
   nameLabel: 'Nombre',
   gradeLabel: 'Grado',
@@ -38,7 +38,7 @@ const DEFAULT_STRINGS = {
   balanceLabel: 'Saldo actual',
   registerLabel: 'Matrícula',
   amountLabel: 'Monto a abonar',
-  amountPlaceholder: '$0.00',
+  amountPlaceholder: '0.00',
   suggestionsLabel: 'Montos sugeridos',
   cancel: 'Cancelar',
   confirm: 'Confirmar recarga',
@@ -56,7 +56,7 @@ const SUGGESTED_AMOUNTS = [50, 100, 200, 500];
 
 const formatCurrency = (value: number | string | null | undefined) => {
   if (value == null || value === '') {
-    return '$0.00';
+    return '0.00';
   }
 
   const numeric = Number(value);
@@ -206,7 +206,7 @@ const BalanceRechargeModal = ({
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
-            user_id: selectedUser.id,
+            userId: selectedUser.id,
             amount: numericAmount,
           }),
         });
@@ -260,118 +260,161 @@ const BalanceRechargeModal = ({
     return normalizeSelectedUser(userId ?? null, studentInfo);
   }, [selectedUser, studentInfo, userId]);
 
+  const modalTitleId = 'add-balance-modal-title';
+  const modalDescriptionId = 'add-balance-modal-description';
+
   return (
-    <form className="balance-recharge-modal" onSubmit={handleSubmit} noValidate>
-      <header className="balance-recharge-modal__header">
-        <h2 className="balance-recharge-modal__title" id={`${instanceId}-title`}>
-          {mergedStrings.title}
-        </h2>
-        <p className="balance-recharge-modal__subtitle">{mergedStrings.subtitle}</p>
-      </header>
-
-      <section className="balance-recharge-modal__body">
-        {!userId ? (
-        <UserBalanceSearchSelect
-          id={`${instanceId}-user`}
-          token={token}
-          logout={logout}
-          language={language}
-          selectedUser={selectedUser as never}
-          onSelect={handleUserSelect as never}
-        />
-      ) : null}
-
-        {displayUser ? (
-          <div className="balance-recharge-modal__student-card">
-            <p className="balance-recharge-modal__student-title">{mergedStrings.studentInfoTitle}</p>
-            <div>
-              <p className="balance-recharge-modal__student-label">{mergedStrings.nameLabel}</p>
-              <p className="balance-recharge-modal__student-value">{displayUser.fullName}</p>
+    <>
+      <div className="modal-backdrop fade show" onClick={handleClose} />
+      <div
+        className="modal fade show d-block"
+        role="dialog"
+        aria-modal="true"
+        // aria-labelledby={modalTitleId}
+        // aria-describedby={modalDescriptionId}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            handleClose();
+          }
+        }}
+      >
+        <div className="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered">
+          <form className="modal-content border-0 shadow" onSubmit={handleSubmit} noValidate>
+            <div className="modal-header">
+              <div>
+                <h2 id={modalTitleId} className="modal-title h4 mb-1">
+                  {mergedStrings.title}
+                </h2>
+                <p id={modalDescriptionId} className="text-muted mb-0">
+                  {mergedStrings.description}
+                </p>
+              </div>
+              <button type="button" className="btn-close" onClick={handleClose} aria-label={mergedStrings.cancel} />
             </div>
-            {displayUser.registerId ? (
-              <div>
-                <p className="balance-recharge-modal__student-label">{mergedStrings.registerLabel}</p>
-                <p className="balance-recharge-modal__student-value">{displayUser.registerId}</p>
-              </div>
-            ) : null}
-            {displayUser.grade ? (
-              <div>
-                <p className="balance-recharge-modal__student-label">{mergedStrings.gradeLabel}</p>
-                <p className="balance-recharge-modal__student-value">{displayUser.grade}</p>
-              </div>
-            ) : null}
-            {displayUser.group ? (
-              <div>
-                <p className="balance-recharge-modal__student-label">{mergedStrings.groupLabel}</p>
-                <p className="balance-recharge-modal__student-value">{displayUser.group}</p>
-              </div>
-            ) : null}
-            {displayUser.scholarLevel ? (
-              <div>
-                <p className="balance-recharge-modal__student-label">{mergedStrings.levelLabel}</p>
-                <p className="balance-recharge-modal__student-value">{displayUser.scholarLevel}</p>
-              </div>
-            ) : null}
-            <div>
-              <p className="balance-recharge-modal__student-label">{mergedStrings.balanceLabel}</p>
-              <p className="balance-recharge-modal__student-value">{formatCurrency(displayUser.balance)}</p>
-            </div>
-          </div>
-        ) : null}
+            {/* <header className="balance-recharge-modal__header">
+              <h2 className="balance-recharge-modal__title" id={`${instanceId}-title`}>
+                {mergedStrings.title}
+              </h2>
+              <p className="balance-recharge-modal__subtitle">{mergedStrings.subtitle}</p>
+            </header> */}
 
-        <div className="balance-recharge-modal__amount-card">
-          <p className="balance-recharge-modal__amount-label">{mergedStrings.amountLabel}</p>
-          <div className="balance-recharge-modal__input">
-            <span>$</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={amount}
-              onChange={handleAmountChange}
-              placeholder={mergedStrings.amountPlaceholder}
-              disabled={isSubmitting}
-              inputMode="decimal"
-            />
-            <span>MXN</span>
-          </div>
-          <div>
-            <p className="balance-recharge-modal__student-label" style={{ marginBottom: '6px' }}>
-              {mergedStrings.suggestionsLabel}
-            </p>
-            <div className="balance-recharge-modal__suggestions">
-              {SUGGESTED_AMOUNTS.map((value) => {
-                const isActive = parseAmount(amount) === value;
-                return (
-                  <button
-                    type="button"
-                    key={value}
-                    className={`balance-recharge-modal__suggestion ${isActive ? 'is-active' : ''}`}
-                    onClick={() => handleSuggestion(value)}
-                    disabled={isSubmitting}
-                  >
-                    {formatCurrency(value)}
-                  </button>
-                );
-              })}
+            <div className="modal-body">
+              <section className="balance-recharge-modal__body">
+                {!userId ? (
+                <UserBalanceSearchSelect
+                  id={`${instanceId}-user`}
+                  token={token}
+                  logout={logout}
+                  language={language}
+                  selectedUser={selectedUser as never}
+                  onSelect={handleUserSelect as never}
+                />
+              ) : null}
+
+                {displayUser ? (
+                  <div className="balance-recharge-modal__student-card">
+                    <p className="balance-recharge-modal__student-title">{mergedStrings.studentInfoTitle}</p>
+                    <div className="row g-3">
+                      <div className='col-md-6'>
+                        <p className="balance-recharge-modal__student-label">{mergedStrings.nameLabel}</p>
+                        <p className="balance-recharge-modal__student-value">{displayUser.fullName}</p>
+                      </div>
+                      {displayUser.registerId ? (
+                        <div className='col-md-6'>
+                          <p className="balance-recharge-modal__student-label">{mergedStrings.registerLabel}</p>
+                          <p className="balance-recharge-modal__student-value">{displayUser.registerId}</p>
+                        </div>
+                      ) : null}
+                      {displayUser.grade ? (
+                        <div className='col-md-6'>
+                          <p className="balance-recharge-modal__student-label">{mergedStrings.gradeLabel}</p>
+                          <p className="balance-recharge-modal__student-value">{displayUser.grade}</p>
+                        </div>
+                      ) : null}
+                      {displayUser.group ? (
+                        <div className='col-md-6'>
+                          <p className="balance-recharge-modal__student-label">{mergedStrings.groupLabel}</p>
+                          <p className="balance-recharge-modal__student-value">{displayUser.group}</p>
+                        </div>
+                      ) : null}
+                      {displayUser.scholarLevel ? (
+                        <div className='col-md-6'>
+                          <p className="balance-recharge-modal__student-label">{mergedStrings.levelLabel}</p>
+                          <p className="balance-recharge-modal__student-value">{displayUser.scholarLevel}</p>
+                        </div>
+                      ) : null}
+                      <div className='col-md-6'>
+                        <p className="balance-recharge-modal__student-label">{mergedStrings.balanceLabel}</p>
+                        <p className="balance-recharge-modal__student-value">{formatCurrency(displayUser.balance)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="balance-recharge-modal__amount-card">
+                  <p className="balance-recharge-modal__amount-label">{mergedStrings.amountLabel}</p>
+                  <div className="balance-recharge-modal__input">
+                    <span>$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={amount}
+                      onChange={handleAmountChange}
+                      placeholder={mergedStrings.amountPlaceholder}
+                      disabled={isSubmitting}
+                      inputMode="decimal"
+                    />
+                    <span>MXN</span>
+                  </div>
+                  <div>
+                    <p className="balance-recharge-modal__student-label" style={{ marginBottom: '6px' }}>
+                      {mergedStrings.suggestionsLabel}
+                    </p>
+                    <div className="balance-recharge-modal__suggestions">
+                      {SUGGESTED_AMOUNTS.map((value) => {
+                        const isActive = parseAmount(amount) === value;
+                        return (
+                          <button
+                            type="button"
+                            key={value}
+                            className={`balance-recharge-modal__suggestion ${isActive ? 'is-active' : ''}`}
+                            onClick={() => handleSuggestion(value)}
+                            disabled={isSubmitting}
+                          >
+                            {formatCurrency(value)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {error ? <p className="balance-recharge-modal__error">{error}</p> : null}
+                </div>
+              </section>
             </div>
-          </div>
-          {error ? <p className="balance-recharge-modal__error">{error}</p> : null}
+
+            <footer className="balance-recharge-modal__footer">
+              <div className="balance-recharge-modal__actions">
+                {/* <ActionButton label={mergedStrings.cancel} variant="ghost" onClick={handleClose} disabled={isSubmitting} />
+                <ActionButton
+                  label={isSubmitting ? mergedStrings.confirmLoading : mergedStrings.confirm}
+                  variant="primary"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                /> */}
+
+              <ActionButton type="button" variant="text" onClick={handleClose} disabled={isSubmitting}>
+                {mergedStrings.cancel}
+              </ActionButton>
+              <ActionButton type="submit" disabled={isSubmitting}>
+                {isSubmitting ? mergedStrings.confirmLoading : mergedStrings.confirm}
+              </ActionButton>
+              </div>
+            </footer>
+          </form>
         </div>
-      </section>
-
-      <footer className="balance-recharge-modal__footer">
-        <div className="balance-recharge-modal__actions">
-          <ActionButton label={mergedStrings.cancel} variant="ghost" onClick={handleClose} disabled={isSubmitting} />
-          <ActionButton
-            label={isSubmitting ? mergedStrings.confirmLoading : mergedStrings.confirm}
-            variant="primary"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          />
-        </div>
-      </footer>
-    </form>
+      </div>
+      </>
   );
 };
 

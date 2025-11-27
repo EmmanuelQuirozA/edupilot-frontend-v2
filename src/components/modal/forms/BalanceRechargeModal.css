@@ -25,7 +25,6 @@
 }
 
 .balance-recharge-modal__body {
-  padding: 0 24px 8px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -35,9 +34,6 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 12px 14px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 8px 12px;
   background: #f9fafb;
 }
 
@@ -113,7 +109,6 @@
   padding: 10px 14px;
   background: #fff;
   cursor: pointer;
-  font-weight: 700;
   transition: all 0.15s ease-in-out;
 }
 
