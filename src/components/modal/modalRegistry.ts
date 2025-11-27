@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import CreateStudentForm from './forms/CreateStudentForm';
 import EditStudentForm from './forms/EditStudentForm';
 import TuitionPaymentDetailsModal from './forms/TuitionPaymentDetailsModal';
+import BalanceRechargeModal from './forms/BalanceRechargeModal';
 
 export interface StudentProfile {
   id: string;
@@ -41,6 +42,54 @@ export interface TuitionPaymentModalPayment {
   amount: number | null;
   createdAt: string | null;
   statusName?: string | null;
+}
+
+export type BalanceRechargeStrings = Partial<{
+  title: string;
+  subtitle: string;
+  studentInfoTitle: string;
+  nameLabel: string;
+  gradeLabel: string;
+  groupLabel: string;
+  levelLabel: string;
+  balanceLabel: string;
+  registerLabel: string;
+  amountLabel: string;
+  amountPlaceholder: string;
+  suggestionsLabel: string;
+  cancel: string;
+  confirm: string;
+  confirmLoading: string;
+  amountRequired: string;
+  userRequired: string;
+  confirmTitle: string;
+  confirmText: string;
+  confirmButton: string;
+  cancelButton: string;
+  genericError: string;
+}>;
+
+export interface BalanceRechargeModalProps {
+  token?: string | null;
+  logout?: (reason?: unknown) => void;
+  language?: string;
+  userId?: string | number | null;
+  studentInfo?: {
+    fullName?: string | null;
+    grade?: string | null;
+    group?: string | null;
+    scholarLevel?: string | null;
+    balance?: number | string | null;
+    registerId?: string | null;
+  };
+  strings?: BalanceRechargeStrings;
+}
+
+export interface BalanceRechargeModalResult {
+  userId: string;
+  amount: number;
+  newBalance?: number | null;
+  rechargeId?: string | number | null;
 }
 
 export interface TuitionPaymentDetailsStrings {
@@ -97,6 +146,7 @@ export type ModalDefinitions = {
   CreateStudent: ModalDefinition<CreateStudentModalProps | undefined, CreateStudentModalResult>;
   EditStudent: ModalDefinition<EditStudentModalProps, EditStudentModalResult>;
   TuitionPaymentDetails: ModalDefinition<TuitionPaymentDetailsModalProps, TuitionPaymentDetailsModalResult>;
+  BalanceRecharge: ModalDefinition<BalanceRechargeModalProps, BalanceRechargeModalResult>;
 };
 
 export type ModalKey = keyof ModalDefinitions;
@@ -164,5 +214,8 @@ export const modalRegistry: ModalRegistry = {
     Component: TuitionPaymentDetailsModal,
     presentation: 'bootstrap',
     dialogClassName: 'modal-lg modal-dialog-centered modal-dialog-scrollable',
+  },
+  BalanceRecharge: {
+    Component: BalanceRechargeModal,
   },
 };
