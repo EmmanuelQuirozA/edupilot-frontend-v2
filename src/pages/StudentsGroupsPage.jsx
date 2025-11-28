@@ -1787,7 +1787,7 @@ const StudentsGroupsPage = ({
               <FilterButton
                 type="button"
                 onClick={() => setIsFiltersOpen(true)}
-                className="rounded-pill d-inline-flex align-items-center gap-2"
+                className="d-inline-flex align-items-center gap-2"
               >
                 <span className="fw-semibold">{strings.actions.filters}</span>
                 {filtersCount > 0 && (
@@ -1852,7 +1852,7 @@ const StudentsGroupsPage = ({
             <FilterButton
               type="button"
               onClick={() => setIsGroupFiltersOpen(true)}
-              className="rounded-pill d-inline-flex align-items-center gap-2"
+              className="d-inline-flex align-items-center gap-2"
             >
               <span className="fw-semibold">{strings.actions.filters}</span>
               {groupFiltersCount > 0 && (

@@ -86,6 +86,16 @@ const ACCESS_CONTROL_MENU_MAP = {
   communications: 'communications',
 };
 
+const ACCESS_CONTROL_MENU_MAP = {
+  dashboard: 'dashboard',
+  payments: 'payments',
+  students: 'students',
+  teachers: 'teachers',
+  schedules: 'schedules',
+  grades: 'grades',
+  communications: 'communications',
+};
+
 export const normalizeRoleName = (roleName) => {
   if (typeof roleName !== 'string') {
     return '';
@@ -99,8 +109,11 @@ export const getRoleLabel = (translations, roleName) => {
   return translations?.home?.role?.[normalizedRole] ?? translations?.home?.role?.default ?? translations?.home?.roleLabel;
 };
 
-export const buildMenuItemsForRole = (_roleName, labels = {}, accessControlledKeys = []) => {
-  const filteredKeys = Array.isArray(accessControlledKeys) ? accessControlledKeys : [];
+export const buildMenuItemsForRole = (roleName, labels = {}, accessControlledKeys = null) => {
+  const normalizedRole = normalizeRoleName(roleName);
+  const hasAccessControl = Array.isArray(accessControlledKeys);
+  const roleMenuKeys = ROLE_MENUS[normalizedRole] ?? ROLE_MENUS.DEFAULT;
+  const filteredKeys = hasAccessControl ? accessControlledKeys : roleMenuKeys;
 
   return MENU_DEFINITIONS.filter((item) => filteredKeys.includes(item.key)).map((item) => ({
     ...item,

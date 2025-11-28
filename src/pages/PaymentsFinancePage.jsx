@@ -3371,7 +3371,7 @@ const PaymentsFinancePage = ({
                   onClick={handleToggleTuitionFilters}
                   aria-expanded={showTuitionFilters}
                   aria-controls="payments-page-filters"
-                  className="rounded-pill d-inline-flex align-items-center gap-2"
+                  className="d-inline-flex align-items-center gap-2"
                 >
                   <span className="fw-semibold">{actionStrings.filter}</span>
                   {tuitionFiltersCount > 0 && (
@@ -3461,7 +3461,7 @@ const PaymentsFinancePage = ({
                     onClick={handleToggleRecurrenceFilters}
                     aria-expanded={showRecurrenceFilters}
                     aria-controls="payment-recurrences-filters"
-                    className="rounded-pill d-inline-flex align-items-center gap-2"
+                    className="d-inline-flex align-items-center gap-2"
                   >
                     <span className="fw-semibold">{actionStrings.filter}</span>
                     {recurrenceFiltersCount > 0 && (
@@ -3485,7 +3485,7 @@ const PaymentsFinancePage = ({
                     onClick={handleToggleRequestsFilters}
                     aria-expanded={showRequestsFilters}
                     aria-controls="payment-requests-filters"
-                    className="rounded-pill d-inline-flex align-items-center gap-2"
+                    className="d-inline-flex align-items-center gap-2"
                   >
                     <span className="fw-semibold">{actionStrings.filter}</span>
                     {requestsFiltersCount > 0 && (
@@ -3512,7 +3512,7 @@ const PaymentsFinancePage = ({
                   onClick={handleTogglePaymentsFilters}
                   aria-expanded={showPaymentsFilters}
                   aria-controls="payments-table-filters"
-                  className="rounded-pill d-inline-flex align-items-center gap-2"
+                  className="d-inline-flex align-items-center gap-2"
                 >
                   <span className="fw-semibold">{actionStrings.filter}</span>
                   {paymentsFiltersCount > 0 && (

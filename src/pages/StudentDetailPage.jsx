@@ -1264,11 +1264,9 @@ const StudentDetailPage = ({
     }
 
     return (
-      <button type="button" className="student-detail-table__sort" onClick={() => handleSort(tabKey, columnKey)}>
+      <button type="button" className="payments-page__sortable" onClick={() => handleSort(tabKey, columnKey)}>
         <span>{label}</span>
-        <span aria-hidden="true" className="student-detail-table__sort-icon">
           {renderSortIndicator(columnKey, sortState)}
-        </span>
       </button>
     );
   };
@@ -1390,7 +1388,7 @@ const StudentDetailPage = ({
     {
       key: 'amount',
       label: requestsTableStrings.columns.amount,
-      render: (row) => formatCurrency(buildCellValue(row, 'amount') ?? 0),
+      render: (row) => formatCurrency(buildCellValue(row, 'pr_amount') ?? 0),
     },
     { key: 'ps_pr_name', label: requestsTableStrings.columns.status },
     {
@@ -1527,13 +1525,13 @@ const StudentDetailPage = ({
                             <span className="table__switch-thumb" />
                           </span>
                         </label>
-                        <span className="student-detail-page__status-label">
+                        <span>
                           {userStatusDraft ? userStatusLabels.active : userStatusLabels.inactive}
                         </span>
                       </div>
                     ) : (
                       <span
-                        className={`student-detail-page__chip ${hasActiveAccess ? 'chip--success' : 'chip--warning'}`}
+                        className={`student-detail-page__chip ${student?.user_enabled ? 'chip--success' : 'chip--warning'}`}
                       >
                         {student?.user_status || contactStrings.emptyValue}
                       </span>
@@ -1569,7 +1567,7 @@ const StudentDetailPage = ({
                 </>
               ) : (
                 <>
-                  <button type="button" className="btn btn--ghost" disabled={status === 'loading'}>
+                  <button type="button" className="ui-button btn--ghost" disabled={status === 'loading'}>
                     {resetPassword}
                   </button>
                   <button
@@ -1685,7 +1683,7 @@ const StudentDetailPage = ({
                         <p className="student-card__hint">{summaryStrings.lastPayment}</p>
                       </div>
                     </div>
-                    <button type="button" className="btn btn--ghost btn--full" onClick={handleOpenBalanceModal}>
+                    <button type="button" className="ui-button btn--ghost btn--full" onClick={handleOpenBalanceModal}>
                       {summaryStrings.balance}
                     </button>
                   </section>
