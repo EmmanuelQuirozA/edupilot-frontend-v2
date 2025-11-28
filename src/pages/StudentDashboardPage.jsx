@@ -2309,7 +2309,7 @@ const StudentDashboardPage = ({
                 onClick={() => setShowRequestsFilters(true)}
                 aria-expanded={showRequestsFilters}
                 aria-controls="student-dashboard-requests-filters"
-                className="rounded-pill d-inline-flex align-items-center gap-2"
+                className="d-inline-flex align-items-center gap-2"
               >
                 <span className="fw-semibold">{paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}</span>
                 {requestsFiltersCount > 0 ? (
@@ -2398,7 +2398,7 @@ const StudentDashboardPage = ({
                 onClick={() => setShowPaymentsFilters(true)}
                 aria-expanded={showPaymentsFilters}
                 aria-controls="student-dashboard-payments-filters"
-                className="rounded-pill d-inline-flex align-items-center gap-2"
+                className="d-inline-flex align-items-center gap-2"
               >
                 <span className="fw-semibold">
                   {paymentsActionsStrings.filter ?? strings.actions?.filter ?? 'Filtrar'}
