@@ -76,12 +76,14 @@ const MENU_DEFINITIONS = [
   { key: 'communications', labelKey: 'communications' },
 ];
 
-const ROLE_MENUS = {
-  ADMIN: ['dashboard', 'payments', 'students', 'teachers', 'schedules', 'grades', 'communications'],
-  TEACHER: ['dashboard', 'students', 'schedules', 'grades', 'communications'],
-  STUDENT: ['dashboard', 'payments', 'communications'],
-  GUARDIAN: ['dashboard', 'payments', 'communications'],
-  DEFAULT: ['dashboard', 'payments', 'students', 'teachers', 'schedules', 'grades', 'communications'],
+const ACCESS_CONTROL_MENU_MAP = {
+  dashboard: 'dashboard',
+  payments: 'payments',
+  students: 'students',
+  teachers: 'teachers',
+  schedules: 'schedules',
+  grades: 'grades',
+  communications: 'communications',
 };
 
 export const normalizeRoleName = (roleName) => {
@@ -97,15 +99,29 @@ export const getRoleLabel = (translations, roleName) => {
   return translations?.home?.role?.[normalizedRole] ?? translations?.home?.role?.default ?? translations?.home?.roleLabel;
 };
 
-export const buildMenuItemsForRole = (roleName, labels = {}) => {
-  const normalizedRole = normalizeRoleName(roleName);
-  const allowedKeys = ROLE_MENUS[normalizedRole] ?? ROLE_MENUS.DEFAULT;
+export const buildMenuItemsForRole = (_roleName, labels = {}, accessControlledKeys = []) => {
+  const filteredKeys = Array.isArray(accessControlledKeys) ? accessControlledKeys : [];
 
-  return MENU_DEFINITIONS.filter((item) => allowedKeys.includes(item.key)).map((item) => ({
+  return MENU_DEFINITIONS.filter((item) => filteredKeys.includes(item.key)).map((item) => ({
     ...item,
     label: labels[item.labelKey] ?? item.labelKey,
     icon: MENU_ICONS[item.key],
   }));
+};
+
+export const deriveMenuKeysFromAccessControl = (accessControlModules = []) => {
+  if (!Array.isArray(accessControlModules)) {
+    return [];
+  }
+
+  const enabledMenuKeys = accessControlModules
+    .filter((module) => module && module.enabled)
+    .map((module) => module?.moduleKey ?? module?.module_key ?? module?.key)
+    .filter((moduleKey) => typeof moduleKey === 'string' && moduleKey.trim())
+    .map((moduleKey) => ACCESS_CONTROL_MENU_MAP[moduleKey.trim().toLowerCase()])
+    .filter(Boolean);
+
+  return Array.from(new Set(enabledMenuKeys));
 };
 
 export default buildMenuItemsForRole;

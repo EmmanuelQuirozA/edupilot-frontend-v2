@@ -9,11 +9,12 @@ import TeachersPage from '../pages/TeachersPage';
 import SchedulesTasksPage from '../pages/SchedulesTasksPage';
 import GradesPage from '../pages/GradesPage';
 import CommunicationsPage from '../pages/CommunicationsPage';
-import { buildMenuItemsForRole, getRoleLabel, normalizeRoleName } from '../utils/menuItems';
+import { buildMenuItemsForRole, deriveMenuKeysFromAccessControl, getRoleLabel } from '../utils/menuItems';
 import Breadcrumbs from './Breadcrumbs';
 import StudentDetailPage from '../pages/StudentDetailPage';
 import './HomePage.css';
 import { getRoleNameFromToken } from '../utils/jwt';
+import { API_BASE_URL } from '../config';
 
 const COLLAPSE_BREAKPOINT = 1200;
 
@@ -53,7 +54,6 @@ const HomePage = ({
   const t = getTranslation(language);
   const tokenRoleName = useMemo(() => getRoleNameFromToken(token), [token]);
   const roleName = tokenRoleName ?? user?.role_name ?? user?.role ?? user?.roleName ?? '';
-  const normalizedRole = normalizeRoleName(roleName);
   const roleLabel = getRoleLabel(t, roleName);
 
   const [activePage, setActivePage] = useState(activePageProp);
@@ -65,6 +65,7 @@ const HomePage = ({
   const [paymentDetailBreadcrumbLabel, setPaymentDetailBreadcrumbLabel] = useState(
     t.home.paymentsPage.detail?.breadcrumbFallback || t.home.menu.items.payments,
   );
+  const [accessControlMenuKeys, setAccessControlMenuKeys] = useState([]);
 
   const paymentsRouteSegments = activePage === 'payments' ? routeSegments : [];
   const paymentsPrimarySegment = paymentsRouteSegments[0] ?? '';
@@ -170,6 +171,55 @@ const HomePage = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (!token) {
+      setAccessControlMenuKeys([]);
+      return () => {};
+    }
+
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const loadAccessControlModules = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/modules/access-control`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load access control modules (${response.status})`);
+        }
+
+        const payload = await response.json();
+        const allowedKeys = deriveMenuKeysFromAccessControl(payload);
+
+        if (isMounted) {
+          setAccessControlMenuKeys(allowedKeys);
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          return;
+        }
+
+        console.error('Error loading access control modules', error);
+
+        if (isMounted) {
+          setAccessControlMenuKeys([]);
+        }
+      }
+    };
+
+    loadAccessControlModules();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [token]);
+
   const displayName = user?.first_name ?? user?.name ?? user?.username ?? roleLabel;
   const initials = displayName
     .split(' ')
@@ -178,8 +228,8 @@ const HomePage = ({
     .join('');
 
   const menuItems = useMemo(
-    () => buildMenuItemsForRole(normalizedRole, t.home.menu.items),
-    [normalizedRole, t.home.menu.items],
+    () => buildMenuItemsForRole(roleName, t.home.menu.items, accessControlMenuKeys),
+    [accessControlMenuKeys, roleName, t.home.menu.items],
   );
 
   const studentsPageStrings = t.home.studentsPage;
