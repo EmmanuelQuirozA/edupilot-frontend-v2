@@ -84,6 +84,16 @@ const ROLE_MENUS = {
   DEFAULT: ['dashboard', 'payments', 'students', 'teachers', 'schedules', 'grades', 'communications'],
 };
 
+const ACCESS_CONTROL_MENU_MAP = {
+  dashboard: 'dashboard',
+  payments: 'payments',
+  students: 'students',
+  teachers: 'teachers',
+  schedules: 'schedules',
+  grades: 'grades',
+  communications: 'communications',
+};
+
 export const normalizeRoleName = (roleName) => {
   if (typeof roleName !== 'string') {
     return '';
@@ -97,15 +107,32 @@ export const getRoleLabel = (translations, roleName) => {
   return translations?.home?.role?.[normalizedRole] ?? translations?.home?.role?.default ?? translations?.home?.roleLabel;
 };
 
-export const buildMenuItemsForRole = (roleName, labels = {}) => {
+export const buildMenuItemsForRole = (roleName, labels = {}, accessControlledKeys = null) => {
   const normalizedRole = normalizeRoleName(roleName);
-  const allowedKeys = ROLE_MENUS[normalizedRole] ?? ROLE_MENUS.DEFAULT;
+  const hasAccessControl = Array.isArray(accessControlledKeys);
+  const roleMenuKeys = ROLE_MENUS[normalizedRole] ?? ROLE_MENUS.DEFAULT;
+  const filteredKeys = hasAccessControl ? accessControlledKeys : roleMenuKeys;
 
-  return MENU_DEFINITIONS.filter((item) => allowedKeys.includes(item.key)).map((item) => ({
+  return MENU_DEFINITIONS.filter((item) => filteredKeys.includes(item.key)).map((item) => ({
     ...item,
     label: labels[item.labelKey] ?? item.labelKey,
     icon: MENU_ICONS[item.key],
   }));
+};
+
+export const deriveMenuKeysFromAccessControl = (accessControlModules = []) => {
+  if (!Array.isArray(accessControlModules)) {
+    return [];
+  }
+
+  const enabledMenuKeys = accessControlModules
+    .filter((module) => module && module.enabled)
+    .map((module) => module?.moduleKey ?? module?.module_key ?? module?.key)
+    .filter((moduleKey) => typeof moduleKey === 'string' && moduleKey.trim())
+    .map((moduleKey) => ACCESS_CONTROL_MENU_MAP[moduleKey.trim().toLowerCase()])
+    .filter(Boolean);
+
+  return Array.from(new Set(enabledMenuKeys));
 };
 
 export default buildMenuItemsForRole;
