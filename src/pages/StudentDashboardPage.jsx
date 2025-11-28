@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useModal } from '../components/modal/useModal';
 import { getTranslation } from '../i18n/translations';
 import { handleExpiredToken } from '../utils/auth';
-import { buildMenuItemsForRole, getRoleLabel, normalizeRoleName } from '../utils/menuItems';
+import { buildMenuItemsForRole, deriveMenuKeysFromAccessControl, getRoleLabel } from '../utils/menuItems';
 import { getRoleNameFromToken } from '../utils/jwt';
 import Breadcrumbs from '../components/Breadcrumbs';
 import GlobalTable from '../components/ui/GlobalTable.jsx';
@@ -370,9 +370,12 @@ const StudentDashboardPage = ({
   }, [t.paymentsPage?.tuitionModal]);
   const tokenRoleName = useMemo(() => getRoleNameFromToken(token), [token]);
   const roleName = tokenRoleName ?? user?.role_name ?? user?.role ?? user?.roleName ?? '';
-  const normalizedRole = normalizeRoleName(roleName);
   const roleLabel = getRoleLabel(t, roleName);
-  const menuItems = useMemo(() => buildMenuItemsForRole(normalizedRole, t.home.menu.items), [normalizedRole, t.home.menu.items]);
+  const [accessControlMenuKeys, setAccessControlMenuKeys] = useState([]);
+  const menuItems = useMemo(
+    () => buildMenuItemsForRole(roleName, t.home.menu.items, accessControlMenuKeys),
+    [accessControlMenuKeys, roleName, t.home.menu.items],
+  );
   const displayName = user?.first_name ?? user?.name ?? user?.username ?? roleLabel;
   const initials = displayName
     .split(' ')
@@ -502,6 +505,56 @@ const StudentDashboardPage = ({
     return 'tuition';
   }, [paymentsPrimarySegment]);
   const [paymentsTab, setPaymentsTab] = useState(resolvedPaymentsTab);
+
+  useEffect(() => {
+    if (!token) {
+      setAccessControlMenuKeys([]);
+      return () => {};
+    }
+
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const loadAccessControlModules = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/modules/access-control`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          handleExpiredToken(response, logout);
+          throw new Error(`Failed to load access control modules (${response.status})`);
+        }
+
+        const payload = await response.json();
+        const allowedKeys = deriveMenuKeysFromAccessControl(payload);
+
+        if (isMounted) {
+          setAccessControlMenuKeys(allowedKeys);
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          return;
+        }
+
+        console.error('Error loading access control modules', error);
+
+        if (isMounted) {
+          setAccessControlMenuKeys([]);
+        }
+      }
+    };
+
+    loadAccessControlModules();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [logout, token]);
 
   useEffect(() => {
     setPaymentsTab(resolvedPaymentsTab);

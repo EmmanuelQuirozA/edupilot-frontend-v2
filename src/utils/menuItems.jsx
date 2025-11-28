@@ -76,12 +76,14 @@ const MENU_DEFINITIONS = [
   { key: 'communications', labelKey: 'communications' },
 ];
 
-const ROLE_MENUS = {
-  ADMIN: ['dashboard', 'payments', 'students', 'teachers', 'schedules', 'grades', 'communications'],
-  TEACHER: ['dashboard', 'students', 'schedules', 'grades', 'communications'],
-  STUDENT: ['dashboard', 'payments', 'communications'],
-  GUARDIAN: ['dashboard', 'payments', 'communications'],
-  DEFAULT: ['dashboard', 'payments', 'students', 'teachers', 'schedules', 'grades', 'communications'],
+const ACCESS_CONTROL_MENU_MAP = {
+  dashboard: 'dashboard',
+  payments: 'payments',
+  students: 'students',
+  teachers: 'teachers',
+  schedules: 'schedules',
+  grades: 'grades',
+  communications: 'communications',
 };
 
 const ACCESS_CONTROL_MENU_MAP = {

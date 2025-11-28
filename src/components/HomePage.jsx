@@ -59,7 +59,6 @@ const HomePage = ({
   const t = getTranslation(language);
   const tokenRoleName = useMemo(() => getRoleNameFromToken(token), [token]);
   const roleName = tokenRoleName ?? user?.role_name ?? user?.role ?? user?.roleName ?? '';
-  const normalizedRole = normalizeRoleName(roleName);
   const roleLabel = getRoleLabel(t, roleName);
 
   const [activePage, setActivePage] = useState(activePageProp);
