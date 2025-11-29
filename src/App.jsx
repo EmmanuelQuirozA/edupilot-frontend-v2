@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import LoginPage from './components/LoginPage';
-import HomePage from './pages/HomePage';
+import AppLayout from './components/AppLayout';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import RoleLandingPage from './pages/RoleLandingPage';
@@ -94,7 +94,7 @@ const ROLE_PORTALS = {
   [ROLE_KEYS.SCHOOL_ADMIN]: {
     allowedSections: HOME_PAGES,
     defaultSection: 'dashboard',
-    component: HomePage,
+    component: AppLayout,
     buildProps: buildHomePortalProps,
   },
   [ROLE_KEYS.TEACHER]: {
