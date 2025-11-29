@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import LanguageSelector from './LanguageSelector';
+import AppLayout from '../components/AppLayout';
 import { getTranslation } from '../i18n/translations';
 import { useAuth } from '../context/AuthContext';
-import PaymentsFinancePage from '../pages/PaymentsFinancePage';
-import StudentsGroupsPage from '../pages/StudentsGroupsPage';
-import StudentsBulkUploadPage from '../pages/StudentsBulkUploadPage';
-import TeachersPage from '../pages/TeachersPage';
-import SchedulesTasksPage from '../pages/SchedulesTasksPage';
-import GradesPage from '../pages/GradesPage';
-import CommunicationsPage from '../pages/CommunicationsPage';
+import PaymentsFinancePage from './PaymentsFinancePage';
+import StudentsGroupsPage from './StudentsGroupsPage';
+import StudentsBulkUploadPage from './StudentsBulkUploadPage';
+import TeachersPage from './TeachersPage';
+import SchedulesTasksPage from './SchedulesTasksPage';
+import GradesPage from './GradesPage';
+import CommunicationsPage from './CommunicationsPage';
 import { buildMenuItemsForRole, deriveMenuKeysFromAccessControl, getRoleLabel } from '../utils/menuItems';
-import Breadcrumbs from './Breadcrumbs';
-import StudentDetailPage from '../pages/StudentDetailPage';
-import './HomePage.css';
+import StudentDetailPage from './StudentDetailPage';
+import '../components/HomePage.css';
 import { getRoleNameFromToken } from '../utils/jwt';
 import { API_BASE_URL } from '../config';
 
@@ -703,147 +702,47 @@ const HomePage = ({
     );
   };
 
-  return (
-    <div className={`dashboard${isSidebarOpen && !isDesktop ? ' has-overlay' : ''}`}>
-      <aside
-        className={`dashboard__sidebar${isSidebarOpen ? ' is-visible' : ''}${isDesktop ? '' : ' is-collapsible'}`}
-      >
-        {!isDesktop ? (
-          <button
-            type="button"
-            className="sidebar__close"
-            onClick={closeSidebar}
-            aria-label={t.home.header.closeMenu}
-          >
-            ×
-          </button>
-        ) : null}
-        {/* <div className="sidebar__brand">
-          <span className="sidebar__brand-mark">school</span>
-          <span className="sidebar__brand-badge">EduPilot</span>
-        </div> */}
-        <div className="sidebar__profile">
-          <div className="sidebar__avatar-wrapper">
-            <div className="sidebar__avatar" aria-hidden="true">
-              {initials || 'AD'}
-            </div>
-            {!isDesktop ? (
-              <div className="sidebar__language-badge">
-                <LanguageSelector value={language} onChange={onLanguageChange} />
-              </div>
-            ) : null}
-          </div>
-          <div>
-            <p className="sidebar__name">{displayName}</p>
-            <span className="sidebar__role">{roleLabel}</span>
-          </div>
-        </div>
-        <nav className="sidebar__nav" aria-label={t.home.menu.main}>
-          <p className="sidebar__section">{t.home.menu.main}</p>
-          <ul>
-            {menuItems.map((item) => (
-              <li
-                key={item.key}
-                className={activePage === item.key ? 'is-active' : ''}
-                onClick={() => handleNavClick(item.key)}
-              >
-                {item.icon} {item.label}
-              </li>
-            ))}
-          </ul>
-          <p className="sidebar__section">{t.home.menu.settings}</p>
-          <ul>
-            <li>{t.home.menu.paymentCenter}</li>
-            <li>{t.home.menu.configuration}</li>
-          </ul>
-        </nav>
-        <button type="button" className="sidebar__logout" onClick={logout}>
-          {t.home.logout}
-        </button>
-      </aside>
+  const pageContent =
+    activePage === 'dashboard'
+      ? renderDashboard()
+      : activePage === 'students'
+      ? studentsContent
+      : activePage === 'payments'
+      ? paymentsContent
+      : genericPages[activePage] ?? null;
 
-      {!isDesktop && isSidebarOpen ? <div className="dashboard__overlay" onClick={closeSidebar} aria-hidden="true" /> : null}
-
-      <div className="dashboard__main">
-        <header className="dashboard__header">
-          <div className="dashboard__header-title">
-            {!isDesktop ? (
-              <button
-                type="button"
-                className="dashboard__menu-toggle"
-                onClick={toggleSidebar}
-                aria-label={isSidebarOpen ? t.home.header.closeMenu : t.home.header.openMenu}
-              >
-                <span />
-                <span />
-                <span />
-              </button>
-            ) : null}
-            <div>
-              <h1>{headerTitle}</h1>
-              <p className="dashboard__subtitle">{t.home.header.subtitle}</p>
-            </div>
-          </div>
-          <div className="dashboard__actions">
-            {isDesktop ? (
-              <label className="dashboard__search" htmlFor="dashboard-search">
-                <span className="visually-hidden">{t.home.header.searchPlaceholder}</span>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.471 6.471 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.505 4.505 0 0 1 9.5 14Z"
-                    fill="currentColor"
-                  />
-                </svg>
-                <input id="dashboard-search" type="search" placeholder={t.home.header.searchPlaceholder} />
-              </label>
-            ) : (
-              <button type="button" className="dashboard__search-button">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.471 6.471 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.505 4.505 0 0 1 9.5 14Z"
-                    fill="currentColor"
-                  />
-                </svg>
-                <span>{t.home.header.searchPlaceholder}</span>
-              </button>
-            )}
-            <button type="button" className="dashboard__notification" aria-label={t.home.header.notifications}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M12 3a5 5 0 0 0-5 5v2.17c0 .7-.28 1.37-.77 1.86L4.6 13.65A1 1 0 0 0 5.3 15h13.4a1 1 0 0 0 .7-1.35l-1.63-1.62a2.63 2.63 0 0 1-.77-1.86V8a5 5 0 0 0-5-5Zm0 18a2.5 2.5 0 0 1-2.45-2h4.9A2.5 2.5 0 0 1 12 21Z"
-                  fill="currentColor"
-                />
-              </svg>
-              <span />
-            </button>
-            {isDesktop ? (
-              <LanguageSelector value={language} onChange={onLanguageChange} />
-            ) : null}
-            {isDesktop ? (
-              <div className="dashboard__user-chip">
-                <div className="dashboard__user-initials" aria-hidden="true">
-                  {initials || 'AD'}
-                </div>
-                <div>
-                  <p>{displayName}</p>
-                  <span>{user?.role ?? roleLabel}</span>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </header>
-
-        <Breadcrumbs items={breadcrumbs} />
-        {activePage === 'dashboard'
-          ? renderDashboard()
-          : activePage === 'students'
-          ? studentsContent
-          : activePage === 'payments'
-          ? paymentsContent
-          : genericPages[activePage] ?? null}
-      </div>
+  const footerContent = (
+    <div className="dashboard__footer-content">
+      <span>© 2024 EduPilot</span>
+      <span>{t.home.header.subtitle}</span>
     </div>
   );
+
+  return (
+    <AppLayout
+      t={t}
+      language={language}
+      onLanguageChange={onLanguageChange}
+      isDesktop={isDesktop}
+      isSidebarOpen={isSidebarOpen}
+      onToggleSidebar={toggleSidebar}
+      onCloseSidebar={closeSidebar}
+      menuItems={menuItems}
+      activePage={activePage}
+      onNavClick={handleNavClick}
+      displayName={displayName}
+      roleLabel={roleLabel}
+      initials={initials}
+      headerTitle={headerTitle}
+      headerSubtitle={t.home.header.subtitle}
+      breadcrumbs={breadcrumbs}
+      onLogout={logout}
+      footerContent={footerContent}
+    >
+      {pageContent}
+    </AppLayout>
+  );
+
 };
 
 export default HomePage;
