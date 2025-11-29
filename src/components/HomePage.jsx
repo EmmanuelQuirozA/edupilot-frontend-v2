@@ -9,12 +9,7 @@ import TeachersPage from '../pages/TeachersPage';
 import SchedulesTasksPage from '../pages/SchedulesTasksPage';
 import GradesPage from '../pages/GradesPage';
 import CommunicationsPage from '../pages/CommunicationsPage';
-import {
-  buildMenuItemsForRole,
-  deriveMenuKeysFromAccessControl,
-  getRoleLabel,
-  normalizeRoleName,
-} from '../utils/menuItems';
+import { buildMenuItemsForRole, deriveMenuKeysFromAccessControl, getRoleLabel } from '../utils/menuItems';
 import Breadcrumbs from './Breadcrumbs';
 import StudentDetailPage from '../pages/StudentDetailPage';
 import './HomePage.css';
@@ -70,7 +65,7 @@ const HomePage = ({
   const [paymentDetailBreadcrumbLabel, setPaymentDetailBreadcrumbLabel] = useState(
     t.home.paymentsPage.detail?.breadcrumbFallback || t.home.menu.items.payments,
   );
-  const [accessControlMenuKeys, setAccessControlMenuKeys] = useState(null);
+  const [accessControlMenuKeys, setAccessControlMenuKeys] = useState([]);
 
   const paymentsRouteSegments = activePage === 'payments' ? routeSegments : [];
   const paymentsPrimarySegment = paymentsRouteSegments[0] ?? '';
@@ -233,8 +228,8 @@ const HomePage = ({
     .join('');
 
   const menuItems = useMemo(
-    () => buildMenuItemsForRole(normalizedRole, t.home.menu.items, accessControlMenuKeys),
-    [accessControlMenuKeys, normalizedRole, t.home.menu.items],
+    () => buildMenuItemsForRole(roleName, t.home.menu.items, accessControlMenuKeys),
+    [accessControlMenuKeys, roleName, t.home.menu.items],
   );
 
   const studentsPageStrings = t.home.studentsPage;
