@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import LoginPage from './components/LoginPage';
-import HomePage from './components/HomePage';
+import HomePage from './pages/HomePage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import RoleLandingPage from './pages/RoleLandingPage';
