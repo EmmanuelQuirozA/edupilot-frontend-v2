@@ -1439,6 +1439,49 @@ export const translations = {
         },
       },
     },
+    adminDashboard: {
+      eyebrow: 'Administración',
+      title: 'Panel de administrador',
+      greeting: 'Hola,',
+      subtitle: 'Gestiona la plataforma central, reportes y licencias en un solo lugar.',
+      helper: 'Selecciona un bloque para abrir su configuración o monitorear métricas.',
+      badge: 'Admin',
+      actionsLabel: 'Áreas disponibles',
+      logout: 'Cerrar sesión',
+      quickLinks: [
+        {
+          title: 'Cuentas escolares',
+          description: 'Administra escuelas, licencias y accesos institucionales.',
+          hint: 'Conecta nuevas sedes en minutos.',
+        },
+        {
+          title: 'Usuarios y roles',
+          description: 'Crea cuentas, define roles y controla permisos avanzados.',
+          hint: 'Incluye autenticación y bloqueos.',
+        },
+        {
+          title: 'Reportes globales',
+          description: 'Consulta indicadores agregados de uso y pagos en la red.',
+          hint: 'Exporta datos en tiempo real.',
+        },
+        {
+          title: 'Integraciones',
+          description: 'Configura proveedores de pagos, identidad y notificaciones.',
+          hint: 'Listo para conexión con terceros.',
+        },
+      ],
+    },
+    rolePortals: {
+      title: 'Estamos preparando el portal de {role}',
+      description: 'Pronto tendrás un panel dedicado con herramientas para tu rol.',
+      hint: 'Puedes cerrar sesión y volver más tarde cuando el portal esté disponible.',
+      logout: 'Cerrar sesión',
+      roles: {
+        teacher: 'docente',
+        coffee: 'coffee',
+        default: 'usuario',
+      },
+    },
     errors: {
       invalidCredentials: 'Usuario o contraseña incorrectos.',
       userDisabled: 'Tu cuenta está deshabilitada. Contacta al administrador.',
@@ -2877,6 +2920,49 @@ export const translations = {
           },
           helper: 'Make sure to fill in all the required fields marked with *.',
         },
+      },
+    },
+    adminDashboard: {
+      eyebrow: 'Administration',
+      title: 'Admin dashboard',
+      greeting: 'Hello,',
+      subtitle: 'Manage the central platform, reports, and licenses from one place.',
+      helper: 'Pick a block to configure it or review the latest metrics.',
+      badge: 'Admin',
+      actionsLabel: 'Available areas',
+      logout: 'Log out',
+      quickLinks: [
+        {
+          title: 'School accounts',
+          description: 'Manage schools, licenses, and institutional access.',
+          hint: 'Connect new campuses in minutes.',
+        },
+        {
+          title: 'Users and roles',
+          description: 'Create accounts, define roles, and enforce permissions.',
+          hint: 'Includes authentication and blocking rules.',
+        },
+        {
+          title: 'Global reports',
+          description: 'Review aggregated usage and payment indicators.',
+          hint: 'Export near real-time data.',
+        },
+        {
+          title: 'Integrations',
+          description: 'Configure payment, identity, and notification providers.',
+          hint: 'Ready for third-party connections.',
+        },
+      ],
+    },
+    rolePortals: {
+      title: '{role} portal is on its way',
+      description: 'A dedicated experience for your role will be available soon.',
+      hint: 'You can sign out and come back when this portal is ready.',
+      logout: 'Log out',
+      roles: {
+        teacher: 'teacher',
+        coffee: 'coffee',
+        default: 'user',
       },
     },
     errors: {
