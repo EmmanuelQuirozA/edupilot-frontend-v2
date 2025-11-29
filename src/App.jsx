@@ -2,9 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import LoginPage from './components/LoginPage';
 import HomePage from './components/HomePage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import RoleLandingPage from './pages/RoleLandingPage';
 import { useAuth } from './context/AuthContext';
 import { getTranslation } from './i18n/translations';
 import { getRoleNameFromToken } from './utils/jwt';
+import { normalizeRoleName } from './utils/menuItems';
 import './App.css';
 
 const supportedLanguages = ['es', 'en'];
@@ -34,25 +37,100 @@ const HOME_PAGES = new Set([
 ]);
 const STUDENT_HOME_PAGE = 'student-dashboard';
 const STUDENT_SECTIONS = new Set([STUDENT_HOME_PAGE, 'payments']);
+const ADMIN_HOME_PAGE = 'admin-dashboard';
+const TEACHER_HOME_PAGE = 'teacher-portal';
+const COFFEE_HOME_PAGE = 'coffee-portal';
+
+const ROLE_KEYS = {
+  ADMIN: 'ADMIN',
+  SCHOOL_ADMIN: 'SCHOOL_ADMIN',
+  TEACHER: 'TEACHER',
+  STUDENT: 'STUDENT',
+  COFFEE: 'COFFEE',
+};
+
+const buildHomePortalProps = (context) => ({
+  language: context.language,
+  onLanguageChange: context.handleLanguageChange,
+  activePage: context.resolvedSection,
+  onNavigate: context.handlePageChange,
+  routeSegments: context.detailSegments,
+  onNavigateToStudentDetail: context.handleStudentDetailNavigation,
+  onNavigateToBulkUpload: context.handleStudentBulkUploadNavigation,
+  onPaymentsSectionChange: context.handlePaymentsSectionNavigation,
+  onStudentsSectionChange: context.handleStudentsSectionNavigation,
+  onNavigateToPaymentDetail: context.handlePaymentDetailNavigation,
+  onNavigateToPaymentRequestDetail: context.handlePaymentRequestDetailNavigation,
+  onNavigateToPaymentRequestScheduleDetail: context.handlePaymentRequestScheduleDetailNavigation,
+  onNavigateToPaymentRequestResult: context.handlePaymentRequestResultNavigation,
+});
+
+const buildStudentPortalProps = (context) => ({
+  language: context.language,
+  onLanguageChange: context.handleLanguageChange,
+  sectionKey: context.resolvedSection,
+  routeSegments: context.detailSegments,
+  onNavigate: context.navigate,
+});
+
+const buildAdminPortalProps = (context) => ({
+  language: context.language,
+  onLanguageChange: context.handleLanguageChange,
+});
+
+const buildLandingPortalProps = (roleKey) => (context) => ({
+  language: context.language,
+  onLanguageChange: context.handleLanguageChange,
+  roleKey,
+});
+
+const ROLE_PORTALS = {
+  [ROLE_KEYS.ADMIN]: {
+    allowedSections: new Set([ADMIN_HOME_PAGE]),
+    defaultSection: ADMIN_HOME_PAGE,
+    component: AdminDashboardPage,
+    buildProps: buildAdminPortalProps,
+  },
+  [ROLE_KEYS.SCHOOL_ADMIN]: {
+    allowedSections: HOME_PAGES,
+    defaultSection: 'dashboard',
+    component: HomePage,
+    buildProps: buildHomePortalProps,
+  },
+  [ROLE_KEYS.TEACHER]: {
+    allowedSections: new Set([TEACHER_HOME_PAGE]),
+    defaultSection: TEACHER_HOME_PAGE,
+    component: RoleLandingPage,
+    roleKey: 'teacher',
+    buildProps: buildLandingPortalProps('teacher'),
+  },
+  [ROLE_KEYS.STUDENT]: {
+    allowedSections: STUDENT_SECTIONS,
+    defaultSection: STUDENT_HOME_PAGE,
+    component: StudentDashboardPage,
+    buildProps: buildStudentPortalProps,
+  },
+  [ROLE_KEYS.COFFEE]: {
+    allowedSections: new Set([COFFEE_HOME_PAGE]),
+    defaultSection: COFFEE_HOME_PAGE,
+    component: RoleLandingPage,
+    roleKey: 'coffee',
+    buildProps: buildLandingPortalProps('coffee'),
+  },
+};
+
+const DEFAULT_PORTAL_KEY = ROLE_KEYS.SCHOOL_ADMIN;
 
 const buildPath = (language, section) => `/${language}/${section}`;
 
 const App = () => {
   const { user, token } = useAuth();
   const tokenRoleName = useMemo(() => getRoleNameFromToken(token), [token]);
-  // const roleName = useMemo(() => {
-  //   const userRoleName = user?.role_name ?? user?.role ?? user?.roleName;
-  //   if (typeof userRoleName === 'string' && userRoleName.trim()) {
-  //     return userRoleName;
-  //   }
-
-  //   if (typeof tokenRoleName === 'string' && tokenRoleName.trim()) {
-  //     return tokenRoleName;
-  //   }
-
-  //   return null;
-  // }, [tokenRoleName, user]);
-  const isStudentRole = tokenRoleName?.toUpperCase?.() === 'STUDENT';
+  const roleName = useMemo(() => {
+    const userRoleName = user?.role_name ?? user?.role ?? user?.roleName;
+    return normalizeRoleName(userRoleName || tokenRoleName);
+  }, [tokenRoleName, user]);
+  const portalDefinition = ROLE_PORTALS[roleName] ?? ROLE_PORTALS[DEFAULT_PORTAL_KEY];
   const [path, setPath] = useState(() => (typeof window === 'undefined' ? '/' : window.location.pathname));
   const fallbackLanguageRef = useRef(getInitialLanguage());
   const fallbackLanguage = fallbackLanguageRef.current;
@@ -109,16 +187,15 @@ const App = () => {
       return 'login';
     }
 
-    if (isStudentRole) {
-      return STUDENT_SECTIONS.has(rawSection) ? rawSection : STUDENT_HOME_PAGE;
-    }
+    const allowedSections = portalDefinition?.allowedSections ?? HOME_PAGES;
+    const defaultSection = portalDefinition?.defaultSection ?? 'dashboard';
 
     if (!rawSection || rawSection === 'login') {
-      return 'dashboard';
+      return defaultSection;
     }
 
-    return HOME_PAGES.has(rawSection) ? rawSection : 'dashboard';
-  }, [isStudentRole, rawSection, user]);
+    return allowedSections.has(rawSection) ? rawSection : defaultSection;
+  }, [portalDefinition, rawSection, user]);
 
   const normalizedPath = useMemo(() => {
     if (!user) {
@@ -128,28 +205,15 @@ const App = () => {
       return buildPath(language, resolvedSection);
     }
 
-    if (isStudentRole) {
-      if (!rawSection) {
-        return buildPath(language, STUDENT_HOME_PAGE);
-      }
-
-      if (!STUDENT_SECTIONS.has(rawSection)) {
-        return buildPath(language, STUDENT_HOME_PAGE);
-      }
-
-      return null;
-    }
-
-    if (!rawSection) {
+    if (!portalDefinition) {
       return buildPath(language, resolvedSection);
     }
 
-    if (!HOME_PAGES.has(rawSection)) {
-      return buildPath(language, resolvedSection);
-    }
+    const isAllowedSection = portalDefinition.allowedSections.has(rawSection);
+    const needsNormalization = !rawSection || rawSection !== resolvedSection || !isAllowedSection || !isLanguageValid;
 
-    return null;
-  }, [isStudentRole, language, rawSection, resolvedSection, user]);
+    return needsNormalization ? buildPath(language, resolvedSection) : null;
+  }, [isLanguageValid, language, portalDefinition, rawSection, resolvedSection, user]);
 
   useEffect(() => {
     if (normalizedPath && path !== normalizedPath) {
@@ -296,40 +360,50 @@ const App = () => {
     [language, navigate],
   );
 
+  const portalContext = useMemo(
+    () => ({
+      language,
+      detailSegments,
+      resolvedSection,
+      navigate,
+      handleLanguageChange,
+      handlePageChange,
+      handleStudentDetailNavigation,
+      handleStudentBulkUploadNavigation,
+      handlePaymentsSectionNavigation,
+      handleStudentsSectionNavigation,
+      handlePaymentDetailNavigation,
+      handlePaymentRequestDetailNavigation,
+      handlePaymentRequestScheduleDetailNavigation,
+      handlePaymentRequestResultNavigation,
+    }),
+    [
+      detailSegments,
+      handleLanguageChange,
+      handlePageChange,
+      handlePaymentDetailNavigation,
+      handlePaymentRequestDetailNavigation,
+      handlePaymentRequestResultNavigation,
+      handlePaymentRequestScheduleDetailNavigation,
+      handlePaymentsSectionNavigation,
+      handleStudentBulkUploadNavigation,
+      handleStudentDetailNavigation,
+      handleStudentsSectionNavigation,
+      language,
+      navigate,
+      resolvedSection,
+    ],
+  );
+
   if (!user && resolvedSection === 'login') {
     return <LoginPage language={language} onLanguageChange={handleLanguageChange} />;
   }
 
-  if (user && isStudentRole) {
-    return (
-      <StudentDashboardPage
-        language={language}
-        onLanguageChange={handleLanguageChange}
-        sectionKey={resolvedSection}
-        routeSegments={detailSegments}
-        onNavigate={navigate}
-      />
-    );
-  }
+  if (user && portalDefinition?.component) {
+    const PortalComponent = portalDefinition.component;
+    const portalProps = portalDefinition.buildProps?.(portalContext) ?? {};
 
-  if (user && HOME_PAGES.has(resolvedSection)) {
-    return (
-      <HomePage
-        language={language}
-        onLanguageChange={handleLanguageChange}
-        activePage={resolvedSection}
-        onNavigate={handlePageChange}
-        routeSegments={detailSegments}
-        onNavigateToStudentDetail={handleStudentDetailNavigation}
-        onNavigateToBulkUpload={handleStudentBulkUploadNavigation}
-        onPaymentsSectionChange={handlePaymentsSectionNavigation}
-        onStudentsSectionChange={handleStudentsSectionNavigation}
-        onNavigateToPaymentDetail={handlePaymentDetailNavigation}
-        onNavigateToPaymentRequestDetail={handlePaymentRequestDetailNavigation}
-        onNavigateToPaymentRequestScheduleDetail={handlePaymentRequestScheduleDetailNavigation}
-        onNavigateToPaymentRequestResult={handlePaymentRequestResultNavigation}
-      />
-    );
+    return <PortalComponent {...portalProps} />;
   }
 
   return null;

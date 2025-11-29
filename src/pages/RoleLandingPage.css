@@ -1,0 +1,75 @@
+.role-landing {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0b1220 100%);
+  color: #e2e8f0;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+.role-landing__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.role-landing__chip {
+  border: 1px solid rgba(226, 232, 240, 0.16);
+  padding: 8px 12px;
+  border-radius: 999px;
+  text-transform: capitalize;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.role-landing__content {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.role-landing__description {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 18px;
+}
+
+.role-landing__hint {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.role-landing__actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+}
+
+.role-landing__logout {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.role-landing__logout:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .role-landing {
+    padding: 20px;
+  }
+
+  .role-landing__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
